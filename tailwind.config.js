@@ -2,7 +2,7 @@
 export default {
   content: [
     './index.html',
-    './src/**/*.{js,ts,jsx,tsx}', // This will scan your App.jsx for classes
+    './src/**/*.{js,ts,jsx,tsx}', // This scans your project
   ],
   theme: {
     extend: {},
