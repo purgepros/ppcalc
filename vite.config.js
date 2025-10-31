@@ -6,10 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss({
-      // Explicitly point to your config file
-      config: './tailwind.config.js', 
-    })
+    // This will now correctly find 'tailwind.config.js' by default
+    tailwindcss(), 
   ],
 })
 
