@@ -150,7 +150,7 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
     className={`w-full text-left p-6 border-2 rounded-xl transition-all ${
       isSelected
         ? 'border-blue-500 bg-blue-50 shadow-lg'
-        : 'border-gray-300 bg-white hover:border-gray-400'
+        : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
     }`}
   >
     <div className="flex items-center">
@@ -267,8 +267,8 @@ const LeadForm = ({ title, description, onSubmit, onBack }) => {
 };
 
 const ServiceInfoModal = ({ onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
       <h3 className="text-lg font-bold text-gray-900">About Seasonal Services</h3>
       <p className="text-sm text-gray-600 mt-4">
         Our Seasonal Deodorizer and WYSI Wash Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.
@@ -290,8 +290,8 @@ const ServiceInfoModal = ({ onClose }) => (
 );
 
 const PricingInfoModal = ({ onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
       <h3 className="text-lg font-bold text-gray-900">How Billing is Calculated</h3>
       <p className="text-sm text-gray-600 mt-4">
         To give you a simple and predictable bill, our monthly plans are based on the total number of visits you'll receive over a full year, averaged into equal payments.
@@ -317,7 +317,7 @@ const PricingInfoModal = ({ onClose }) => (
 const Header = () => (
   <header className="py-6">
     <div className="container mx-auto px-4 flex justify-center">
-      <a href="https://itspurgepros.com/">
+      <a href="https://itspurgepros.com/" className="transition hover:opacity-80">
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
     </div>
@@ -564,13 +564,13 @@ const App = () => {
               <div className="flex w-full rounded-lg bg-gray-200 p-1 mb-6">
                 <button
                   onClick={() => setSelectedPlanTab('biWeekly')}
-                  className={`w-1/3 py-4 px-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'biWeekly' ? 'bg-white text-blue-600 shadow' : 'text-gray-600 hover:bg-gray-300'}`}
+                  className={`w-1/3 py-4 px-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'biWeekly' ? 'bg-white text-blue-600 shadow hover:bg-gray-50' : 'text-gray-600 hover:bg-gray-300'}`}
                 >
                   Bi-Weekly
                 </button>
                 <button
                   onClick={() => setSelectedPlanTab('weekly')}
-                  className={`w-1/3 px-2 py-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'weekly' ? 'bg-white text-green-600 shadow' : 'text-gray-600 hover:bg-gray-300'}`}
+                  className={`w-1/3 px-2 py-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'weekly' ? 'bg-white text-green-600 shadow hover:bg-gray-50' : 'text-gray-600 hover:bg-gray-300'}`}
                 >
                   <span className="flex flex-col items-center">
                     <span className="text-[10px] font-bold text-white bg-[var(--brand-green)] px-2 py-0.5 rounded-full mb-1">
@@ -581,7 +581,7 @@ const App = () => {
                 </button>
                 <button
                   onClick={() => setSelectedPlanTab('twiceWeekly')}
-                  className={`w-1/3 py-4 px-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'twiceWeekly' ? 'bg-white text-blue-600 shadow' : 'text-gray-600 hover:bg-gray-300'}`}
+                  className={`w-1/3 py-4 px-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'twiceWeekly' ? 'bg-white text-blue-600 shadow hover:bg-gray-50' : 'text-gray-600 hover:bg-gray-300'}`}
                 >
                   Twice-Weekly
                 </button>
@@ -722,4 +722,3 @@ const App = () => {
 };
 
 export default App;
-
