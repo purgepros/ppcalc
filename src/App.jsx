@@ -333,7 +333,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, planData = null
       total_monthly: planData ? planData.price : 'Custom Quote',
       dog_count: planData ? planData.dogCount : 'N/A',
       notes: formData.notes || 'None',
-      description: planData ? `Selected Plan: ${planData.name}` : description,
+      description: description, // Use the detailed description prop passed to the form
       quote_link: quote_link, // --- NEW ---
     });
 
@@ -717,24 +717,33 @@ const App = () => {
       // Pre-fill standard flow
       if (urlYardSize) setYardSize(urlYardSize);
       
+      let nextView = 'yard'; // Default view if only zip is present
+
       if (urlDogCount) {
         if (dogFeeMap[urlDogCount] !== undefined) {
           setDogCount(urlDogCount);
           setMultiDogFee(dogFeeMap[urlDogCount]);
+          nextView = 'packages'; // Go to packages if dog count is valid
         } else if (urlDogCount === '6+') {
           setView('multipet'); // Go to multi-pet form
           return;
+        } else {
+          nextView = 'dogs'; // Go to dog selection if yardSize is present but dog count is not
         }
+      } else if (urlYardSize) {
+         nextView = 'dogs'; // Go to dog selection if yardSize is present
       }
       
       if (urlPlan) {
         const planKey = Object.keys(planDetails).find(key => planDetails[key].name === urlPlan);
-        if (planKey) setSelectedPlanTab(planKey);
+        if (planKey) {
+          setSelectedPlanTab(planKey);
+          nextView = 'packages'; // Go to packages if plan is specified
+        }
       }
 
-      // If we got this far with a valid zip, skip zip and go to yard
-      // If they also had dog/plan info, they'll see it pre-filled
-      setView('yard');
+      // If we got this far with a valid zip, skip zip and go to the correct step
+      setView(nextView);
 
     } else {
       // No valid zip in URL, show zip validator
@@ -783,14 +792,15 @@ const App = () => {
     }
   };
   
-  const handlePlanSelect = (planName, basePrice, fee) => {
+  const handlePlanSelect = (planName, basePrice, fee, perVisit, dogCountString) => {
     const totalMonthly = basePrice + fee;
     const signupData = {
       name: planName,
       basePrice: basePrice,
       dogFee: fee,
       price: totalMonthly,
-      dogCount: dogCount,
+      perVisit: perVisit,
+      dogCount: dogCountString,
     };
     
     setSelectedPlanData(signupData); 
@@ -966,7 +976,7 @@ const App = () => {
                 </ul>
                 
                 <button
-                  onClick={() => handlePlanSelect(CurrentPlan.name, CurrentPlan.price - multiDogFee, multiDogFee)}
+                  onClick={() => handlePlanSelect(CurrentPlan.name, CurrentPlan.price - multiDogFee, multiDogFee, CurrentPlan.perVisitPrice, CurrentPlan.dogCount)}
                   className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
                 >
                   Select {planDetails[selectedPlanTab].name}
@@ -1084,4 +1094,6 @@ const App = () => {
 };
 
 export default App;
+
+
 
