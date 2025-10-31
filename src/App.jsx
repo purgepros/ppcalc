@@ -181,9 +181,13 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
       }
     };
 
-    document.addEventListener('mouseleave', handleMouseLeave);
+    // Add a delay before attaching the listener to prevent firing on load
+    const timer = setTimeout(() => {
+      document.addEventListener('mouseleave', handleMouseLeave);
+    }, 1500); // Wait 1.5 seconds
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
   }, [isFormSubmitted, onIntent]); // Re-check if form gets submitted
@@ -331,6 +335,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, planData = null
       zip: zipCode,
       plan: planData ? planData.name : title,
       total_monthly: planData ? planData.price : 'Custom Quote',
+      per_visit: planData ? planData.perVisit : 'N/A', // <-- ADDED THIS
       dog_count: planData ? planData.dogCount : 'N/A',
       notes: formData.notes || 'None',
       description: description, // Use the detailed description prop passed to the form
@@ -531,6 +536,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
       name: 'Valued Customer',
       plan: currentPlan.name,
       total_monthly: currentPlan.price,
+      per_visit: currentPlan.perVisitPrice, // <-- ADDED THIS
       dog_count: currentPlan.dogCount,
       description: 'Here is the custom quote you built on our site. We hope to see you soon!',
       notes: 'User captured on exit intent.',
@@ -1094,6 +1100,7 @@ const App = () => {
 };
 
 export default App;
+
 
 
 
