@@ -163,12 +163,10 @@ const generateQuoteLink = (quoteState) => {
 
 // --- Exit Intent Hook ---
 /**
- * @param {boolean} isFormSubmitted - Pass true if the main form was submitted, to prevent the modal.
- * @returns {boolean} - Returns true if the modal should be shown.
+ * @param {boolean} isFormSubmitted - Pass true if the main form was submitted.
+ * @param {function} onIntent - Callback function to call when exit intent is detected.
  */
-const useExitIntent = (isFormSubmitted) => {
-  const [showModal, setShowModal] = useState(false);
-
+const useExitIntent = (isFormSubmitted, onIntent) => {
   useEffect(() => {
     if (isFormSubmitted) return; // Don't run if form is already submitted
 
@@ -177,8 +175,8 @@ const useExitIntent = (isFormSubmitted) => {
       if (e.clientY <= 0) {
         const hasSeenModal = sessionStorage.getItem('seenExitIntentModal');
         if (!hasSeenModal) {
-          setShowModal(true);
           sessionStorage.setItem('seenExitIntentModal', 'true');
+          onIntent(); // Call the callback
         }
       }
     };
@@ -188,9 +186,7 @@ const useExitIntent = (isFormSubmitted) => {
     return () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [isFormSubmitted]); // Re-check if form gets submitted
-
-  return showModal;
+  }, [isFormSubmitted, onIntent]); // Re-check if form gets submitted
 };
 
 
@@ -693,6 +689,7 @@ const App = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [selectedPlanData, setSelectedPlanData] = useState(null);
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   // Load external scripts and init pixel on mount
   useEffect(() => {
@@ -746,15 +743,15 @@ const App = () => {
   }, []);
 
   // --- Exit Intent Hook ---
-  const showExitModal = useExitIntent(isFormSubmitted);
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-
-  useEffect(() => {
+  // New handler for the hook
+  const handleExitIntent = () => {
     // Only show exit modal if they are on a step *after* the zip code
-    if (showExitModal && view !== 'zip') {
+    if (view !== 'zip') {
       setIsExitModalOpen(true);
     }
-  }, [showExitModal, view]);
+  };
+
+  useExitIntent(isFormSubmitted, handleExitIntent); // New hook usage
   
   const handleFormSubmissionSuccess = () => {
     setIsFormSubmitted(true);
@@ -1087,3 +1084,4 @@ const App = () => {
 };
 
 export default App;
+
