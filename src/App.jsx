@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import './index.css'; // This liks to your css file
 
 // --- Configuration ---
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c9f-aa25-3c221e72ada4';
@@ -268,8 +267,8 @@ const LeadForm = ({ title, description, onSubmit, onBack }) => {
 };
 
 const ServiceInfoModal = ({ onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={onClose}>
-    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
       <h3 className="text-lg font-bold text-gray-900">About Seasonal Services</h3>
       <p className="text-sm text-gray-600 mt-4">
         Our Seasonal Deodorizer and WYSI Wash Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.
@@ -291,8 +290,8 @@ const ServiceInfoModal = ({ onClose }) => (
 );
 
 const PricingInfoModal = ({ onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50" onClick={onClose}>
-    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
       <h3 className="text-lg font-bold text-gray-900">How Billing is Calculated</h3>
       <p className="text-sm text-gray-600 mt-4">
         To give you a simple and predictable bill, our monthly plans are based on the total number of visits you'll receive over a full year, averaged into equal payments.
@@ -327,7 +326,11 @@ const Header = () => (
 
 const Footer = () => {
   useEffect(() => {
-    document.getElementById('copyright-year').textContent = new Date().getFullYear();
+    // Check if the element exists before trying to set its content
+    const yearElement = document.getElementById('copyright-year');
+    if (yearElement) {
+      yearElement.textContent = new Date().getFullYear();
+    }
   }, []);
 
   return (
@@ -451,7 +454,8 @@ const App = () => {
     sendToWebhook(signupData);
 
     // 3. Show confirmation
-    alert(`Success! You've selected the ${planName}.\nTotal: $${signupData.totalMonthly}/mo`);
+    // NOTE: alert() is not supported in this environment.
+    console.log(`Success! You've selected the ${planName}.\nTotal: $${signupData.totalMonthly}/mo`);
     
     // In a real app, you'd redirect to a signup/payment page here
     // window.location.href = `https://your-signup-flow.com?plan=${planName}&price=${signupData.totalMonthly}`;
@@ -718,8 +722,4 @@ const App = () => {
 };
 
 export default App;
-
-
-
-
 
