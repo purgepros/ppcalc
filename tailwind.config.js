@@ -4,10 +4,11 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  // ADD THIS SAFELIST BLOCK
+  // Revert to the simple array safelist
   safelist: [
-    'bg-opacity-50', // Force this class to be included
-    'bg-opacity-25', // Might as well add this one too
+    'bg-opacity-25',
+    'bg-opacity-50',
+    'bg-opacity-90',
   ],
   theme: {
     extend: {},
