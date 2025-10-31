@@ -30,7 +30,6 @@ const planDetails = {
   biWeekly: {
     name: 'Bi-Weekly Reset',
     price: basePrices.biWeekly,
-    visitsPerMonth: 26 / 12, // 2.167
     features: [
       'Service Every 2 Weeks',
       'Full Property Coverage (Front & Sides)',
@@ -42,10 +41,9 @@ const planDetails = {
   weekly: {
     name: 'Pristine-Clean',
     price: basePrices.weekly,
-    visitsPerMonth: 52 / 12, // 4.333
     features: [
       'Service Every Week',
-      'Full Property Coverage (Front & Sides)',
+      'Full Property Coverage (Front &Sides)',
       'Waste Hauled Away',
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
@@ -54,7 +52,6 @@ const planDetails = {
   twiceWeekly: {
     name: 'Pristine-Plus',
     price: basePrices.twiceWeekly,
-    visitsPerMonth: 104 / 12, // 8.667
     features: [
       'Service 2x Per Week',
       'Full Property Coverage (Front & Sides)',
@@ -144,7 +141,7 @@ const sendEmail = async (templateParams) => {
 };
 
 /**
- * --- NEW: Generates a shareable quote link ---
+ * --- Generates a shareable quote link ---
  * @param {object} quoteState - An object with current selections
  * @returns {string} - A full URL with query parameters
  */
@@ -156,6 +153,7 @@ const generateQuoteLink = (quoteState) => {
   if (quoteState.yardSize) params.set('yardSize', quoteState.yardSize);
   if (quoteState.dogCount) params.set('dogCount', quoteState.dogCount);
   if (quoteState.plan) params.set('plan', quoteState.plan);
+  if (quoteState.paymentTerm) params.set('paymentTerm', quoteState.paymentTerm);
 
   return `${baseUrl}?${params.toString()}`;
 };
@@ -163,33 +161,36 @@ const generateQuoteLink = (quoteState) => {
 
 // --- Exit Intent Hook ---
 /**
- * @param {boolean} isFormSubmitted - Pass true if the main form was submitted.
- * @param {function} onIntent - Callback function to call when exit intent is detected.
+ * @param {boolean} isFormSubmitted - Pass true if the main form was submitted, to prevent the modal.
+ * @param {function} onIntent - Callback to fire when exit intent is detected.
  */
 const useExitIntent = (isFormSubmitted, onIntent) => {
   useEffect(() => {
     if (isFormSubmitted) return; // Don't run if form is already submitted
 
-    const handleMouseLeave = (e) => {
-      // Check if mouse is near the top of the viewport
-      if (e.clientY <= 0) {
-        const hasSeenModal = sessionStorage.getItem('seenExitIntentModal');
-        if (!hasSeenModal) {
-          sessionStorage.setItem('seenExitIntentModal', 'true');
-          onIntent(); // Call the callback
+    // Add a delay to prevent firing on page load
+    const timerId = setTimeout(() => {
+      const handleMouseLeave = (e) => {
+        // Check if mouse is near the top of the viewport
+        if (e.clientY <= 0) {
+          const hasSeenModal = sessionStorage.getItem('seenExitIntentModal');
+          if (!hasSeenModal) {
+            onIntent(); // Fire the callback
+            sessionStorage.setItem('seenExitIntentModal', 'true');
+          }
         }
-      }
-    };
-
-    // Add a delay before attaching the listener to prevent firing on load
-    const timer = setTimeout(() => {
+      };
       document.addEventListener('mouseleave', handleMouseLeave);
-    }, 1500); // Wait 1.5 seconds
 
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-    };
+      // Cleanup
+      return () => {
+        document.removeEventListener('mouseleave', handleMouseLeave);
+      };
+    }, 1500); // 1.5 second delay
+
+    // Cleanup timer if component unmounts
+    return () => clearTimeout(timerId);
+
   }, [isFormSubmitted, onIntent]); // Re-check if form gets submitted
 };
 
@@ -197,7 +198,7 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
 // --- Child Components ---
 
 /**
- * --- NEW: Zip Code Validation Component ---
+ * VIEW 1: The Gate (Zip Code Validator)
  */
 const ZipCodeValidator = ({ onZipValidated }) => {
   const [zip, setZip] = useState('');
@@ -220,8 +221,7 @@ const ZipCodeValidator = ({ onZipValidated }) => {
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Start Your Free Quote</h2>
-      <p className="text-slate-600 text-center mb-6">Enter your service zip code to begin.</p>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Enter your zip code to see our plans.</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="tel"
@@ -242,9 +242,84 @@ const ZipCodeValidator = ({ onZipValidated }) => {
           type="submit"
           className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
         >
-          Get Started
+          See Prices
         </button>
       </form>
+    </div>
+  );
+};
+
+
+/**
+ * VIEW 2: The Sorter (Yard Size & Dog Count)
+ */
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) => {
+  const [yardSize, setYardSize] = useState(initialYardSize);
+  const [dogCount, setDogCount] = useState(initialDogCount);
+
+  const handleSubmit = () => {
+    const fee = dogFeeMap[dogCount] ?? 0; // Default to 0 if 6+
+    onSortComplete(yardSize, dogCount, fee);
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">1. What is your property size?</h2>
+        <div className="space-y-4">
+          <YardButton
+            title="Standard Residential Lot"
+            description="Up to 1/2 Acre"
+            icon={<svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4a1 1 0 001-1v-1a1 1 0 10-2 0v1a1 1 0 001 1z" /></svg>}
+            onClick={() => setYardSize('standard')}
+            isSelected={yardSize === 'standard'}
+          />
+          <YardButton
+            title="Large Lot / Estate"
+            description="Over 1/2 Acre"
+            icon={<svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+            onClick={() => setYardSize('estate')}
+            isSelected={yardSize === 'estate'}
+          />
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">2. How many dogs do you have?</h2>
+        <select
+          value={dogCount}
+          onChange={(e) => setDogCount(e.target.value)}
+          className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg"
+        >
+          <option value="1-2">1-2 Dogs</option>
+          <option value="3">3 Dogs</option>
+          <option value="4">4 Dogs</option>
+          <option value="5">5 Dogs</option>
+          <option value="6+">6+ Dogs</option>
+        </select>
+      </div>
+      
+      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3">
+        <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+        <div>
+          <p className="font-bold text-lg">Special Offer:</p>
+          <p className="text-sm font-semibold">All new weekly service plans include a <strong>Free First Cleanup!</strong></p>
+        </div>
+      </div>
+
+      <button
+        onClick={handleSubmit}
+        className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center mt-6"
+      >
+        See My Plans
+      </button>
+
+      <button
+        onClick={onBack}
+        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-6"
+      >
+        &larr; Change Zip Code
+      </button>
     </div>
   );
 };
@@ -271,7 +346,152 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
   </button>
 );
 
-const LeadForm = ({ title, description, onBack, onSubmitSuccess, planData = null, zipCode }) => {
+/**
+ * VIEW 3B: The "Package Selection" (The Grand Slam)
+ */
+const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick }) => {
+  const plans = [
+    { key: 'biWeekly', ...planDetails.biWeekly, finalPrice: planDetails.biWeekly.price + dogFee },
+    { key: 'weekly', ...planDetails.weekly, finalPrice: planDetails.weekly.price + dogFee, popular: true },
+    { key: 'twiceWeekly', ...planDetails.twiceWeekly, finalPrice: planDetails.twiceWeekly.price + dogFee },
+  ];
+  
+  const dogText = dogCount === '1-2' ? '1-2 Dogs' : `${dogCount} Dogs`;
+
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Selections</button>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">3. Choose Your 'Pristine Yard' Plan</h2>
+      
+      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3">
+        <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+        <div>
+          <p className="font-bold text-lg">Special Offer:</p>
+          <p className="text-sm font-semibold">All new weekly service plans include a <strong>Free First Cleanup!</strong></p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {plans.map((plan) => (
+          <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg' : 'border-gray-300'}`}>
+            {plan.popular && (
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-white bg-[var(--brand-green)] px-3 py-0.5 rounded-full">
+                Best Value
+              </span>
+            )}
+            <h3 className="text-2xl font-bold text-slate-800 text-center">{plan.name}</h3>
+            <div className="text-center my-4 py-4 border-y border-gray-200">
+              <span className="text-5xl font-extrabold text-slate-900">${plan.finalPrice}</span>
+              <span className="text-xl font-medium text-slate-600">/mo</span>
+            </div>
+            
+            <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
+              <li className="flex items-center text-slate-600">
+                <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>Service for {dogText}</span>
+              </li>
+              {plan.features.map((feature, index) => (
+                <li key={index} className="flex items-center text-slate-600">
+                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span>{feature}</span>
+                  {(feature.includes('Seasonal')) && (
+                    <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            
+            <button
+              onClick={() => onPlanSelect(plan.name, plan.finalPrice)}
+              className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+            >
+              Select {plan.name}
+            </button>
+          </div>
+        ))}
+      </div>
+      
+      <button
+        onClick={onOneTimeClick}
+        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
+      >
+        Looking for a One-Time Cleanup?
+      </button>
+    </div>
+  );
+};
+
+/**
+ * VIEW 4: The "Payment Plan" (The Cash Multiplier)
+ */
+const PaymentPlanSelector = ({ finalMonthlyPrice, onPaymentSelect, onBack, initialPaymentTerm }) => {
+  const plans = [
+    {
+      term: 'Monthly',
+      price: finalMonthlyPrice,
+      total: finalMonthlyPrice,
+      description: `Billed every month`,
+      savings: null,
+      chargeAmount: finalMonthlyPrice,
+    },
+    {
+      term: 'Quarterly',
+      price: (finalMonthlyPrice * 3) - 30,
+      total: (finalMonthlyPrice * 3) - 30,
+      description: `Billed every 3 months`,
+      savings: "Save $30!",
+      chargeAmount: (finalMonthlyPrice * 3) - 30,
+    },
+    {
+      term: 'Annual',
+      price: finalMonthlyPrice * 11,
+      total: finalMonthlyPrice * 11,
+      description: `Billed once a year`,
+      savings: `Save $${finalMonthlyPrice} - 1 Month FREE!`,
+      chargeAmount: finalMonthlyPrice * 11,
+    }
+  ];
+
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">4. Choose Your Payment Plan & Lock In Savings</h2>
+      
+      <div className="space-y-4">
+        {plans.map((plan) => (
+          <button
+            key={plan.term}
+            onClick={() => onPaymentSelect(plan.term, plan.chargeAmount, plan.savings)}
+            className={`w-full text-left p-6 border-2 rounded-xl transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg ${
+              initialPaymentTerm === plan.term
+                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                : 'border-gray-300 bg-white'
+            }`}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-2xl font-bold text-slate-800">{plan.term} Plan</h3>
+              {plan.savings && (
+                <span className="text-sm font-bold text-white bg-[var(--brand-green)] px-3 py-1 rounded-full">
+                  {plan.savings}
+                </span>
+              )}
+            </div>
+            <p className="text-3xl font-extrabold text-slate-900">${plan.total}</p>
+            <p className="text-sm text-slate-600">{plan.description}</p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+
+/**
+ * VIEW 3A / VIEW 5: The Lead Form (Custom Quote & Final Checkout)
+ */
+const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, quoteData = null }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -303,44 +523,104 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, planData = null
 
     setIsSubmitting(true);
 
-    // --- NEW: Generate quote link on final submission ---
-    const quoteState = {
-      zip: zipCode,
-      yardSize: planData ? 'standard' : 'estate', // Assuming 'estate' if no planData
-      dogCount: planData ? planData.dogCount : '6+', // Assuming '6+' if no planData
-      plan: planData ? planData.name : 'Custom',
-    };
-    const quote_link = generateQuoteLink(quoteState);
+    let leadData, emailParams, quoteLinkState, fbTrackEvent;
+    
+    // Calculate per_visit price just for the email, IF it's a standard plan
+    let perVisitPrice = 'N/A';
+    if (quoteData) {
+      const planKey = Object.keys(planDetails).find(key => planDetails[key].name === quoteData.planName);
+      if (planKey) {
+        // Find visitsPerMonth - this logic is no longer in the main app, so we recreate it here
+        const visitsPerMonth = { biWeekly: 26/12, weekly: 52/12, twiceWeekly: 104/12 };
+        perVisitPrice = (quoteData.finalMonthlyPrice / visitsPerMonth[planKey]).toFixed(2);
+      }
+    }
 
-    const leadData = {
-      ...formData,
-      zip: zipCode,
-      lead_status: planData ? 'Complete - Plan Selected' : 'Custom Quote Request',
-      quote_type: planData ? planData.name : title,
-      plan: planData ? planData.name : title,
-      total_monthly: planData ? planData.price : 'Custom',
-      dog_count: planData ? planData.dogCount : 'N/A (Custom Quote)',
-      quote_link: quote_link, // --- NEW ---
-    };
 
+    if (quoteData) {
+      // VIEW 5: Final Checkout Logic
+      fbTrackEvent = 'CompleteRegistration';
+      quoteLinkState = {
+        zip: zipCode,
+        dogCount: dogCount,
+        plan: quoteData.planName,
+        paymentTerm: quoteData.paymentTerm,
+      };
+      
+      leadData = {
+        ...formData,
+        zip: zipCode,
+        lead_status: 'Complete - Plan Selected',
+        quote_type: quoteData.planName,
+        plan: quoteData.planName,
+        dog_count: dogCount,
+        total_monthly_rate: quoteData.finalMonthlyPrice,
+        payment_term: quoteData.paymentTerm,
+        final_charge_amount: quoteData.finalChargeAmount,
+        savings: quoteData.savings || 'N/A',
+        quote_link: generateQuoteLink(quoteLinkState),
+      };
+
+      emailParams = {
+        ...formData,
+        ...leadData, // Send everything
+        description: `Plan: ${quoteData.planName} (${quoteData.paymentTerm})`,
+        total_monthly: `$${quoteData.finalMonthlyPrice}/mo`, // For consistency, though new fields are better
+        per_visit: `$${perVisitPrice}`,
+        final_charge: `$${quoteData.finalChargeAmount} (Billed ${quoteData.paymentTerm})`,
+      };
+
+    } else {
+      // VIEW 3A: Custom Quote Logic OR One-Time Form
+      fbTrackEvent = 'Lead';
+      
+      const isOneTime = title.includes("One-Time");
+      
+      quoteLinkState = {
+        zip: zipCode,
+        dogCount: dogCount,
+      };
+      
+      let leadStatus, quoteType, planName;
+      if (isOneTime) {
+        leadStatus = 'One-Time Cleanup Request';
+        quoteType = 'One-Time Cleanup';
+        planName = 'One-Time Cleanup';
+      } else {
+        leadStatus = dogCount === '6+' ? 'Custom - Multi-Pet' : 'Custom - Estate';
+        quoteType = 'Custom Quote Request';
+        planName = 'Custom Quote';
+      }
+
+      leadData = {
+        ...formData,
+        zip: zipCode,
+        lead_status: leadStatus,
+        quote_type: quoteType,
+        plan: planName,
+        dog_count: dogCount,
+        quote_link: generateQuoteLink(quoteLinkState),
+      };
+      
+      emailParams = {
+        ...formData,
+        ...leadData,
+        description: title,
+        total_monthly: isOneTime ? '$99.99 (first 30 min)' : 'Custom Quote',
+        per_visit: 'N/A',
+        final_charge: 'N/A',
+        savings: 'N/A',
+      };
+    }
+    
     // 1. Fire FB event
-    fbq('track', planData ? 'CompleteRegistration' : 'Lead');
+    fbq('track', fbTrackEvent);
     
     // 2. Send to Webhook
     await sendToWebhook(leadData);
     
     // 3. Send Email
-    await sendEmail({
-      ...formData,
-      zip: zipCode,
-      plan: planData ? planData.name : title,
-      total_monthly: planData ? planData.price : 'Custom Quote',
-      per_visit: planData ? planData.perVisit : 'N/A', // <-- ADDED THIS
-      dog_count: planData ? planData.dogCount : 'N/A',
-      notes: formData.notes || 'None',
-      description: description, // Use the detailed description prop passed to the form
-      quote_link: quote_link, // --- NEW ---
-    });
+    await sendEmail(emailParams);
 
     setIsSubmitting(false);
     setIsSubmitted(true);
@@ -357,9 +637,12 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, planData = null
         </div>
         <h2 className="text-2xl font-bold text-slate-800">Thank You!</h2>
         <p className="text-slate-600 mt-2">
-          {planData
-            ? "We've received your request! We will contact you shortly to confirm your service start date."
-            : "We've received your request and will contact you shortly to provide your free custom quote."
+          {quoteData
+            ? "We've received your request! We will contact you shortly to confirm your service start date and finalize payment."
+            : (title.includes("One-Time")
+              ? "We've received your cleanup request! We'll contact you shortly to get you on the schedule."
+              : "We've received your request and will contact you shortly to provide your free custom quote."
+            )
           }
         </p>
       </div>
@@ -433,7 +716,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, planData = null
           disabled={isSubmitting}
           className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
         >
-          {isSubmitting ? <span className="loader"></span> : (planData ? 'Lock In My Plan!' : 'Request Free Quote')}
+          {isSubmitting ? <span className="loader"></span> : (quoteData ? 'Complete My Quote!' : 'Request My Quote')}
         </button>
       </form>
       <button
@@ -497,6 +780,18 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Calculate per_visit for the exit modal email
+  let perVisitPrice = 'N/A';
+  if (currentPlan && currentPlan.name) {
+      const planKey = Object.keys(planDetails).find(key => planDetails[key].name === currentPlan.name);
+      if (planKey) {
+        // Find visitsPerMonth - this logic is no longer in the main app, so we recreate it here
+        const visitsPerMonth = { biWeekly: 26/12, weekly: 52/12, twiceWeekly: 104/12 };
+        perVisitPrice = (currentPlan.price / visitsPerMonth[planKey]).toFixed(2);
+      }
+  }
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -521,7 +816,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
       total_monthly: currentPlan.price,
       dog_count: currentPlan.dogCount,
       notes: 'User captured on exit intent.',
-      quote_link: quote_link, // --- NEW ---
+      quote_link: quote_link,
     };
 
     // 1. Fire FB Event
@@ -535,12 +830,14 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
       email: email,
       name: 'Valued Customer',
       plan: currentPlan.name,
-      total_monthly: currentPlan.price,
-      per_visit: currentPlan.perVisitPrice, // <-- ADDED THIS
+      total_monthly: `$${currentPlan.price}/mo`,
       dog_count: currentPlan.dogCount,
       description: 'Here is the custom quote you built on our site. We hope to see you soon!',
       notes: 'User captured on exit intent.',
-      quote_link: quote_link, // --- NEW ---
+      quote_link: quote_link,
+      per_visit: `$${perVisitPrice}`, // Add per_visit price
+      final_charge: 'N/A',
+      savings: 'N/A',
     });
 
     setIsSubmitting(false);
@@ -685,16 +982,19 @@ const GlobalStyles = () => (
 
 const App = () => {
   // State
-  const [view, setView] = useState('zip'); // --- NEW: Start with 'zip'
-  const [zipCode, setZipCode] = useState(''); // --- NEW: Store validated zip
+  const [view, setView] = useState('zip'); // 'zip' -> 'sorter' -> 'custom_quote' OR 'packages' -> 'payment_plan' -> 'checkout'
+  const [zipCode, setZipCode] = useState('');
   const [yardSize, setYardSize] = useState('standard');
   const [dogCount, setDogCount] = useState('1-2');
   const [multiDogFee, setMultiDogFee] = useState(0);
-  const [selectedPlanTab, setSelectedPlanTab] = useState('weekly');
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
-  const [selectedPlanData, setSelectedPlanData] = useState(null);
+  
+  // New state for the full funnel
+  const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0 });
+  const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', chargeAmount: 0, savings: null });
+  
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   // Load external scripts and init pixel on mount
@@ -708,7 +1008,8 @@ const App = () => {
     const urlZip = params.get('zip');
     const urlYardSize = params.get('yardSize');
     const urlDogCount = params.get('dogCount');
-    const urlPlan = params.get('plan'); // e.g., 'Pristine-Clean'
+    const urlPlan = params.get('plan');
+    const urlPaymentTerm = params.get('paymentTerm');
 
     if (urlZip && APPROVED_ZIP_CODES.includes(urlZip)) {
       setZipCode(urlZip);
@@ -716,40 +1017,48 @@ const App = () => {
       // If zip is valid, check for other params
       if (urlYardSize === 'estate') {
         setYardSize('estate');
-        setView('estate'); // Go straight to estate form
+        setDogCount(urlDogCount || '1-2'); // Set dog count if present
+        setView('custom_quote'); // Go straight to estate form
         return;
       }
 
-      // Pre-fill standard flow
+      // Pre-fill sorter
       if (urlYardSize) setYardSize(urlYardSize);
       
-      let nextView = 'yard'; // Default view if only zip is present
-
       if (urlDogCount) {
         if (dogFeeMap[urlDogCount] !== undefined) {
           setDogCount(urlDogCount);
           setMultiDogFee(dogFeeMap[urlDogCount]);
-          nextView = 'packages'; // Go to packages if dog count is valid
         } else if (urlDogCount === '6+') {
-          setView('multipet'); // Go to multi-pet form
+          setDogCount('6+');
+          setView('custom_quote'); // Go to multi-pet form
           return;
-        } else {
-          nextView = 'dogs'; // Go to dog selection if yardSize is present but dog count is not
         }
-      } else if (urlYardSize) {
-         nextView = 'dogs'; // Go to dog selection if yardSize is present
       }
       
+      // Pre-fill plan
       if (urlPlan) {
         const planKey = Object.keys(planDetails).find(key => planDetails[key].name === urlPlan);
         if (planKey) {
-          setSelectedPlanTab(planKey);
-          nextView = 'packages'; // Go to packages if plan is specified
+          const finalPrice = planDetails[planKey].price + (dogFeeMap[urlDogCount] || 0);
+          setPackageSelection({ name: urlPlan, finalMonthlyPrice: finalPrice });
+
+          // If plan is set, pre-fill payment term
+          if (urlPaymentTerm) {
+            setPaymentSelection(prev => ({ ...prev, term: urlPaymentTerm }));
+            // We have everything, go to payment plan
+            setView('payment_plan'); // Go to payment plan to calculate final charge, then user clicks to checkout
+            return;
+          }
+          
+          // We have a plan, go to package selection
+          setView('packages'); // Go to packages, let user click through
+          return;
         }
       }
 
-      // If we got this far with a valid zip, skip zip and go to the correct step
-      setView(nextView);
+      // If we got this far with a valid zip, skip zip and go to sorter
+      setView('sorter');
 
     } else {
       // No valid zip in URL, show zip validator
@@ -758,14 +1067,12 @@ const App = () => {
   }, []);
 
   // --- Exit Intent Hook ---
-  // New handler for the hook
   const handleExitIntent = () => {
     // Only show exit modal if they are on a step *after* the zip code
-    if (view !== 'zip') {
+    if (view !== 'zip' && view !== 'checkout' && !isFormSubmitted) {
       setIsExitModalOpen(true);
     }
   };
-
   useExitIntent(isFormSubmitted, handleExitIntent); // New hook usage
   
   const handleFormSubmissionSuccess = () => {
@@ -776,76 +1083,57 @@ const App = () => {
   // --- NEW: Handler for Zip Validator ---
   const handleZipValidation = (validZip) => {
     setZipCode(validZip);
-    setView('yard'); // Move to next step
+    setView('sorter'); // Move to Sorter (VIEW 2)
   };
 
-  // Handlers
-  const handleYardSelect = (size) => {
+  /**
+   * VIEW 2: Sorter Completion Handler
+   */
+  const handleSorterComplete = (size, dogs, fee) => {
     setYardSize(size);
+    setDogCount(dogs);
+    setMultiDogFee(fee);
+
     if (size === 'estate') {
-      setView('estate');
+      setView('custom_quote'); // GOTO View 3A
+    } else if (dogs === '6+') {
+      setView('custom_quote'); // GOTO View 3A
     } else {
-      setView('dogs');
-    }
-  };
-
-  const confirmDogCount = () => {
-    if (dogCount === '6+') {
-      setView('multipet');
-    } else {
-      setMultiDogFee(dogFeeMap[dogCount]);
-      setView('packages');
+      setView('packages'); // GOTO View 3B
     }
   };
   
-  const handlePlanSelect = (planName, basePrice, fee, perVisit, dogCountString) => {
-    const totalMonthly = basePrice + fee;
-    const signupData = {
-      name: planName,
-      basePrice: basePrice,
-      dogFee: fee,
-      price: totalMonthly,
-      perVisit: perVisit,
-      dogCount: dogCountString,
-    };
+  /**
+   * VIEW 3B: Package Selection Handler
+   */
+  const handlePlanSelect = (planName, finalMonthlyPrice) => {
+    setPackageSelection({ name: planName, finalMonthlyPrice: finalMonthlyPrice });
+    setView('payment_plan'); // GOTO View 4
+  };
+
+  /**
+   * VIEW 4: Payment Plan Selection Handler
+   */
+  const handlePaymentPlanSelect = (term, chargeAmount, savings) => {
+    setPaymentSelection({ term: term, chargeAmount: chargeAmount, savings: savings });
+    setView('checkout'); // GOTO View 5
+  };
+  
+  // This is still needed for the Exit Intent Modal
+  const CurrentPlanForExitModal = useMemo(() => {
+    // Find the plan they're looking at, or default to weekly
+    const planName = packageSelection.name || 'Pristine-Clean';
+    const planKey = Object.keys(planDetails).find(key => planDetails[key].name === planName) || 'weekly';
+    const plan = planDetails[planKey];
     
-    setSelectedPlanData(signupData); 
-    setView('checkout');
-  };
-  
-  const plansOrder = ['biWeekly', 'weekly', 'twiceWeekly'];
-
-  const handleNextPlan = () => {
-    const currentIndex = plansOrder.indexOf(selectedPlanTab);
-    const nextIndex = (currentIndex + 1) % plansOrder.length;
-    setSelectedPlanTab(plansOrder[nextIndex]);
-  };
-
-  const handlePrevPlan = () => {
-    const currentIndex = plansOrder.indexOf(selectedPlanTab);
-    const prevIndex = (currentIndex - 1 + plansOrder.length) % plansOrder.length;
-    setSelectedPlanTab(plansOrder[prevIndex]);
-  };
-
-  const CurrentPlan = useMemo(() => {
-    const plan = planDetails[selectedPlanTab];
     const totalMonthlyPrice = plan.price + multiDogFee;
-    const perVisitPrice = totalMonthlyPrice / plan.visitsPerMonth;
-    
-    const dogText = dogCount === '1-2' ? '1-2 Dogs' : `${dogCount} Dogs`;
-    const featuresWithDogCount = [
-      `Service for ${dogText}`,
-      ...plan.features
-    ];
     
     return { 
       ...plan, 
       price: totalMonthlyPrice,
-      perVisitPrice: perVisitPrice.toFixed(2),
-      features: featuresWithDogCount,
       dogCount: dogCount,
     };
-  }, [selectedPlanTab, multiDogFee, dogCount]);
+  }, [packageSelection, multiDogFee, dogCount]);
 
   return (
     <>
@@ -860,179 +1148,73 @@ const App = () => {
             <ZipCodeValidator onZipValidated={handleZipValidation} />
           )}
 
-          {/* Step 1: Yard Size */}
-          {view === 'yard' && (
-            <div className="space-y-6 fade-in">
-              <div className="bg-white/80 backdrop-blur-sm rounded-lg py-3 px-4 shadow">
-                <p className="text-sm text-gray-500 text-center">Service ZIP: {zipCode} (<button onClick={() => setView('zip')} className="text-blue-600 underline">Change</button>)</p>
-                <h2 className="text-2xl font-bold text-slate-800 text-center">1. What is your property size?</h2>
-              </div>
-              <YardButton
-                title="Standard Residential Lot"
-                description="Up to 1/2 Acre"
-                icon={<svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4a1 1 0 001-1v-1a1 1 0 10-2 0v1a1 1 0 001 1z" /></svg>}
-                onClick={() => handleYardSelect('standard')}
-                isSelected={yardSize === 'standard'}
-              />
-              <YardButton
-                title="Large Lot / Estate"
-                description="Over 1/2 Acre"
-                icon={<svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
-                onClick={() => handleYardSelect('estate')}
-                isSelected={yardSize === 'estate'}
-              />
-            </div>
-          )}
-
-          {/* Step 2: Dog Count */}
-          {view === 'dogs' && (
-            <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('yard')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Yard Size</button>
-              <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">2. How many dogs do you have?</h2>
-              
-              <select
-                value={dogCount}
-                onChange={(e) => setDogCount(e.target.value)}
-                className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg"
-              >
-                <option value="1-2">1-2 Dogs</option>
-                <option value="3">3 Dogs</option>
-                <option value="4">4 Dogs</option>
-                <option value="5">5 Dogs</option>
-                <option value="6+">6+ Dogs</option>
-              </select>
-              
-              <button
-                onClick={confirmDogCount}
-                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center mt-6"
-              >
-                Confirm Dog Count
-              </button>
-            </div>
+          {/* --- Step 1 & 2: Sorter (VIEW 2) --- */}
+          {view === 'sorter' && (
+            <Sorter
+              onSortComplete={handleSorterComplete}
+              onBack={() => setView('zip')}
+              initialYardSize={yardSize}
+              initialDogCount={dogCount}
+            />
           )}
           
-          {/* Step 3: Packages */}
+          {/* --- Step 3: Packages (VIEW 3B) --- */}
           {view === 'packages' && (
-            <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('dogs')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Dog Count</button>
-              <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">3. Choose Your 'Pristine Yard' Plan</h2>
-              
-              <div className="flex w-full rounded-lg bg-gray-200 p-1 mb-6">
-                <button
-                  onClick={() => setSelectedPlanTab('biWeekly')}
-                  className={`w-1/3 py-4 px-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'biWeekly' ? 'bg-white text-blue-600 shadow hover:bg-gray-50' : 'text-gray-600 hover:bg-gray-300'}`}
-                >
-                  Bi-Weekly
-                </button>
-                <button
-                  onClick={() => setSelectedPlanTab('weekly')}
-                  className={`w-1/3 px-2 py-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'weekly' ? 'bg-white text-green-600 shadow hover:bg-gray-50' : 'text-gray-600 hover:bg-gray-300'}`}
-                >
-                  <span className="flex flex-col items-center">
-                    <span className="text-[10px] font-bold text-white bg-[var(--brand-green)] px-2 py-0.5 rounded-full mb-1">
-                      Most Popular
-                    </span>
-                    Weekly
-                  </span>
-                </button>
-                <button
-                  onClick={() => setSelectedPlanTab('twiceWeekly')}
-                  className={`w-1/3 py-4 px-2 text-sm md:text-base font-bold rounded-md transition-all ${selectedPlanTab === 'twiceWeekly' ? 'bg-white text-blue-600 shadow hover:bg-gray-50' : 'text-gray-600 hover:bg-gray-300'}`}
-                >
-                  Twice-Weekly
-                </button>
-              </div>
-              
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2">
-                  <button onClick={handlePrevPlan} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all hover:scale-125">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                  </button>
-                  <h3 className="text-2xl font-bold text-slate-800 text-center w-56">
-                    {CurrentPlan.name}
-                  </h3>
-                  <button onClick={handleNextPlan} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all hover:scale-125">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-
-                <div className="text-center my-6 py-4 border-y border-gray-200">
-                  <span className="text-5xl font-extrabold text-slate-900">${CurrentPlan.price}</span>
-                  <span className="text-xl font-medium text-slate-600">/mo</span>
-                  <div className="flex items-center justify-center text-sm text-slate-500 mt-1">
-                    <span>Approx. ${CurrentPlan.perVisitPrice}/visit</span>
-                    <button onClick={() => setShowPricingModal(true)} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                    </button>
-                  </div>
-                </div>
-
-                <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
-                  {CurrentPlan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-slate-600">
-                      <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                      <span>{feature}</span>
-                      {(feature.includes('Seasonal')) && (
-                        <button onClick={() => setShowInfoModal(true)} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-                
-                <button
-                  onClick={() => handlePlanSelect(CurrentPlan.name, CurrentPlan.price - multiDogFee, multiDogFee, CurrentPlan.perVisitPrice, CurrentPlan.dogCount)}
-                  className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-                >
-                  Select {planDetails[selectedPlanTab].name}
-                </button>
-                
-                <button
-                  onClick={() => setView('onetime')}
-                  className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
-                >
-                  Looking for a One-Time Cleanup?
-                </button>
-              </div>
-            </div>
+            <PackageSelector
+              dogFee={multiDogFee}
+              dogCount={dogCount}
+              onPlanSelect={handlePlanSelect}
+              onBack={() => setView('sorter')}
+              onOneTimeClick={() => setView('onetime')}
+              onInfoClick={() => setShowInfoModal(true)}
+            />
           )}
 
-        {/* Step 4: Checkout Form */}
+          {/* --- Step 4: Payment Plan (VIEW 4) --- */}
+          {view === 'payment_plan' && (
+            <PaymentPlanSelector
+              finalMonthlyPrice={packageSelection.finalMonthlyPrice}
+              onPaymentSelect={handlePaymentPlanSelect}
+              onBack={() => setView('packages')}
+              initialPaymentTerm={paymentSelection.term}
+            />
+          )}
+
+          {/* --- Step 5: Checkout (VIEW 5) --- */}
           {view === 'checkout' && (
             <LeadForm
-              title={`Great Choice!`}
-              description={`You're selecting the ${selectedPlanData.name} for $${selectedPlanData.price}/mo. Just fill out your details below to lock in your plan!`}
-              planData={selectedPlanData}
+              title="Great Choice! Let's Get You Set Up."
+              description={`You're selecting the ${packageSelection.name} with ${paymentSelection.term} billing. We'll contact you to confirm your start date and set up payment.`}
+              quoteData={{
+                planName: packageSelection.name,
+                finalMonthlyPrice: packageSelection.finalMonthlyPrice,
+                paymentTerm: paymentSelection.term,
+                finalChargeAmount: paymentSelection.chargeAmount,
+                savings: paymentSelection.savings,
+              }}
               zipCode={zipCode}
+              dogCount={dogCount}
               onSubmitSuccess={handleFormSubmissionSuccess}
-              onBack={() => setView('packages')}
+              onBack={() => setView('payment_plan')}
             />
           )}
           
-          {/* Estate View */}
-          {view === 'estate' && (
+          {/* --- Custom Quote (VIEW 3A) --- */}
+          {view === 'custom_quote' && (
             <LeadForm
-              title="You Qualify for our 'Estate Plan'"
-              description="Our standard plans are for lots up to 1/2 acre. Because your property is larger, it requires a custom-quoted flat monthly rate. This ensures we can dedicate the appropriate time to keep your entire property perfect."
+              title="You Qualify for a Custom 'Estate' Quote!"
+              description={dogCount === '6+'
+                ? "We love dogs! Properties with 6 or more dogs require a custom service plan. Please provide your info, and we will contact you for a free consultation."
+                : "Your property qualifies for our 'Estate Plan.' This requires a custom flat-rate quote. Please provide your info, and we will contact you for a free consultation."
+              }
               zipCode={zipCode}
+              dogCount={dogCount}
               onSubmitSuccess={handleFormSubmissionSuccess}
-              onBack={() => setView('yard')}
-            />
-          )}
-
-          {/* Multi-Pet View */}
-          {view === 'multipet' && (
-            <LeadForm
-              title="You Qualify for our 'Custom Multi-Pet' Plan"
-              description="We love dogs! Properties with 6 or more dogs require a custom service plan to ensure we can keep up with the 'demand.' This allows us to dedicate the appropriate time for a full, comprehensive cleanup at every visit."
-              zipCode={zipCode}
-              onSubmitSuccess={handleFormSubmissionSuccess}
-              onBack={() => setView('dogs')}
+              onBack={() => setView('sorter')}
             />
           )}
           
-          {/* One-Time Cleanup View */}
+          {/* --- One-Time Cleanup View (KEPT) --- */}
           {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
               <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
@@ -1041,13 +1223,14 @@ const App = () => {
               <div className="text-center my-6 py-4 border-y border-gray-200">
                 <span className="text-5xl font-extrabold text-slate-900">$99.99</span>
                 <p className="text-sm text-slate-500 mt-1">For the first 30 minutes</p>
+
               </div>
 
               <p className="text-slate-600 text-center mb-4">
                 Perfect for first-time cleanups or special events. This price includes 30 minutes of service. Additional time is billed at $1/minute.
               </p>
               <p className="text-slate-600 text-center text-sm mb-6">
-                This service is for properties up to 1/2 acre. For larger properties, please <button onClick={() => setView('estate')} className="font-bold underline text-blue-600 hover:text-blue-700">request an 'Estate Quote'</button>.
+                This service is for properties up to 1/2 acre. For larger properties, please <button onClick={() => { setView('custom_quote'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">request an 'Estate Quote'</button>.
               </p>
 
               {/* The Upsell */}
@@ -1070,12 +1253,13 @@ const App = () => {
             </div>
           )}
           
-          {/* One-Time Cleanup Form */}
+          {/* --- One-Time Cleanup Form (KEPT) --- */}
           {view === 'onetime_form' && (
             <LeadForm
               title="Book Your 'One-Time Yard Reset'"
               description={`Your quote is $99.99 for the first 30 minutes (plus $1/min after). We'll confirm your details and schedule your cleanup.`}
               zipCode={zipCode}
+              dogCount={dogCount}
               onSubmitSuccess={handleFormSubmissionSuccess}
               onBack={() => setView('onetime')}
             />
@@ -1084,11 +1268,13 @@ const App = () => {
         </div>
       </main>
       
+      {/* --- Modals (KEPT) --- */}
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} />}
+      
       {isExitModalOpen && (
         <ExitIntentModal
-          currentPlan={CurrentPlan}
+          currentPlan={CurrentPlanForExitModal}
           zipCode={zipCode}
           yardSize={yardSize}
           onClose={() => setIsExitModalOpen(false)}
@@ -1100,7 +1286,4 @@ const App = () => {
 };
 
 export default App;
-
-
-
 
