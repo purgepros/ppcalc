@@ -251,7 +251,7 @@ const LeadForm = ({ title, description, onSubmit, onBack }) => {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition shadow-lg flex items-center justify-center h-14"
+          className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
         >
           {isSubmitting ? <span className="loader"></span> : 'Request Free Quote'}
         </button>
@@ -547,7 +547,7 @@ const App = () => {
               
               <button
                 onClick={confirmDogCount}
-                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition shadow-lg flex items-center justify-center mt-6"
+                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center mt-6"
               >
                 Confirm Dog Count
               </button>
@@ -628,7 +628,7 @@ const App = () => {
                 
                 <button
                   onClick={() => handlePlanSelect(CurrentPlan.name, CurrentPlan.price - multiDogFee, multiDogFee)}
-                  className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition shadow-lg"
+                  className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
                 >
                   Select {planDetails[selectedPlanTab].name}
                 </button>
@@ -694,7 +694,7 @@ const App = () => {
 
               <button
                 onClick={() => setView('onetime_form')}
-                className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition shadow-lg"
+                className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
               >
                 Book One-Time Cleanup
               </button>
