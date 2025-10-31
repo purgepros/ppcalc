@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import './index.css'; // This liks to your css file
 
 // --- Configuration ---
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c9f-aa25-3c221e72ada4';
