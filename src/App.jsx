@@ -147,10 +147,10 @@ const sendEmail = async (templateParams) => {
 const YardButton = ({ title, description, icon, onClick, isSelected }) => (
   <button
     onClick={onClick}
-    className={`w-full text-left p-6 border-2 rounded-xl transition-all ${
+    className={`w-full text-left p-6 border-2 rounded-xl transition-all hover:-translate-y-1 ${
       isSelected
-        ? 'border-blue-500 bg-blue-50 shadow-lg'
-        : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-md'
+        ? 'border-blue-500 bg-blue-50 shadow-lg hover:shadow-xl'
+        : 'border-gray-300 bg-white hover:border-blue-400 hover:shadow-lg'
     }`}
   >
     <div className="flex items-center">
@@ -211,7 +211,7 @@ const LeadForm = ({ title, description, onSubmit, onBack }) => {
         <p className="text-slate-600 mt-2">We've received your request and will contact you shortly to provide your free custom quote.</p>
         <button
           onClick={onBack}
-          className="w-full text-center text-sm text-gray-600 hover:text-blue-600 transition-colors mt-6"
+          className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-6"
         >
           &larr; Go Back
         </button>
@@ -258,7 +258,7 @@ const LeadForm = ({ title, description, onSubmit, onBack }) => {
       </form>
       <button
         onClick={onBack}
-        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 transition-colors mt-6"
+        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-6"
       >
         &larr; Go Back
       </button>
@@ -317,7 +317,7 @@ const PricingInfoModal = ({ onClose }) => (
 const Header = () => (
   <header className="py-6">
     <div className="container mx-auto px-4 flex justify-center">
-      <a href="https://itspurgepros.com/" className="transition hover:opacity-80">
+      <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105">
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
     </div>
@@ -344,26 +344,26 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-bold mb-4">Links</h3>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="https://itspurgepros.com/" className="hover:text-white">Home</a></li>
-              <li><a href="https://itspurgepros.com/about" className="hover:text-white">About Us</a></li>
-              <li><a href="https://itspurgepros.com/services" className="hover:text-white">Services</a></li>
+              <li><a href="https://itspurgepros.com/" className="hover:text-white hover:underline">Home</a></li>
+              <li><a href="https://itspurgepros.com/about" className="hover:text-white hover:underline">About Us</a></li>
+              <li><a href="https://itspurgepros.com/services" className="hover:text-white hover:underline">Services</a></li>
             </ul>
           </div>
           <div>
             <h3 className="text-lg font-bold mb-4 invisible">.</h3>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="https://share.google/uRiDZSanR8YaFknWM" className="hover:text-white">Testimonials</a></li>
-              <li><a href="https://itspurgepros.com/terms-conditions" className="hover:text-white">Terms & Conditions</a></li>
-              <li><a href="https://itspurgepros.com/privacy-policy" className="hover:text-white">Privacy Policy</a></li>
+              <li><a href="https://share.google/uRiDZSanR8YaFknWM" className="hover:text-white hover:underline">Testimonials</a></li>
+              <li><a href="https://itspurgepros.com/terms-conditions" className="hover:text-white hover:underline">Terms & Conditions</a></li>
+              <li><a href="https://itspurgepros.com/privacy-policy" className="hover:text-white hover:underline">Privacy Policy</a></li>
             </ul>
           </div>
           <div>
             <h3 className="text-lg font-bold mb-4">Locations</h3>
             <ul className="space-y-2 text-gray-400">
               <li>5625 N GERMAN CHURCH RD. UNIT 2036, INDIANAPOLIS INDIANA 46235</li>
-              <li><a href="tel:3176997667" className="hover:text-white">(317) 699-7667</a></li>
-              <li><a href="tel:3179615865" className="hover:text-white">(317) 961-5865</a></li>
-              <li><a href="mailto:matt@itspurgepros.com" className="hover:text-white">matt@itspurgepros.com</a></li>
+              <li><a href="tel:3176997667" className="hover:text-white hover:underline">(317) 699-7667</a></li>
+              <li><a href="tel:3179615865" className="hover:text-white hover:underline">(317) 961-5865</a></li>
+              <li><a href="mailto:matt@itspurgepros.com" className="hover:text-white hover:underline">matt@itspurgepros.com</a></li>
             </ul>
           </div>
         </div>
@@ -530,7 +530,7 @@ const App = () => {
           {/* Step 2: Dog Count */}
           {view === 'dogs' && (
             <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('yard')} className="text-sm text-gray-600 hover:text-blue-600 mb-4">&larr; Back to Yard Size</button>
+              <button onClick={() => setView('yard')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Yard Size</button>
               <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">2. How many dogs do you have?</h2>
               
               <select
@@ -557,7 +557,7 @@ const App = () => {
           {/* Step 3: Packages */}
           {view === 'packages' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('dogs')} className="text-sm text-gray-600 hover:text-blue-600 mb-4">&larr; Back to Dog Count</button>
+              <button onClick={() => setView('dogs')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Dog Count</button>
               <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">3. Choose Your 'Pristine Yard' Plan</h2>
               
               {/* Tab Navigation */}
@@ -590,13 +590,13 @@ const App = () => {
               {/* Plan Details Card */}
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-2">
-                  <button onClick={handlePrevPlan} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                  <button onClick={handlePrevPlan} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all hover:scale-125">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   </button>
                   <h3 className="text-2xl font-bold text-slate-800 text-center w-56">
                     {CurrentPlan.name}
                   </h3>
-                  <button onClick={handleNextPlan} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                  <button onClick={handleNextPlan} className="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all hover:scale-125">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </button>
                 </div>
@@ -606,7 +606,7 @@ const App = () => {
                   <span className="text-xl font-medium text-slate-600">/mo</span>
                   <div className="flex items-center justify-center text-sm text-slate-500 mt-1">
                     <span>Approx. ${CurrentPlan.perVisitPrice}/visit</span>
-                    <button onClick={() => setShowPricingModal(true)} className="ml-2 text-gray-400 hover:text-gray-600">
+                    <button onClick={() => setShowPricingModal(true)} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                     </button>
                   </div>
@@ -618,7 +618,7 @@ const App = () => {
                       <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       <span>{feature}</span>
                       {(feature.includes('Seasonal')) && (
-                        <button onClick={() => setShowInfoModal(true)} className="ml-2 text-gray-400 hover:text-gray-600">
+                        <button onClick={() => setShowInfoModal(true)} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                         </button>
                       )}
@@ -635,7 +635,7 @@ const App = () => {
                 
                 <button
                   onClick={() => setView('onetime')}
-                  className="w-full text-center text-sm text-gray-600 hover:text-blue-600 transition-colors mt-8"
+                  className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
                 >
                   Looking for a One-Time Cleanup?
                 </button>
@@ -666,7 +666,7 @@ const App = () => {
           {/* One-Time Cleanup View */}
           {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 mb-4">&larr; Back to Plans</button>
+              <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
               <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">The "One-Time Yard Reset"</h2>
               
               <div className="text-center my-6 py-4 border-y border-gray-200">
@@ -722,3 +722,4 @@ const App = () => {
 };
 
 export default App;
+
