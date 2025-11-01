@@ -1,6 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
+// --- NEW STRIPE IMPORTS ---
+// We import from a CDN-like ESM provider to resolve the modules in this environment
+import { loadStripe } from 'https://esm.sh/@stripe/stripe-js';
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements
+} from 'https://esm.sh/@stripe/react-stripe-js';
 
 // --- Configuration ---
+
+// TODO: Replace this with your ZAPIER Webhook URL
+// This is the "glue" that will receive the form data and payment token,
+// then send it to Stripe (to charge) and HCP (to create an account).
+const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/123456/abcdefg';
+
+// TODO: Replace this with your own Stripe PUBLISHABLE Key (pk_test_... or pk_live_...)
+// This is safe to have in the front-end code.
+const stripePromise = loadStripe('pk_test_YOUR_STRIPE_PUBLISHABLE_KEY');
+
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c9f-aa25-3c221e72ada4';
 const emailJsConfig = {
   serviceID: 'service_b0us6cq',
@@ -9,6 +28,7 @@ const emailJsConfig = {
 };
 const FACEBOOK_PIXEL_ID = '770811879146972';
 const APPROVED_ZIP_CODES = ['46011', '46012', '46013', '46014', '46015', '46016', '46032', '46033', '46034', '46035', '46036', '46037', '46038', '46039', '46040', '46041', '46048', '46049', '46055', '46056', '46060', '46061', '46062', '46063', '46064', '46065', '46068', '46069', '46071', '46072', '46074', '46075', '46076', '46077', '46082', '46085', '46163', '46201', '46202', '46203', '46204', '46205', '46206', '46207', '46208', '46209', '46211', '46214', '46216', '46217', '46218', '46219', '46220', '46221', '46222', '46223', '46224', '46225', '46226', '46227', '46228', '46229', '46230', '46231', '46234', '46235', '46236', '46237', '46239', '46240', '46241', '46242', '46244', '46247', '46249', '46250', '46251', '46253', '46254', '46255', '46256', '46259', '46260', '46266', '46268', '46278', '46280', '46282', '46283', '46285', '46290', '46291', '46295', '46296', '46298'];
+const FAVICON_URL = 'https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png';
 
 // --- Base Prices ---
 const basePrices = {
@@ -102,6 +122,19 @@ const initFacebookPixel = () => {
   fbq('init', FACEBOOK_PIXEL_ID);
   fbq('track', 'PageView');
 };
+
+/**
+ * Sets the website's favicon.
+ * @param {string} href - The URL of the favicon.
+ */
+const setFavicon = (href) => {
+  let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+  link.type = 'image/png';
+  link.rel = 'shortcut icon';
+  link.href = href;
+  document.getElementsByTagName('head')[0].appendChild(link);
+};
+
 
 /**
  * Sends lead data to the GHL webhook.
@@ -423,65 +456,332 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
   );
 };
 
-/**
- * VIEW 4: The "Payment Plan" (The Cash Multiplier)
- */
-const PaymentPlanSelector = ({ finalMonthlyPrice, onPaymentSelect, onBack, initialPaymentTerm }) => {
-  const plans = [
-    {
-      term: 'Monthly',
-      price: finalMonthlyPrice,
-      total: finalMonthlyPrice,
-      description: `Billed every month`,
-      savings: null,
-      chargeAmount: finalMonthlyPrice,
-    },
-    {
-      term: 'Quarterly',
-      price: (finalMonthlyPrice * 3) - 30,
-      total: (finalMonthlyPrice * 3) - 30,
-      description: `Billed every 3 months`,
-      savings: "Save $30!",
-      chargeAmount: (finalMonthlyPrice * 3) - 30,
-    },
-    {
-      term: 'Annual',
-      price: finalMonthlyPrice * 11,
-      total: finalMonthlyPrice * 11,
-      description: `Billed once a year`,
-      savings: `Save $${finalMonthlyPrice} - 1 Month FREE!`,
-      chargeAmount: finalMonthlyPrice * 11,
-    }
-  ];
 
+/**
+ * --- NEW: VIEW 4: The One-Page Checkout ---
+ * This component combines Payment Plan selection and Final Checkout.
+ * It uses Stripe Elements to securely capture card info.
+ */
+const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    terms: false,
+  });
+  
+  const [paymentTerm, setPaymentTerm] = useState('Monthly');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  // --- Calculate Payment Plans ---
+  const paymentPlans = useMemo(() => {
+    const monthly = packageSelection.finalMonthlyPrice;
+    return {
+      'Monthly': {
+        term: 'Monthly',
+        label: `$${monthly}/month`,
+        total: monthly,
+        savings: null,
+      },
+      'Quarterly': {
+        term: 'Quarterly',
+        label: `$${(monthly * 3) - 30} / 3 Months`,
+        total: (monthly * 3) - 30,
+        savings: 'Save $30!',
+      },
+      'Annual': {
+        term: 'Annual',
+        label: `$${monthly * 11} / Year`,
+        total: monthly * 11,
+        savings: `Save $${monthly} - 1 Month FREE!`,
+      }
+    };
+  }, [packageSelection.finalMonthlyPrice]);
+
+  const totalDueToday = paymentPlans[paymentTerm].total;
+
+  // --- Form Handlers ---
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.terms) {
+      setError('You must agree to the Terms of Service.');
+      return;
+    }
+    
+    if (!stripe || !elements) {
+      // Stripe.js has not yet loaded.
+      setError('Payment system is not ready. Please wait a moment and try again.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // --- 1. Get Card Element ---
+    const cardElement = elements.getElement(CardElement);
+    if (cardElement == null) {
+      setError('Could not find card details. Please refresh and try again.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // --- 2. Create Stripe Payment Method ---
+    const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+      billing_details: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: {
+            line1: formData.address, // Stripe can use this for validation
+            postal_code: zipCode,
+        }
+      },
+    });
+
+    if (stripeError) {
+      setError(stripeError.message || 'An error occurred during payment validation.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // --- 3. Build ALL Data Payloads ---
+    
+    // --- Payload for Zapier (The "Glue") ---
+    // This has *everything* Zapier needs to charge the card AND create the HCP account.
+    const zapierPayload = {
+      paymentMethodId: paymentMethod.id, // The secure token
+      customer: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+      },
+      quote: {
+        zipCode: zipCode,
+        dogCount: dogCount,
+        planName: packageSelection.name,
+        paymentTerm: paymentTerm,
+        totalDueToday: totalDueToday,
+        savings: paymentPlans[paymentTerm].savings || 'N/A',
+      }
+    };
+    
+    // --- Payload for GHL & EmailJS (No sensitive data) ---
+    // This is for your own records and for the customer confirmation email.
+    // It does NOT contain the paymentMethodId.
+    
+    // Calculate per_visit for the email
+    let perVisitPrice = 'N/A';
+    const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
+    if (planKey) {
+      const visitsPerMonth = { biWeekly: 26/12, weekly: 52/12, twiceWeekly: 104/12 };
+      perVisitPrice = (packageSelection.finalMonthlyPrice / visitsPerMonth[planKey]).toFixed(2);
+    }
+    
+    const leadData = {
+        ...formData,
+        zip: zipCode,
+        lead_status: 'Complete - PAID',
+        quote_type: packageSelection.name,
+        plan: packageSelection.name,
+        dog_count: dogCount,
+        total_monthly_rate: packageSelection.finalMonthlyPrice,
+        payment_term: paymentTerm,
+        final_charge_amount: totalDueToday,
+        savings: paymentPlans[paymentTerm].savings || 'N/A',
+        quote_link: generateQuoteLink({
+            zip: zipCode,
+            dogCount: dogCount,
+            plan: packageSelection.name,
+            paymentTerm: paymentTerm,
+        }),
+    };
+    
+    const emailParams = {
+        ...leadData,
+        description: `Plan: ${packageSelection.name} (${paymentTerm})`,
+        total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
+        per_visit: `$${perVisitPrice}`,
+        final_charge: `$${totalDueToday} (Billed ${paymentTerm})`,
+    };
+
+    // --- 4. Send ALL Data ---
+    try {
+      // ACTION 1 (The Cash & Service): Send to Zapier
+      // Zapier will handle charging the card via Stripe and creating the HCP account.
+      const zapierResponse = await fetch(ZAPIER_WEBHOOK_URL, {
+        method: 'POST',
+        body: JSON.stringify(zapierPayload),
+      });
+
+      // Check if Zapier/Stripe had an error
+      if (!zapierResponse.ok) {
+        // Try to get an error message from Zapier if it sent one
+        const errorData = await zapierResponse.json().catch(() => null);
+        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
+      }
+      
+      // ACTION 2: Send to GHL (for records)
+      await sendToWebhook(leadData);
+      
+      // ACTION 3: Send Confirmation Email
+      await sendEmail(emailParams);
+
+      // ACTION 4: Fire FB Event
+      fbq('track', 'CompleteRegistration');
+
+      // All successful!
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      onSubmitSuccess();
+
+    } catch (err) {
+      // This catches any error from the fetch, Zapier, or Stripe
+      console.error('Submission Error:', err);
+      setError(err.message || 'An unknown error occurred.');
+      setIsSubmitting(false);
+    }
+  };
+  
+  // --- Thank You View ---
+  if (isSubmitted) {
+    return (
+      <div className="bg-white p-8 rounded-xl shadow-lg text-center fade-in">
+        <div className="w-16 h-16 bg-green-100 text-green-600 flex items-center justify-center rounded-full mx-auto mb-4">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800">Success! Welcome Aboard!</h2>
+        <p className="text-slate-600 mt-2">
+          Your payment was successful! We've sent a confirmation email to {formData.email}. We will contact you shortly to schedule your first visit!
+        </p>
+      </div>
+    );
+  }
+
+  // --- Stripe Card Element Styling ---
+  const cardElementOptions = {
+    style: {
+      base: {
+        color: "#32325d",
+        fontFamily: 'Inter, sans-serif',
+        fontSmoothing: "antialiased",
+        fontSize: "16px",
+        "::placeholder": {
+          color: "#aab7c4",
+        },
+      },
+      invalid: {
+        color: "#fa755a",
+        iconColor: "#fa755a",
+      },
+    },
+  };
+  
+  // --- Main Checkout Form View ---
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">4. Choose Your Payment Plan & Lock In Savings</h2>
-      
-      <div className="space-y-4">
-        {plans.map((plan) => (
-          <button
-            key={plan.term}
-            onClick={() => onPaymentSelect(plan.term, plan.chargeAmount, plan.savings)}
-            className={`w-full text-left p-6 border-2 rounded-xl transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg ${
-              initialPaymentTerm === plan.term
-                ? 'border-blue-500 bg-blue-50 shadow-lg'
-                : 'border-gray-300 bg-white'
-            }`}
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-2xl font-bold text-slate-800">{plan.term} Plan</h3>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">Final Step: Choose Your Plan & Check Out</h2>
+      <p className="text-slate-600 text-center mb-6">You've selected the <strong>{packageSelection.name}</strong> (${packageSelection.finalMonthlyPrice}/month).</p>
+
+      <form onSubmit={handleSubmit}>
+        {/* --- 1. The Cash Multiplier (Payment Plan) --- */}
+        <div className="space-y-3 mb-6">
+          <h3 className="text-lg font-semibold text-slate-800">1. Choose Your Payment Plan</h3>
+          {Object.values(paymentPlans).map((plan) => (
+            <label
+              key={plan.term}
+              className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentTerm === plan.term ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+            >
+              <input
+                type="radio"
+                name="paymentTerm"
+                value={plan.term}
+                checked={paymentTerm === plan.term}
+                onChange={(e) => setPaymentTerm(e.target.value)}
+                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <span className="ml-3 flex-grow">
+                <span className="block text-base font-bold text-slate-800">{plan.label}</span>
+              </span>
               {plan.savings && (
-                <span className="text-sm font-bold text-white bg-[var(--brand-green)] px-3 py-1 rounded-full">
+                <span className="text-xs font-bold text-white bg-[var(--brand-green)] px-2 py-1 rounded-full">
                   {plan.savings}
                 </span>
               )}
+            </label>
+          ))}
+        </div>
+
+        {/* --- 2. The Close (Payment Form) --- */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-slate-800">2. Enter Your Details</h3>
+          <input type="text" name="name" placeholder="Full Name*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.name} />
+          <input type="email" name="email" placeholder="Email Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.email} />
+          <input type="tel" name="phone" placeholder="Phone Number*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.phone} />
+          <input type="text" name="address" placeholder="Service Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.address} />
+          
+          {/* --- Stripe Payment Module --- */}
+          <div className="p-3 border-2 border-gray-300 rounded-lg">
+            <CardElement options={cardElementOptions} />
+          </div>
+
+          <div className="pt-2">
+            <label className="flex items-start text-xs text-gray-500 cursor-pointer" htmlFor="terms-consent-checkout">
+              <input type="checkbox" id="terms-consent-checkout" name="terms" checked={formData.terms} onChange={handleChange} className="mt-0.5 mr-3 h-5 w-5 rounded border-gray-300 text-[var(--brand-blue)] focus:ring-[var(--brand-blue)] flex-shrink-0" />
+              <div>
+                <span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.
+              </div>
+            </label>
+          </div>
+
+          {/* --- Error Display --- */}
+          {error && (
+            <p className="text-red-600 text-sm font-medium text-center p-3 bg-red-50 rounded-lg">{error}</p>
+          )}
+
+          {/* --- Submit Button --- */}
+          <div className="border-t pt-6">
+            <div className="text-right mb-4">
+              <span className="text-xl font-medium text-slate-600">Total Due Today:</span>
+              <span className="text-3xl font-extrabold text-slate-900 ml-2">${totalDueToday}</span>
             </div>
-            <p className="text-3xl font-extrabold text-slate-900">${plan.total}</p>
-            <p className="text-sm text-slate-600">{plan.description}</p>
-          </button>
-        ))}
+            <button
+              type="submit"
+              disabled={isSubmitting || !stripe}
+              className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
+            >
+              {isSubmitting ? <span className="loader"></span> : 'Start My Service Now!'}
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {/* --- The "Bailout" Link --- */}
+      <div className="text-center mt-6">
+        <button
+          onClick={onBailout}
+          className="text-sm text-gray-600 hover:text-blue-600 hover:underline"
+        >
+          Prefer to set up your account over the phone? Click here.
+        </button>
       </div>
     </div>
   );
@@ -489,9 +789,10 @@ const PaymentPlanSelector = ({ finalMonthlyPrice, onPaymentSelect, onBack, initi
 
 
 /**
- * VIEW 3A / VIEW 5: The Lead Form (Custom Quote & Final Checkout)
+ * VIEW 3A / One-Time: The Lead Form (Custom Quote & One-Time)
+ * This is now *only* for non-payment leads (Custom Quote, One-Time)
  */
-const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, quoteData = null }) => {
+const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -525,93 +826,39 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
 
     let leadData, emailParams, quoteLinkState, fbTrackEvent;
     
-    // Calculate per_visit price just for the email, IF it's a standard plan
-    let perVisitPrice = 'N/A';
-    if (quoteData) {
-      const planKey = Object.keys(planDetails).find(key => planDetails[key].name === quoteData.planName);
-      if (planKey) {
-        // Find visitsPerMonth - this logic is no longer in the main app, so we recreate it here
-        const visitsPerMonth = { biWeekly: 26/12, weekly: 52/12, twiceWeekly: 104/12 };
-        perVisitPrice = (quoteData.finalMonthlyPrice / visitsPerMonth[planKey]).toFixed(2);
-      }
-    }
-
-
-    if (quoteData) {
-      // VIEW 5: Final Checkout Logic
-      fbTrackEvent = 'CompleteRegistration';
-      quoteLinkState = {
-        zip: zipCode,
-        dogCount: dogCount,
-        plan: quoteData.planName,
-        paymentTerm: quoteData.paymentTerm,
-      };
-      
-      leadData = {
-        ...formData,
-        zip: zipCode,
-        lead_status: 'Complete - Plan Selected',
-        quote_type: quoteData.planName,
-        plan: quoteData.planName,
-        dog_count: dogCount,
-        total_monthly_rate: quoteData.finalMonthlyPrice,
-        payment_term: quoteData.paymentTerm,
-        final_charge_amount: quoteData.finalChargeAmount,
-        savings: quoteData.savings || 'N/A',
-        quote_link: generateQuoteLink(quoteLinkState),
-      };
-
-      emailParams = {
-        ...formData,
-        ...leadData, // Send everything
-        description: `Plan: ${quoteData.planName} (${quoteData.paymentTerm})`,
-        total_monthly: `$${quoteData.finalMonthlyPrice}/mo`, // For consistency, though new fields are better
-        per_visit: `$${perVisitPrice}`,
-        final_charge: `$${quoteData.finalChargeAmount} (Billed ${quoteData.paymentTerm})`,
-      };
-
+    fbTrackEvent = 'Lead';
+    quoteLinkState = { zip: zipCode, dogCount: dogCount };
+    
+    let leadStatus, quoteType, planName;
+    if (isOneTimeForm) {
+      leadStatus = 'One-Time Cleanup Request';
+      quoteType = 'One-Time Cleanup';
+      planName = 'One-Time Cleanup';
     } else {
-      // VIEW 3A: Custom Quote Logic OR One-Time Form
-      fbTrackEvent = 'Lead';
-      
-      const isOneTime = title.includes("One-Time");
-      
-      quoteLinkState = {
-        zip: zipCode,
-        dogCount: dogCount,
-      };
-      
-      let leadStatus, quoteType, planName;
-      if (isOneTime) {
-        leadStatus = 'One-Time Cleanup Request';
-        quoteType = 'One-Time Cleanup';
-        planName = 'One-Time Cleanup';
-      } else {
-        leadStatus = dogCount === '6+' ? 'Custom - Multi-Pet' : 'Custom - Estate';
-        quoteType = 'Custom Quote Request';
-        planName = 'Custom Quote';
-      }
-
-      leadData = {
-        ...formData,
-        zip: zipCode,
-        lead_status: leadStatus,
-        quote_type: quoteType,
-        plan: planName,
-        dog_count: dogCount,
-        quote_link: generateQuoteLink(quoteLinkState),
-      };
-      
-      emailParams = {
-        ...formData,
-        ...leadData,
-        description: title,
-        total_monthly: isOneTime ? '$99.99 (first 30 min)' : 'Custom Quote',
-        per_visit: 'N/A',
-        final_charge: 'N/A',
-        savings: 'N/A',
-      };
+      leadStatus = dogCount === '6+' ? 'Custom - Multi-Pet' : 'Custom - Estate';
+      quoteType = 'Custom Quote Request';
+      planName = 'Custom Quote';
     }
+
+    leadData = {
+      ...formData,
+      zip: zipCode,
+      lead_status: leadStatus,
+      quote_type: quoteType,
+      plan: planName,
+      dog_count: dogCount,
+      quote_link: generateQuoteLink(quoteLinkState),
+    };
+    
+    emailParams = {
+      ...formData,
+      ...leadData,
+      description: title,
+      total_monthly: isOneTimeForm ? '$99.99 (first 30 min)' : 'Custom Quote',
+      per_visit: 'N/A',
+      final_charge: 'N/A',
+      savings: 'N/A',
+    };
     
     // 1. Fire FB event
     fbq('track', fbTrackEvent);
@@ -637,12 +884,9 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
         </div>
         <h2 className="text-2xl font-bold text-slate-800">Thank You!</h2>
         <p className="text-slate-600 mt-2">
-          {quoteData
-            ? "We've received your request! We will contact you shortly to confirm your service start date and finalize payment."
-            : (title.includes("One-Time")
-              ? "We've received your cleanup request! We'll contact you shortly to get you on the schedule."
-              : "We've received your request and will contact you shortly to provide your free custom quote."
-            )
+          {isOneTimeForm
+            ? "We've received your cleanup request! We'll contact you shortly to get you on the schedule."
+            : "We've received your request and will contact you shortly to provide your free custom quote."
           }
         </p>
       </div>
@@ -716,7 +960,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
           disabled={isSubmitting}
           className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
         >
-          {isSubmitting ? <span className="loader"></span> : (quoteData ? 'Complete My Quote!' : 'Request My Quote')}
+          {isSubmitting ? <span className="loader"></span> : 'Request My Quote'}
         </button>
       </form>
       <button
@@ -982,7 +1226,7 @@ const GlobalStyles = () => (
 
 const App = () => {
   // State
-  const [view, setView] = useState('zip'); // 'zip' -> 'sorter' -> 'custom_quote' OR 'packages' -> 'payment_plan' -> 'checkout'
+  const [view, setView] = useState('zip'); // 'zip' -> 'sorter' -> 'custom_quote' OR 'packages' -> 'checkout'
   const [zipCode, setZipCode] = useState('');
   const [yardSize, setYardSize] = useState('standard');
   const [dogCount, setDogCount] = useState('1-2');
@@ -993,12 +1237,14 @@ const App = () => {
   
   // New state for the full funnel
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0 });
-  const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', chargeAmount: 0, savings: null });
   
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
 
   // Load external scripts and init pixel on mount
   useEffect(() => {
+    // --- Add Favicon ---
+    setFavicon(FAVICON_URL);
+    
     initFacebookPixel();
     loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', 'emailjs-sdk')
       .catch(error => console.error(error));
@@ -1009,7 +1255,7 @@ const App = () => {
     const urlYardSize = params.get('yardSize');
     const urlDogCount = params.get('dogCount');
     const urlPlan = params.get('plan');
-    const urlPaymentTerm = params.get('paymentTerm');
+    const urlPaymentTerm = params.get('paymentTerm'); // Still capture this, though checkout handles it
 
     if (urlZip && APPROVED_ZIP_CODES.includes(urlZip)) {
       setZipCode(urlZip);
@@ -1042,17 +1288,9 @@ const App = () => {
         if (planKey) {
           const finalPrice = planDetails[planKey].price + (dogFeeMap[urlDogCount] || 0);
           setPackageSelection({ name: urlPlan, finalMonthlyPrice: finalPrice });
-
-          // If plan is set, pre-fill payment term
-          if (urlPaymentTerm) {
-            setPaymentSelection(prev => ({ ...prev, term: urlPaymentTerm }));
-            // We have everything, go to payment plan
-            setView('payment_plan'); // Go to payment plan to calculate final charge, then user clicks to checkout
-            return;
-          }
           
-          // We have a plan, go to package selection
-          setView('packages'); // Go to packages, let user click through
+          // We have a plan, go straight to checkout
+          setView('checkout'); 
           return;
         }
       }
@@ -1108,16 +1346,22 @@ const App = () => {
    */
   const handlePlanSelect = (planName, finalMonthlyPrice) => {
     setPackageSelection({ name: planName, finalMonthlyPrice: finalMonthlyPrice });
-    setView('payment_plan'); // GOTO View 4
+    setView('checkout'); // GOTO View 4 (Checkout)
   };
 
   /**
-   * VIEW 4: Payment Plan Selection Handler
+   * VIEW 4: "Bailout" Handler
+   * User clicks "Prefer to set up over the phone?"
    */
-  const handlePaymentPlanSelect = (term, chargeAmount, savings) => {
-    setPaymentSelection({ term: term, chargeAmount: chargeAmount, savings: savings });
-    setView('checkout'); // GOTO View 5
+  const handleBailout = () => {
+    // Set view to 'custom_quote', but we're already on the checkout page,
+    // so we need to pass the plan info to the custom quote form
+    // for a seamless transition.
+    // For simplicity, we just send them to the generic 'custom_quote' view.
+    // A more advanced way would be to pass the data.
+    setView('custom_quote');
   };
+  
   
   // This is still needed for the Exit Intent Modal
   const CurrentPlanForExitModal = useMemo(() => {
@@ -1136,7 +1380,8 @@ const App = () => {
   }, [packageSelection, multiDogFee, dogCount]);
 
   return (
-    <>
+    // --- NEW: Wrap entire app in Stripe's <Elements> provider ---
+    <Elements stripe={stripePromise}>
       <GlobalStyles />
       <Header />
       
@@ -1170,32 +1415,15 @@ const App = () => {
             />
           )}
 
-          {/* --- Step 4: Payment Plan (VIEW 4) --- */}
-          {view === 'payment_plan' && (
-            <PaymentPlanSelector
-              finalMonthlyPrice={packageSelection.finalMonthlyPrice}
-              onPaymentSelect={handlePaymentPlanSelect}
-              onBack={() => setView('packages')}
-              initialPaymentTerm={paymentSelection.term}
-            />
-          )}
-
-          {/* --- Step 5: Checkout (VIEW 5) --- */}
+          {/* --- Step 4: Checkout (NEW VIEW 4) --- */}
           {view === 'checkout' && (
-            <LeadForm
-              title="Great Choice! Let's Get You Set Up."
-              description={`You're selecting the ${packageSelection.name} with ${paymentSelection.term} billing. We'll contact you to confirm your start date and set up payment.`}
-              quoteData={{
-                planName: packageSelection.name,
-                finalMonthlyPrice: packageSelection.finalMonthlyPrice,
-                paymentTerm: paymentSelection.term,
-                finalChargeAmount: paymentSelection.chargeAmount,
-                savings: paymentSelection.savings,
-              }}
+            <CheckoutForm
+              packageSelection={packageSelection}
               zipCode={zipCode}
               dogCount={dogCount}
+              onBack={() => setView('packages')}
+              onBailout={handleBailout} // The "Decoy Close"
               onSubmitSuccess={handleFormSubmissionSuccess}
-              onBack={() => setView('payment_plan')}
             />
           )}
           
@@ -1211,6 +1439,7 @@ const App = () => {
               dogCount={dogCount}
               onSubmitSuccess={handleFormSubmissionSuccess}
               onBack={() => setView('sorter')}
+              isOneTimeForm={false}
             />
           )}
           
@@ -1262,6 +1491,7 @@ const App = () => {
               dogCount={dogCount}
               onSubmitSuccess={handleFormSubmissionSuccess}
               onBack={() => setView('onetime')}
+              isOneTimeForm={true}
             />
           )}
 
@@ -1281,9 +1511,10 @@ const App = () => {
         />
       )}
       <Footer />
-    </>
+    </Elements>
   );
 };
 
 export default App;
+
 
