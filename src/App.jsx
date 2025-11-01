@@ -43,13 +43,13 @@ const planDetails = {
     price: basePrices.biWeekly,
     features: [
       'Service Every 2 Weeks',
-      'Full Property Coverage (Back, Front, Sides)',
-      '!Waste Hauled Away', // <-- NOT INCLUDED (shows red X)
-      'Seasonal Deodorizer',
-      'Seasonal WYSI Wash Sanitizer',
-      'Free Treats Each Visit',
+      'Yard+ Coverage (Front, Back, Sides)',
+      'FREE Deodorizer (1x/Week - a $40 Value!)',
+      'WYSIwash® (1x/Month - A $30 Value!)',
+      'FREE Treats Each Visit',
       'Pictures of Locked Gates',
-      'Text Alerts: Reminders, ETA & On the Way',
+      'Automated Reminders & Alerts',
+      '!Waste Hauled Away', // <-- NOT INCLUDED (shows red X)
     ],
   },
   weekly: {
@@ -57,13 +57,13 @@ const planDetails = {
     price: basePrices.weekly,
     features: [
       'Service Every Week',
-      'Full Property Coverage (Back, Front, Sides)',
+      'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
-      'Seasonal Deodorizer',
-      'Seasonal WYSI Wash Sanitizer',
-      'Free Treats Each Visit',
+      'FREE Deodorizer (1x/Week - a $40 Value!)',
+      'WYSIwash® (1x/Month - A $30 Value!)',
+      'FREE Treats Each Visit',
       'Pictures of Locked Gates',
-      'Text Alerts: Reminders, ETA & On the Way',
+      'Automated Reminders & Alerts',
     ],
   },
   twiceWeekly: {
@@ -71,13 +71,13 @@ const planDetails = {
     price: basePrices.twiceWeekly,
     features: [
       'Service 2x Per Week',
-      'Full Property Coverage (Back, Front, Sides)',
+      'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
-      'Seasonal Deodorizer',
-      'Seasonal WYSI Wash Sanitizer',
-      'Free Treats Each Visit',
+      'FREE Deodorizer (1x/Week - a $40 Value!)',
+      'WYSIwash® (1x/Month - A $30 Value!)',
+      'FREE Treats Each Visit',
       'Pictures of Locked Gates',
-      'Text Alerts: Reminders, ETA & On the Way',
+      'Automated Reminders & Alerts',
     ],
   },
 };
@@ -332,11 +332,11 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) =>
         </select>
       </div>
       
-      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3">
+      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3 special-offer-glow">
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
           <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST!</p>
+          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup!</strong> We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST! <strong>(A $99.99+ Value)</strong>.</p>
         </div>
       </div>
 
@@ -382,7 +382,7 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
 /**
  * VIEW 3B: The "Package Selection" (The Grand Slam)
  */
-const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick }) => {
+const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick }) => {
   const plans = [
     { key: 'biWeekly', ...planDetails.biWeekly, finalPrice: planDetails.biWeekly.price + dogFee },
     { key: 'weekly', ...planDetails.weekly, finalPrice: planDetails.weekly.price + dogFee, popular: true },
@@ -396,65 +396,92 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Selections</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">3. Choose Your 'Pristine Yard' Plan</h2>
       
-      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3">
+      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3 special-offer-glow">
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
           <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST!</p>
+          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup!</strong> We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST! <strong>(A $99.99+ Value)</strong>.</p>
         </div>
       </div>
 
       <div className="space-y-4">
-        {plans.map((plan) => (
-          <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg' : 'border-gray-300'}`}>
-            {plan.popular && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-white bg-[var(--brand-green)] px-3 py-0.5 rounded-full">
-                Best Value
-              </span>
-            )}
-            <h3 className="text-2xl font-bold text-slate-800 text-center">{plan.name}</h3>
-            <div className="text-center my-4 py-4 border-y border-gray-200">
-              <span className="text-5xl font-extrabold text-slate-900">${plan.finalPrice}</span>
-              <span className="text-xl font-medium text-slate-600">/mo</span>
+        {plans.map((plan) => {
+          // Sort features: FREE items first, then standard, then excluded
+          const sortedFeatures = [...plan.features].sort((a, b) => {
+            const aExcluded = a.startsWith('!');
+            const bExcluded = b.startsWith('!');
+            const aFree = a.toUpperCase().startsWith('FREE');
+            const bFree = b.toUpperCase().startsWith('FREE');
+
+            if (aExcluded && !bExcluded) return 1;  // a (excluded) goes to bottom
+            if (!aExcluded && bExcluded) return -1; // b (excluded) goes to bottom
+            if (aExcluded && bExcluded) return 0;   // both excluded, keep order
+
+            // Neither is excluded
+            if (aFree && !bFree) return -1; // a (free) goes first
+            if (!aFree && bFree) return 1;  // b (free) goes first
+
+            return 0; // both free or both not free, keep order
+          });
+
+          return (
+            <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg best-value-glow' : 'border-gray-300'}`}>
+              {plan.popular && (
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-white bg-[var(--brand-green)] px-3 py-0.5 rounded-full">
+                  Best Value
+                </span>
+              )}
+              <h3 className="text-2xl font-bold text-slate-800 text-center">{plan.name}</h3>
+              <div className="text-center my-4 py-4 border-y border-gray-200">
+                <span className="text-5xl font-extrabold text-slate-900">${plan.finalPrice}</span>
+                <span className="text-xl font-medium text-slate-600">/mo</span>
+              </div>
+              
+              <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
+                <li className="flex items-center text-slate-600">
+                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span>Service for {dogText} Household</span>
+                </li>
+                {sortedFeatures.map((feature, index) => {
+                  const isIncluded = !feature.startsWith('!');
+                  const featureText = isIncluded ? feature : feature.substring(1);
+                  
+                  return (
+                    <li key={index} className={`flex items-center ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
+                      {isIncluded ? (
+                        <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                      <span>{featureText}</span>
+                      {/* Info button for Deodorizer/WYSIwash */}
+                      {(featureText.includes('Deodorizer') || featureText.includes('WYSIwash')) && isIncluded && (
+                        <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                        </button>
+                      )}
+                      {/* Info button for Alerts */}
+                      {(featureText.includes('Automated Reminders')) && isIncluded && (
+                        <button onClick={onAlertsInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              
+              <button
+                onClick={() => onPlanSelect(plan.name, plan.finalPrice)}
+                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
+              >
+                Select {plan.name}
+              </button>
             </div>
-            
-            <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
-              <li className="flex items-center text-slate-600">
-                <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>Service for {dogText} Household</span>
-              </li>
-              {plan.features.map((feature, index) => {
-                const isIncluded = !feature.startsWith('!');
-                const featureText = isIncluded ? feature : feature.substring(1);
-                
-                return (
-                  <li key={index} className={`flex items-center ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
-                    {isIncluded ? (
-                      <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    ) : (
-                      <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    )}
-                    <span>{featureText}</span>
-                    {(featureText.includes('Seasonal')) && isIncluded && (
-                      <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-            
-            <button
-              onClick={() => onPlanSelect(plan.name, plan.finalPrice)}
-              className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-            >
-              Select {plan.name}
-            </button>
-          </div>
-        ))}
+          )
+        })}
       </div>
       
       <button
@@ -955,12 +982,12 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
 const ServiceInfoModal = ({ onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-      <h3 className="text-lg font-bold text-gray-900">About Seasonal Services</h3>
+      <h3 className="text-lg font-bold text-gray-900">About Our FREE Add-Ons</h3>
       <p className="text-sm text-gray-600 mt-4">
-        <strong>What is WYSI Wash?</strong> Our WYSI Wash Sanitizer is a hospital-grade, pet-safe disinfectant designed to kill harmful viruses and bacteria like Parvovirus and Giardia, ensuring your yard is not just clean, but sanitary.
+        <strong>What is WYSIwash®?</strong> Our WYSIwash® Sanitizer is a hospital-grade, pet-safe disinfectant designed to kill harmful viruses and bacteria like Parvovirus and Giardia, ensuring your yard is not just clean, but sanitary.
       </p>
       <p className="text-sm text-gray-600 mt-2">
-        Our Seasonal Deodorizer and WYSI Wash Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.
+        Our Deodorizer and WYSIwash® Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.
       </p>
       <p className="text-sm text-gray-600 mt-2">
         To be effective, these treatments must be applied to a non-frozen ground. Service is typically paused during Indiana's frost months (roughly October - April).
@@ -978,9 +1005,51 @@ const ServiceInfoModal = ({ onClose }) => (
   </div>
 );
 
+// --- NEW: Alerts Info Modal ---
+const AlertsInfoModal = ({ onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <h3 className="text-lg font-bold text-gray-900">About Our Automated Alerts</h3>
+      <p className="text-sm text-gray-600 mt-4">
+        We keep you in the loop every step of the way! Our system sends automated text messages for:
+      </p>
+      <ul className="text-sm text-gray-600 mt-2 list-disc list-inside space-y-1">
+        <li><strong>Service Reminders:</strong> Sent the night before to confirm your upcoming service.</li>
+        <li><strong>ETAs:</strong> Sent the day of service with a narrowed-down arrival window.</li>
+        <li><strong>On The Way:</strong> A text to let you know our tech is en route.</li>
+        <li><strong>Service Complete:</strong> A final alert (with a photo of your locked gate) once the job is done!</li>
+      </ul>
+      <button
+        onClick={onClose}
+        className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
+      >
+        Got it!
+      </button>
+    </div>
+  </div>
+);
+
 // --- NEW: Package Review Modal ---
 const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
   const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
+  
+  // Sort features: FREE items first, then standard, then excluded
+  const sortedFeatures = [...features].sort((a, b) => {
+    const aExcluded = a.startsWith('!');
+    const bExcluded = b.startsWith('!');
+    const aFree = a.toUpperCase().startsWith('FREE');
+    const bFree = b.toUpperCase().startsWith('FREE');
+
+    if (aExcluded && !bExcluded) return 1;  // a (excluded) goes to bottom
+    if (!aExcluded && bExcluded) return -1; // b (excluded) goes to bottom
+    if (aExcluded && bExcluded) return 0;   // both excluded, keep order
+
+    // Neither is excluded
+    if (aFree && !bFree) return -1; // a (free) goes first
+    if (!aFree && bFree) return 1;  // b (free) goes first
+
+    return 0; // both free or both not free, keep order
+  });
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
@@ -992,7 +1061,7 @@ const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
             <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>Service for {dogText} Household</span>
           </li>
-          {features.map((feature, index) => {
+          {sortedFeatures.map((feature, index) => {
             const isIncluded = !feature.startsWith('!');
             const featureText = isIncluded ? feature : feature.substring(1);
 
@@ -1268,6 +1337,22 @@ const GlobalStyles = () => (
     .StripeElement--webkit-autofill {
       background-color: #fefde5 !important;
     }
+    
+    /* NEW: Glow Effects */
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.7); border-color: rgba(34, 197, 94, 1); }
+      50% { box-shadow: 0 0 20px rgba(34, 197, 94, 1); border-color: rgba(34, 197, 94, 1); }
+    }
+    @keyframes pulse-shadow {
+      0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 10px rgba(34, 197, 94, 0.5); }
+      50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 20px rgba(34, 197, 94, 1); }
+    }
+    .best-value-glow {
+      animation: pulse-green 2s infinite;
+    }
+    .special-offer-glow {
+      animation: pulse-shadow 2.5s infinite;
+    }
   `}} />
 );
 
@@ -1281,6 +1366,7 @@ const App = () => {
   const [dogCount, setDogCount] = useState('1-2');
   const [multiDogFee, setMultiDogFee] = useState(0);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showAlertsModal, setShowAlertsModal] = useState(false); // NEW
   const [showPackageReviewModal, setShowPackageReviewModal] = useState(false); // NEW
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
@@ -1521,6 +1607,7 @@ const App = () => {
               onBack={() => setView('sorter')}
               onOneTimeClick={() => setView('onetime')}
               onInfoClick={() => setShowInfoModal(true)}
+              onAlertsInfoClick={() => setShowAlertsModal(true)} // NEW
             />
           )}
 
@@ -1612,6 +1699,7 @@ const App = () => {
       </main>
       
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} />}
+      {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} />}
       
       {/* --- NEW: Package Review Modal Render --- */}
