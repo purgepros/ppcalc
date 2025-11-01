@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-// --- NEW STRIPE IMPORTS ---
-// We import from a CDN-like ESM provider to resolve the modules in this environment
-import { loadStripe } from 'https://esm.sh/@stripe/stripe-js';
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements
-} from 'https://esm.sh/@stripe/react-stripe-js';
+// --- STRIPE IMPORTS REMOVED ---
+// We will now load Stripe scripts dynamically
 
 // --- Configuration ---
 
@@ -18,7 +11,7 @@ const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/123456/abcdefg'
 
 // TODO: Replace this with your own Stripe PUBLISHABLE Key (pk_test_... or pk_live_...)
 // This is safe to have in the front-end code.
-const stripePromise = loadStripe('pk_test_YOUR_STRIPE_PUBLISHABLE_KEY');
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_YOUR_STRIPE_PUBLISHABLE_KEY';
 
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c9f-aa25-3c221e72ada4';
 const emailJsConfig = {
@@ -463,6 +456,10 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
  * It uses Stripe Elements to securely capture card info.
  */
 const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess }) => {
+  // --- NEW: Get Stripe components from window ---
+  // These will exist because this component is only rendered *after* the scripts are loaded.
+  const { CardElement, useStripe, useElements } = window.ReactStripeJs;
+  
   const stripe = useStripe();
   const elements = useElements();
 
@@ -1239,6 +1236,11 @@ const App = () => {
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0 });
   
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  
+  // --- NEW: State for loading scripts ---
+  const [scriptsLoading, setScriptsLoading] = useState(true);
+  const [stripePromise, setStripePromise] = useState(null);
+  const [StripeElements, setStripeElements] = useState(null);
 
   // Load external scripts and init pixel on mount
   useEffect(() => {
@@ -1246,6 +1248,25 @@ const App = () => {
     setFavicon(FAVICON_URL);
     
     initFacebookPixel();
+    
+    // --- NEW: Load Stripe Scripts ---
+    loadScript('https://js.stripe.com/v3/', 'stripe-js')
+      .then(() => {
+        // After Stripe.js loads, load React-Stripe.js
+        // --- UPDATED URL: Switched from jsdelivr to unpkg for reliability ---
+        return loadScript('https://unpkg.com/@stripe/react-stripe-js@latest/dist/react-stripe-js.umd.js', 'react-stripe-js');
+      })
+      .then(() => {
+        // Now that BOTH scripts are loaded, set state
+        setStripePromise(window.Stripe(STRIPE_PUBLISHABLE_KEY));
+        setStripeElements(() => window.ReactStripeJs.Elements); // Store the Elements component
+        setScriptsLoading(false); // We are ready to render
+      })
+      .catch(err => {
+        console.error("Failed to load payment scripts", err);
+        setScriptsLoading(false); // Stop loading, will show an error
+      });
+    
     loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', 'emailjs-sdk')
       .catch(error => console.error(error));
 
@@ -1378,10 +1399,30 @@ const App = () => {
       dogCount: dogCount,
     };
   }, [packageSelection, multiDogFee, dogCount]);
+  
+  // --- NEW: Handle Script Loading ---
+  if (scriptsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="loader" style={{ width: '48px', height: '48px', borderTopColor: 'var(--brand-blue)', borderWidth: '4px' }}></div>
+      </div>
+    );
+  }
+  
+  if (!stripePromise || !StripeElements) {
+    return (
+       <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
+        <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-lg text-center">
+           <h2 className="text-2xl font-bold text-red-600 mb-4">Payment System Error</h2>
+           <p className="text-slate-700">Could not load the payment system. Please refresh the page and try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     // --- NEW: Wrap entire app in Stripe's <Elements> provider ---
-    <Elements stripe={stripePromise}>
+    <StripeElements stripe={stripePromise}>
       <GlobalStyles />
       <Header />
       
@@ -1511,10 +1552,9 @@ const App = () => {
         />
       )}
       <Footer />
-    </Elements>
+    </StripeElements>
   );
 };
 
 export default App;
-
 
