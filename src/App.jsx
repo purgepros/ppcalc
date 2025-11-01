@@ -11,7 +11,7 @@ const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/16707629/ui73nn
 // This is safe to have in the front-end code.
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAb7GvYrox5UEsP0Pt119qN9A9uEdb1Y7vonGU1MnJQJvrXkAzYaxVC4GJQt60BwE2wUHWMGqDP9wf7nFDNg8c00BG6j655d';
 
-const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c9f-aa25-3c221e72ada4';
+const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c4f-aa25-3c221e72ada4';
 const emailJsConfig = {
   serviceID: 'service_b0us6cq',
   templateID: 'template_uwysfzx', // Customer-facing template
@@ -44,8 +44,12 @@ const planDetails = {
     features: [
       'Service Every 2 Weeks',
       'Full Property Coverage (Back, Front, Sides)',
+      '!Waste Hauled Away', // <-- NOT INCLUDED (shows red X)
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
+      'Free Treats Each Visit',
+      'Pictures of Locked Gates',
+      'Text Alerts: Reminders, ETA & On the Way',
     ],
   },
   weekly: {
@@ -54,9 +58,12 @@ const planDetails = {
     features: [
       'Service Every Week',
       'Full Property Coverage (Back, Front, Sides)',
-      'Waste Hauled Away',
+      'Waste Hauled Away', // <-- INCLUDED
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
+      'Free Treats Each Visit',
+      'Pictures of Locked Gates',
+      'Text Alerts: Reminders, ETA & On the Way',
     ],
   },
   twiceWeekly: {
@@ -65,9 +72,12 @@ const planDetails = {
     features: [
       'Service 2x Per Week',
       'Full Property Coverage (Back, Front, Sides)',
-      'Waste Hauled Away',
+      'Waste Hauled Away', // <-- INCLUDED
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
+      'Free Treats Each Visit',
+      'Pictures of Locked Gates',
+      'Text Alerts: Reminders, ETA & On the Way',
     ],
   },
 };
@@ -326,7 +336,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) =>
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
           <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST, and see what we're all about!</p>
+          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST!</p>
         </div>
       </div>
 
@@ -390,7 +400,7 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
           <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST, and see what we're all about!</p>
+          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST!</p>
         </div>
       </div>
 
@@ -413,17 +423,28 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
                 <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <span>Service for {dogText} Household</span>
               </li>
-              {plan.features.map((feature, index) => (
-                <li key={index} className="flex items-center text-slate-600">
-                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  <span>{feature}</span>
-                  {(feature.includes('Seasonal')) && (
-                    <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                    </button>
-                  )}
-                </li>
-              ))}
+              {plan.features.map((feature, index) => {
+                const isIncluded = !feature.startsWith('!');
+                const featureText = isIncluded ? feature : feature.substring(1);
+                
+                return (
+                  <li key={index} className={`flex items-center ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
+                    {isIncluded ? (
+                      <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                    <span>{featureText}</span>
+                    {(featureText.includes('Seasonal')) && isIncluded && (
+                      <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             
             <button
@@ -971,12 +992,23 @@ const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
             <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>Service for {dogText} Household</span>
           </li>
-          {features.map((feature, index) => (
-            <li key={index} className="flex items-center text-slate-600">
-              <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              <span>{feature}</span>
-            </li>
-          ))}
+          {features.map((feature, index) => {
+            const isIncluded = !feature.startsWith('!');
+            const featureText = isIncluded ? feature : feature.substring(1);
+
+            return (
+              <li key={index} className={`flex items-center ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
+                {isIncluded ? (
+                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                ) : (
+                   <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   </svg>
+                )}
+                <span>{featureText}</span>
+              </li>
+            );
+          })}
         </ul>
         
         <button
