@@ -41,8 +41,8 @@ const planDetails = {
   biWeekly: {
     name: 'Bi-Weekly Reset',
     price: basePrices.biWeekly,
+    frequency: 'Service Every 2 Weeks',
     features: [
-      'Service Every 2 Weeks',
       'Yard+ Coverage (Front, Back, Sides)',
       'FREE Deodorizer (1x/Week - a $40 Value!)',
       'FREE WYSIwash® (1x/Month - A $30 Value!)',
@@ -55,8 +55,8 @@ const planDetails = {
   weekly: {
     name: 'Pristine-Clean',
     price: basePrices.weekly,
+    frequency: 'Service Every Week',
     features: [
-      'Service Every Week',
       'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
       'FREE Deodorizer (1x/Week - a $40 Value!)',
@@ -69,8 +69,8 @@ const planDetails = {
   twiceWeekly: {
     name: 'Pristine-Plus',
     price: basePrices.twiceWeekly,
+    frequency: 'Service 2x Per Week',
     features: [
-      'Service 2x Per Week',
       'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
       'FREE Deodorizer (1x/Week - a $40 Value!)',
@@ -438,12 +438,23 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
               </div>
               
               <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
+                {/* 1. Dog Household */}
                 <li className="flex items-start text-slate-600">
                   <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <div className="flex-grow">
                     <span>Service for {dogText} Household</span>
                   </div>
                 </li>
+                
+                {/* 2. Frequency */}
+                <li className="flex items-start text-slate-600">
+                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <div className="flex-grow">
+                    <span>{plan.frequency}</span>
+                  </div>
+                </li>
+
+                {/* 3. The rest of the features (FREE, standard, excluded) */}
                 {sortedFeatures.map((feature, index) => {
                   const isIncluded = !feature.startsWith('!');
                   let featureText = isIncluded ? feature : feature.substring(1);
@@ -1049,7 +1060,7 @@ const AlertsInfoModal = ({ onClose }) => (
 );
 
 // --- NEW: Package Review Modal ---
-const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
+const PackageReviewModal = ({ onClose, planName, frequency, features, dogCount }) => {
   const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
   
   // Sort features: FREE items first, then standard, then excluded
@@ -1076,12 +1087,23 @@ const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
         <h3 className="text-lg font-bold text-gray-900">Plan Details: {planName}</h3>
         
         <ul className="space-y-3 mt-4 text-left">
+          {/* 1. Dog Household */}
           <li className="flex items-start text-slate-600">
             <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <div className="flex-grow">
               <span>Service for {dogText} Household</span>
             </div>
           </li>
+          
+          {/* 2. Frequency */}
+          <li className="flex items-start text-slate-600">
+            <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="flex-grow">
+              <span>{frequency}</span>
+            </div>
+          </li>
+
+          {/* 3. The rest of the features */}
           {sortedFeatures.map((feature, index) => {
             const isIncluded = !feature.startsWith('!');
             let featureText = isIncluded ? feature : feature.substring(1);
@@ -1610,6 +1632,13 @@ const App = () => {
      return planDetails[planKey]?.features || [];
   }, [packageSelection.name]);
   
+  // NEW: Get frequency for the selected plan
+  const selectedPlanFrequency = useMemo(() => {
+     if (!packageSelection.name) return '';
+     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
+     return planDetails[planKey]?.frequency || '';
+  }, [packageSelection.name]);
+  
 
   return (
     <>
@@ -1748,6 +1777,7 @@ const App = () => {
         <PackageReviewModal
           onClose={() => setShowPackageReviewModal(false)}
           planName={packageSelection.name}
+          frequency={selectedPlanFrequency}
           features={selectedPlanFeatures}
           dogCount={dogCount}
         />
