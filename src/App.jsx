@@ -73,7 +73,7 @@ const planDetails = {
     features: [
       'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
-      'FREE Deodorizer (1x/Week - a $40 Value!)',
+      'FREE Deodorizer (2x/Week - an $80 Value!)', // <-- UPDATED
       'FREE WYSIwash® (1x/Month - A $30 Value!)',
       'FREE Treats Each Visit',
       'Pictures of Locked Gates',
