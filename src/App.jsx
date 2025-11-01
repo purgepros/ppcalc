@@ -43,8 +43,7 @@ const planDetails = {
     price: basePrices.biWeekly,
     features: [
       'Service Every 2 Weeks',
-      'Full Property Coverage (Front & Sides)',
-      'Waste Hauled Away',
+      'Full Property Coverage (Back, Front, Sides)',
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
     ],
@@ -54,7 +53,7 @@ const planDetails = {
     price: basePrices.weekly,
     features: [
       'Service Every Week',
-      'Full Property Coverage (Front & Sides)',
+      'Full Property Coverage (Back, Front, Sides)',
       'Waste Hauled Away',
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
@@ -65,7 +64,7 @@ const planDetails = {
     price: basePrices.twiceWeekly,
     features: [
       'Service 2x Per Week',
-      'Full Property Coverage (Front & Sides)',
+      'Full Property Coverage (Back, Front, Sides)',
       'Waste Hauled Away',
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
@@ -327,7 +326,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) =>
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
           <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new weekly service plans include a <strong>Free First Cleanup!</strong></p>
+          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST, and see what we're all about!</p>
         </div>
       </div>
 
@@ -380,7 +379,7 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
     { key: 'twiceWeekly', ...planDetails.twiceWeekly, finalPrice: planDetails.twiceWeekly.price + dogFee },
   ];
   
-  const dogText = dogCount === '1-2' ? '1-2 Dogs' : `${dogCount} Dogs`;
+  const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
@@ -391,7 +390,7 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
           <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new weekly service plans include a <strong>Free First Cleanup!</strong></p>
+          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup! (A $99.99+ Value)</strong>. We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST, and see what we're all about!</p>
         </div>
       </div>
 
@@ -412,7 +411,7 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
             <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
               <li className="flex items-center text-slate-600">
                 <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <span>Service for {dogText}</span>
+                <span>Service for {dogText} Household</span>
               </li>
               {plan.features.map((feature, index) => (
                 <li key={index} className="flex items-center text-slate-600">
@@ -453,7 +452,7 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
  * This component combines Payment Plan selection and Final Checkout.
  * It uses Stripe.js *directly* without the react-stripe-js wrapper.
  */
-const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement }) => {
+const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, onPackageReviewClick }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -652,7 +651,12 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">Final Step: Choose Your Plan & Check Out</h2>
-      <p className="text-slate-600 text-center mb-6">You've selected the <strong>{packageSelection.name}</strong> (${packageSelection.finalMonthlyPrice}/month).</p>
+      <p className="text-slate-600 text-center mb-6 flex items-center justify-center space-x-2">
+        <span>You've selected the <strong>{packageSelection.name}</strong> (${packageSelection.finalMonthlyPrice}/month).</span>
+        <button type="button" onClick={onPackageReviewClick} className="text-blue-500 hover:text-blue-700 transition-transform hover:scale-125">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+        </button>
+      </p>
 
       <form onSubmit={handleSubmit}>
         {/* --- 1. The Cash Multiplier (Payment Plan) --- */}
@@ -932,6 +936,9 @@ const ServiceInfoModal = ({ onClose }) => (
     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
       <h3 className="text-lg font-bold text-gray-900">About Seasonal Services</h3>
       <p className="text-sm text-gray-600 mt-4">
+        <strong>What is WYSI Wash?</strong> Our WYSI Wash Sanitizer is a hospital-grade, pet-safe disinfectant designed to kill harmful viruses and bacteria like Parvovirus and Giardia, ensuring your yard is not just clean, but sanitary.
+      </p>
+      <p className="text-sm text-gray-600 mt-2">
         Our Seasonal Deodorizer and WYSI Wash Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.
       </p>
       <p className="text-sm text-gray-600 mt-2">
@@ -949,6 +956,40 @@ const ServiceInfoModal = ({ onClose }) => (
     </div>
   </div>
 );
+
+// --- NEW: Package Review Modal ---
+const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
+  const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-gray-900">Plan Details: {planName}</h3>
+        
+        <ul className="space-y-3 mt-4 text-left">
+          <li className="flex items-center text-slate-600">
+            <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>Service for {dogText} Household</span>
+          </li>
+          {features.map((feature, index) => (
+            <li key={index} className="flex items-center text-slate-600">
+              <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+        
+        <button
+          onClick={onClose}
+          className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
+        >
+          Got it!
+        </button>
+      </div>
+    </div>
+  );
+};
+
 
 const PricingInfoModal = ({ onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
@@ -1208,6 +1249,7 @@ const App = () => {
   const [dogCount, setDogCount] = useState('1-2');
   const [multiDogFee, setMultiDogFee] = useState(0);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showPackageReviewModal, setShowPackageReviewModal] = useState(false); // NEW
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   
@@ -1402,6 +1444,13 @@ const App = () => {
     };
   }, [packageSelection, multiDogFee, dogCount]);
   
+  // NEW: Get features for the selected plan for the review modal
+  const selectedPlanFeatures = useMemo(() => {
+     if (!packageSelection.name) return [];
+     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
+     return planDetails[planKey]?.features || [];
+  }, [packageSelection.name]);
+  
 
   return (
     <>
@@ -1459,6 +1508,7 @@ const App = () => {
               onSubmitSuccess={handleFormSubmissionSuccess}
               stripeInstance={stripeInstance} // Pass Stripe objects
               cardElement={cardElement}       // Pass CardElement
+              onPackageReviewClick={() => setShowPackageReviewModal(true)} // NEW
             />
           )}
           
@@ -1531,6 +1581,16 @@ const App = () => {
       
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} />}
+      
+      {/* --- NEW: Package Review Modal Render --- */}
+      {showPackageReviewModal && (
+        <PackageReviewModal
+          onClose={() => setShowPackageReviewModal(false)}
+          planName={packageSelection.name}
+          features={selectedPlanFeatures}
+          dogCount={dogCount}
+        />
+      )}
       
       {isExitModalOpen && (
         <ExitIntentModal
