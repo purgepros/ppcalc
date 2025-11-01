@@ -1,17 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-// --- STRIPE IMPORTS REMOVED ---
-// We will now load Stripe scripts dynamically
 
 // --- Configuration ---
 
-// TODO: Replace this with your ZAPIER Webhook URL
+// ZAPIER Webhook URL
 // This is the "glue" that will receive the form data and payment token,
 // then send it to Stripe (to charge) and HCP (to create an account).
-const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/123456/abcdefg';
+const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/16707629/ui73nn9/';
 
-// TODO: Replace this with your own Stripe PUBLISHABLE Key (pk_test_... or pk_live_...)
+// Stripe PUBLISHABLE Key
 // This is safe to have in the front-end code.
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_YOUR_STRIPE_PUBLISHABLE_KEY';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAb7GvYrox5UEsP0Pt119qN9A9uEdb1Y7vonGU1MnJQJvrXkAzYaxVC4GJQt60BwE2wUHWMGqDP9wf7nFDNg8c00BG6j655d';
 
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c9f-aa25-3c221e72ada4';
 const emailJsConfig = {
@@ -56,7 +54,7 @@ const planDetails = {
     price: basePrices.weekly,
     features: [
       'Service Every Week',
-      'Full Property Coverage (Front &Sides)',
+      'Full Property Coverage (Front & Sides)',
       'Waste Hauled Away',
       'Seasonal Deodorizer',
       'Seasonal WYSI Wash Sanitizer',
@@ -453,16 +451,9 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
 /**
  * --- NEW: VIEW 4: The One-Page Checkout ---
  * This component combines Payment Plan selection and Final Checkout.
- * It uses Stripe Elements to securely capture card info.
+ * It uses Stripe.js *directly* without the react-stripe-js wrapper.
  */
-const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess }) => {
-  // --- NEW: Get Stripe components from window ---
-  // These will exist because this component is only rendered *after* the scripts are loaded.
-  const { CardElement, useStripe, useElements } = window.ReactStripeJs;
-  
-  const stripe = useStripe();
-  const elements = useElements();
-
+const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -521,7 +512,7 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
       return;
     }
     
-    if (!stripe || !elements) {
+    if (!stripeInstance || !cardElement) {
       // Stripe.js has not yet loaded.
       setError('Payment system is not ready. Please wait a moment and try again.');
       return;
@@ -529,16 +520,8 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
 
     setIsSubmitting(true);
 
-    // --- 1. Get Card Element ---
-    const cardElement = elements.getElement(CardElement);
-    if (cardElement == null) {
-      setError('Could not find card details. Please refresh and try again.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    // --- 2. Create Stripe Payment Method ---
-    const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
+    // --- 1. Create Stripe Payment Method ---
+    const { error: stripeError, paymentMethod } = await stripeInstance.createPaymentMethod({
       type: 'card',
       card: cardElement,
       billing_details: {
@@ -558,10 +541,9 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
       return;
     }
 
-    // --- 3. Build ALL Data Payloads ---
+    // --- 2. Build ALL Data Payloads ---
     
     // --- Payload for Zapier (The "Glue") ---
-    // This has *everything* Zapier needs to charge the card AND create the HCP account.
     const zapierPayload = {
       paymentMethodId: paymentMethod.id, // The secure token
       customer: {
@@ -581,9 +563,6 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
     };
     
     // --- Payload for GHL & EmailJS (No sensitive data) ---
-    // This is for your own records and for the customer confirmation email.
-    // It does NOT contain the paymentMethodId.
-    
     // Calculate per_visit for the email
     let perVisitPrice = 'N/A';
     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
@@ -619,18 +598,15 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
         final_charge: `$${totalDueToday} (Billed ${paymentTerm})`,
     };
 
-    // --- 4. Send ALL Data ---
+    // --- 3. Send ALL Data ---
     try {
       // ACTION 1 (The Cash & Service): Send to Zapier
-      // Zapier will handle charging the card via Stripe and creating the HCP account.
       const zapierResponse = await fetch(ZAPIER_WEBHOOK_URL, {
         method: 'POST',
         body: JSON.stringify(zapierPayload),
       });
 
-      // Check if Zapier/Stripe had an error
       if (!zapierResponse.ok) {
-        // Try to get an error message from Zapier if it sent one
         const errorData = await zapierResponse.json().catch(() => null);
         throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
       }
@@ -650,7 +626,6 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
       onSubmitSuccess();
 
     } catch (err) {
-      // This catches any error from the fetch, Zapier, or Stripe
       console.error('Submission Error:', err);
       setError(err.message || 'An unknown error occurred.');
       setIsSubmitting(false);
@@ -671,25 +646,6 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
       </div>
     );
   }
-
-  // --- Stripe Card Element Styling ---
-  const cardElementOptions = {
-    style: {
-      base: {
-        color: "#32325d",
-        fontFamily: 'Inter, sans-serif',
-        fontSmoothing: "antialiased",
-        fontSize: "16px",
-        "::placeholder": {
-          color: "#aab7c4",
-        },
-      },
-      invalid: {
-        color: "#fa755a",
-        iconColor: "#fa755a",
-      },
-    },
-  };
   
   // --- Main Checkout Form View ---
   return (
@@ -737,7 +693,8 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
           
           {/* --- Stripe Payment Module --- */}
           <div className="p-3 border-2 border-gray-300 rounded-lg">
-            <CardElement options={cardElementOptions} />
+             {/* This div is the mount point for the Stripe CardElement */}
+            <div id="card-element"></div>
           </div>
 
           <div className="pt-2">
@@ -762,7 +719,7 @@ const CheckoutForm = ({ packageSelection, zipCode, dogCount, onBack, onBailout, 
             </div>
             <button
               type="submit"
-              disabled={isSubmitting || !stripe}
+              disabled={isSubmitting || !stripeInstance}
               className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
             >
               {isSubmitting ? <span className="loader"></span> : 'Start My Service Now!'}
@@ -1027,7 +984,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
   if (currentPlan && currentPlan.name) {
       const planKey = Object.keys(planDetails).find(key => planDetails[key].name === currentPlan.name);
       if (planKey) {
-        // Find visitsPerMonth - this logic is no longer in the main app, so we recreate it here
+        // Find visitsPerMonth
         const visitsPerMonth = { biWeekly: 26/12, weekly: 52/12, twiceWeekly: 104/12 };
         perVisitPrice = (currentPlan.price / visitsPerMonth[planKey]).toFixed(2);
       }
@@ -1039,7 +996,6 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
     if (!email) return;
     setIsSubmitting(true);
 
-    // --- NEW: Generate quote link for exit intent ---
     const quoteState = {
       zip: zipCode,
       yardSize: yardSize,
@@ -1216,6 +1172,29 @@ const GlobalStyles = () => (
       animation: rotation 0.8s linear infinite;
     }
     @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* NEW: Stripe Card Element Styling */
+    #card-element {
+      padding: 10px 0;
+    }
+    .StripeElement {
+      box-sizing: border-box;
+      height: 40px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background-color: white;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    .StripeElement--focus {
+      border-color: #3182ce;
+      box-shadow: 0 0 0 3px rgba(66,153,225,0.5);
+    }
+    .StripeElement--invalid {
+      border-color: #fa755a;
+    }
+    .StripeElement--webkit-autofill {
+      background-color: #fefde5 !important;
+    }
   `}} />
 );
 
@@ -1234,14 +1213,13 @@ const App = () => {
   
   // New state for the full funnel
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0 });
-  
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-  
-  // --- NEW: State for loading scripts ---
-  const [scriptsLoading, setScriptsLoading] = useState(true);
-  const [stripePromise, setStripePromise] = useState(null);
-  const [StripeElements, setStripeElements] = useState(null);
 
+  // --- NEW: Stripe state objects ---
+  const [stripeInstance, setStripeInstance] = useState(null);
+  const [cardElement, setCardElement] = useState(null);
+  const [stripeError, setStripeError] = useState(null);
+  
   // Load external scripts and init pixel on mount
   useEffect(() => {
     // --- Add Favicon ---
@@ -1249,47 +1227,68 @@ const App = () => {
     
     initFacebookPixel();
     
-    // --- NEW: Load Stripe Scripts ---
+    // --- Load EmailJS SDK ---
+    loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', 'emailjs-sdk')
+      .catch(error => console.error("Failed to load EmailJS", error));
+
+    // --- NEW: Load Stripe.js v3 ---
     loadScript('https://js.stripe.com/v3/', 'stripe-js')
       .then(() => {
-        // After Stripe.js loads, load React-Stripe.js
-        // --- UPDATED URL: Switched from jsdelivr to unpkg for reliability ---
-        return loadScript('https://unpkg.com/@stripe/react-stripe-js@latest/dist/react-stripe-js.umd.js', 'react-stripe-js');
+        if (window.Stripe) {
+          const stripe = window.Stripe(STRIPE_PUBLISHABLE_KEY);
+          setStripeInstance(stripe);
+          
+          // --- Mount Stripe Card Element ---
+          // This must be done *after* Stripe.js is loaded
+          const elements = stripe.elements();
+          const card = elements.create('card', {
+            style: {
+              base: {
+                color: "#32325d",
+                fontFamily: 'Inter, sans-serif',
+                fontSmoothing: "antialiased",
+                fontSize: "16px",
+                "::placeholder": {
+                  color: "#aab7c4",
+                },
+              },
+              invalid: {
+                color: "#fa755a",
+                iconColor: "#fa755a",
+              },
+            }
+          });
+          setCardElement(card);
+          
+          // We need to mount it *after* the 'checkout' view renders the #card-element div
+          // This is a bit tricky, so we'll re-check in the 'checkout' view useEffect
+        } else {
+          console.error("Stripe.js loaded but window.Stripe is not available.");
+          setStripeError("Failed to initialize payment system.");
+        }
       })
-      .then(() => {
-        // Now that BOTH scripts are loaded, set state
-        setStripePromise(window.Stripe(STRIPE_PUBLISHABLE_KEY));
-        setStripeElements(() => window.ReactStripeJs.Elements); // Store the Elements component
-        setScriptsLoading(false); // We are ready to render
-      })
-      .catch(err => {
-        console.error("Failed to load payment scripts", err);
-        setScriptsLoading(false); // Stop loading, will show an error
+      .catch(error => {
+        console.error("Failed to load Stripe.js", error);
+        setStripeError("Failed to load payment system. Please refresh.");
       });
-    
-    loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', 'emailjs-sdk')
-      .catch(error => console.error(error));
 
-    // --- NEW: URL Parameter "Transposer" Logic ---
+    // --- URL Parameter "Transposer" Logic ---
     const params = new URLSearchParams(window.location.search);
     const urlZip = params.get('zip');
     const urlYardSize = params.get('yardSize');
     const urlDogCount = params.get('dogCount');
     const urlPlan = params.get('plan');
-    const urlPaymentTerm = params.get('paymentTerm'); // Still capture this, though checkout handles it
 
     if (urlZip && APPROVED_ZIP_CODES.includes(urlZip)) {
       setZipCode(urlZip);
       
-      // If zip is valid, check for other params
       if (urlYardSize === 'estate') {
         setYardSize('estate');
-        setDogCount(urlDogCount || '1-2'); // Set dog count if present
-        setView('custom_quote'); // Go straight to estate form
+        setDogCount(urlDogCount || '1-2');
+        setView('custom_quote');
         return;
       }
 
-      // Pre-fill sorter
       if (urlYardSize) setYardSize(urlYardSize);
       
       if (urlDogCount) {
@@ -1298,99 +1297,102 @@ const App = () => {
           setMultiDogFee(dogFeeMap[urlDogCount]);
         } else if (urlDogCount === '6+') {
           setDogCount('6+');
-          setView('custom_quote'); // Go to multi-pet form
+          setView('custom_quote');
           return;
         }
       }
       
-      // Pre-fill plan
       if (urlPlan) {
         const planKey = Object.keys(planDetails).find(key => planDetails[key].name === urlPlan);
         if (planKey) {
           const finalPrice = planDetails[planKey].price + (dogFeeMap[urlDogCount] || 0);
           setPackageSelection({ name: urlPlan, finalMonthlyPrice: finalPrice });
-          
-          // We have a plan, go straight to checkout
           setView('checkout'); 
           return;
         }
       }
-
-      // If we got this far with a valid zip, skip zip and go to sorter
       setView('sorter');
-
     } else {
-      // No valid zip in URL, show zip validator
       setView('zip');
     }
-  }, []);
+  }, []); // Run once on mount
+
+  // --- NEW: Effect to mount card element ---
+  // This effect runs when the view changes to 'checkout'
+  useEffect(() => {
+    if (view === 'checkout' && cardElement) {
+      // Find the mount point
+      const mountPoint = document.getElementById('card-element');
+      if (mountPoint) {
+        // Use a small delay to ensure the DOM is ready
+        setTimeout(() => {
+          try {
+            cardElement.mount('#card-element');
+          } catch (e) {
+            // It might already be mounted, which is fine
+            if (e.message.includes('already mounted')) {
+              // ignore
+            } else {
+              console.error("Error mounting card:", e.message);
+            }
+          }
+        }, 100);
+      }
+    } else if (cardElement) {
+      // If we're not in checkout, unmount it
+      try {
+        cardElement.unmount();
+      } catch (e) {
+        // ignore if not mounted
+      }
+    }
+  }, [view, cardElement]);
+
 
   // --- Exit Intent Hook ---
   const handleExitIntent = () => {
-    // Only show exit modal if they are on a step *after* the zip code
     if (view !== 'zip' && view !== 'checkout' && !isFormSubmitted) {
       setIsExitModalOpen(true);
     }
   };
-  useExitIntent(isFormSubmitted, handleExitIntent); // New hook usage
+  useExitIntent(isFormSubmitted, handleExitIntent);
   
   const handleFormSubmissionSuccess = () => {
     setIsFormSubmitted(true);
     setIsExitModalOpen(false); 
   };
 
-  // --- NEW: Handler for Zip Validator ---
   const handleZipValidation = (validZip) => {
     setZipCode(validZip);
-    setView('sorter'); // Move to Sorter (VIEW 2)
+    setView('sorter');
   };
 
-  /**
-   * VIEW 2: Sorter Completion Handler
-   */
   const handleSorterComplete = (size, dogs, fee) => {
     setYardSize(size);
     setDogCount(dogs);
     setMultiDogFee(fee);
 
-    if (size === 'estate') {
-      setView('custom_quote'); // GOTO View 3A
-    } else if (dogs === '6+') {
-      setView('custom_quote'); // GOTO View 3A
+    if (size === 'estate' || dogs === '6+') {
+      setView('custom_quote');
     } else {
-      setView('packages'); // GOTO View 3B
+      setView('packages');
     }
   };
   
-  /**
-   * VIEW 3B: Package Selection Handler
-   */
   const handlePlanSelect = (planName, finalMonthlyPrice) => {
     setPackageSelection({ name: planName, finalMonthlyPrice: finalMonthlyPrice });
-    setView('checkout'); // GOTO View 4 (Checkout)
+    setView('checkout');
   };
 
-  /**
-   * VIEW 4: "Bailout" Handler
-   * User clicks "Prefer to set up over the phone?"
-   */
   const handleBailout = () => {
-    // Set view to 'custom_quote', but we're already on the checkout page,
-    // so we need to pass the plan info to the custom quote form
-    // for a seamless transition.
-    // For simplicity, we just send them to the generic 'custom_quote' view.
-    // A more advanced way would be to pass the data.
     setView('custom_quote');
   };
   
   
-  // This is still needed for the Exit Intent Modal
   const CurrentPlanForExitModal = useMemo(() => {
-    // Find the plan they're looking at, or default to weekly
     const planName = packageSelection.name || 'Pristine-Clean';
     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === planName) || 'weekly';
     const plan = planDetails[planKey];
-    
     const totalMonthlyPrice = plan.price + multiDogFee;
     
     return { 
@@ -1400,41 +1402,27 @@ const App = () => {
     };
   }, [packageSelection, multiDogFee, dogCount]);
   
-  // --- NEW: Handle Script Loading ---
-  if (scriptsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="loader" style={{ width: '48px', height: '48px', borderTopColor: 'var(--brand-blue)', borderWidth: '4px' }}></div>
-      </div>
-    );
-  }
-  
-  if (!stripePromise || !StripeElements) {
-    return (
-       <div className="flex items-center justify-center min-h-screen bg-gray-100 p-8">
-        <div className="max-w-md w-full bg-white p-6 rounded-lg shadow-lg text-center">
-           <h2 className="text-2xl font-bold text-red-600 mb-4">Payment System Error</h2>
-           <p className="text-slate-700">Could not load the payment system. Please refresh the page and try again.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    // --- NEW: Wrap entire app in Stripe's <Elements> provider ---
-    <StripeElements stripe={stripePromise}>
+    <>
       <GlobalStyles />
       <Header />
       
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-xl mx-auto">
           
-          {/* --- NEW: Step 0 - Zip Code --- */}
+          {/* --- Render Stripe Error --- */}
+          {stripeError && (
+             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+              <p className="font-bold">Payment Error</p>
+              <p>{stripeError}</p>
+            </div>
+          )}
+
           {view === 'zip' && (
             <ZipCodeValidator onZipValidated={handleZipValidation} />
           )}
 
-          {/* --- Step 1 & 2: Sorter (VIEW 2) --- */}
           {view === 'sorter' && (
             <Sorter
               onSortComplete={handleSorterComplete}
@@ -1444,7 +1432,6 @@ const App = () => {
             />
           )}
           
-          {/* --- Step 3: Packages (VIEW 3B) --- */}
           {view === 'packages' && (
             <PackageSelector
               dogFee={multiDogFee}
@@ -1456,19 +1443,25 @@ const App = () => {
             />
           )}
 
-          {/* --- Step 4: Checkout (NEW VIEW 4) --- */}
           {view === 'checkout' && (
             <CheckoutForm
               packageSelection={packageSelection}
               zipCode={zipCode}
               dogCount={dogCount}
-              onBack={() => setView('packages')}
-              onBailout={handleBailout} // The "Decoy Close"
+              onBack={() => {
+                cardElement?.unmount(); // Unmount before leaving
+                setView('packages');
+              }}
+              onBailout={() => {
+                cardElement?.unmount(); // Unmount before leaving
+                handleBailout();
+              }}
               onSubmitSuccess={handleFormSubmissionSuccess}
+              stripeInstance={stripeInstance} // Pass Stripe objects
+              cardElement={cardElement}       // Pass CardElement
             />
           )}
           
-          {/* --- Custom Quote (VIEW 3A) --- */}
           {view === 'custom_quote' && (
             <LeadForm
               title="You Qualify for a Custom 'Estate' Quote!"
@@ -1484,7 +1477,6 @@ const App = () => {
             />
           )}
           
-          {/* --- One-Time Cleanup View (KEPT) --- */}
           {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
               <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
@@ -1503,7 +1495,6 @@ const App = () => {
                 This service is for properties up to 1/2 acre. For larger properties, please <button onClick={() => { setView('custom_quote'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">request an 'Estate Quote'</button>.
               </p>
 
-              {/* The Upsell */}
               <div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg mb-6">
                 <p className="font-bold">P.S. Why pay $100 for one day?</p>
                 <p className="text-sm">
@@ -1523,7 +1514,6 @@ const App = () => {
             </div>
           )}
           
-          {/* --- One-Time Cleanup Form (KEPT) --- */}
           {view === 'onetime_form' && (
             <LeadForm
               title="Book Your 'One-Time Yard Reset'"
@@ -1539,7 +1529,6 @@ const App = () => {
         </div>
       </main>
       
-      {/* --- Modals (KEPT) --- */}
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} />}
       
@@ -1552,7 +1541,7 @@ const App = () => {
         />
       )}
       <Footer />
-    </StripeElements>
+    </>
   );
 };
 
