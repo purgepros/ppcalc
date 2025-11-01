@@ -45,7 +45,7 @@ const planDetails = {
       'Service Every 2 Weeks',
       'Yard+ Coverage (Front, Back, Sides)',
       'FREE Deodorizer (1x/Week - a $40 Value!)',
-      'WYSIwash® (1x/Month - A $30 Value!)',
+      'FREE WYSIwash® (1x/Month - A $30 Value!)',
       'FREE Treats Each Visit',
       'Pictures of Locked Gates',
       'Automated Reminders & Alerts',
@@ -60,7 +60,7 @@ const planDetails = {
       'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
       'FREE Deodorizer (1x/Week - a $40 Value!)',
-      'WYSIwash® (1x/Month - A $30 Value!)',
+      'FREE WYSIwash® (1x/Month - A $30 Value!)',
       'FREE Treats Each Visit',
       'Pictures of Locked Gates',
       'Automated Reminders & Alerts',
@@ -74,7 +74,7 @@ const planDetails = {
       'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
       'FREE Deodorizer (1x/Week - a $40 Value!)',
-      'WYSIwash® (1x/Month - A $30 Value!)',
+      'FREE WYSIwash® (1x/Month - A $30 Value!)',
       'FREE Treats Each Visit',
       'Pictures of Locked Gates',
       'Automated Reminders & Alerts',
@@ -438,33 +438,52 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
               </div>
               
               <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
-                <li className="flex items-center text-slate-600">
-                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  <span>Service for {dogText} Household</span>
+                <li className="flex items-start text-slate-600">
+                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <div className="flex-grow">
+                    <span>Service for {dogText} Household</span>
+                  </div>
                 </li>
                 {sortedFeatures.map((feature, index) => {
                   const isIncluded = !feature.startsWith('!');
-                  const featureText = isIncluded ? feature : feature.substring(1);
+                  let featureText = isIncluded ? feature : feature.substring(1);
+                  let featureSubtext = '';
+
+                  // Check for the subtext
+                  if (featureText.includes('(') && featureText.endsWith(')')) {
+                    const parts = featureText.split('(');
+                    featureText = parts[0].trim(); // "FREE Deodorizer"
+                    featureSubtext = `(${parts[1]}`; // "(1x/Week - a $40 Value!)"
+                  }
                   
                   return (
-                    <li key={index} className={`flex items-center ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
+                    <li key={index} className={`flex items-start ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
                       {isIncluded ? (
-                        <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                       ) : (
-                        <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       )}
-                      <span>{featureText}</span>
-                      {/* Info button for Deodorizer/WYSIwash */}
-                      {(featureText.includes('Deodorizer') || featureText.includes('WYSIwash')) && isIncluded && (
-                        <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
+                      
+                      <div className="flex-grow">
+                        <span>{featureText}</span>
+                        {featureSubtext && (
+                          <span className="block text-xs text-slate-500 -mt-1">
+                            {featureSubtext}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Info button for Deodorizer/WYSIwash (check original feature string) */}
+                      {(feature.includes('Deodorizer') || feature.includes('WYSIwash')) && isIncluded && (
+                        <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125 flex-shrink-0">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                         </button>
                       )}
-                      {/* Info button for Alerts */}
-                      {(featureText.includes('Automated Reminders')) && isIncluded && (
-                        <button onClick={onAlertsInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125">
+                      {/* Info button for Alerts (check original feature string) */}
+                      {(feature.includes('Automated Reminders')) && isIncluded && (
+                        <button onClick={onAlertsInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125 flex-shrink-0">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                         </button>
                       )}
@@ -1057,24 +1076,43 @@ const PackageReviewModal = ({ onClose, planName, features, dogCount }) => {
         <h3 className="text-lg font-bold text-gray-900">Plan Details: {planName}</h3>
         
         <ul className="space-y-3 mt-4 text-left">
-          <li className="flex items-center text-slate-600">
-            <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>Service for {dogText} Household</span>
+          <li className="flex items-start text-slate-600">
+            <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <div className="flex-grow">
+              <span>Service for {dogText} Household</span>
+            </div>
           </li>
           {sortedFeatures.map((feature, index) => {
             const isIncluded = !feature.startsWith('!');
-            const featureText = isIncluded ? feature : feature.substring(1);
+            let featureText = isIncluded ? feature : feature.substring(1);
+            let featureSubtext = '';
+
+            // Check for the subtext
+            if (featureText.includes('(') && featureText.endsWith(')')) {
+              const parts = featureText.split('(');
+              featureText = parts[0].trim(); // "FREE Deodorizer"
+              featureSubtext = `(${parts[1]}`; // "(1x/Week - a $40 Value!)"
+            }
 
             return (
-              <li key={index} className={`flex items-center ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
+              <li key={index} className={`flex items-start ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
                 {isIncluded ? (
-                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 ) : (
-                   <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                   <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                    </svg>
                 )}
-                <span>{featureText}</span>
+                
+                <div className="flex-grow">
+                  <span>{featureText}</span>
+                  {featureSubtext && (
+                    <span className="block text-xs text-slate-500 -mt-1">
+                      {featureSubtext}
+                    </span>
+                  )}
+                </div>
+                
               </li>
             );
           })}
@@ -1382,6 +1420,9 @@ const App = () => {
   
   // Load external scripts and init pixel on mount
   useEffect(() => {
+    // --- Set Page Title ---
+    document.title = 'Purge Pros Pet Waste Removal - Pricing';
+    
     // --- Add Favicon ---
     setFavicon(FAVICON_URL);
     
