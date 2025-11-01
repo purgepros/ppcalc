@@ -44,8 +44,8 @@ const planDetails = {
     frequency: 'Service Every 2 Weeks',
     features: [
       'Yard+ Coverage (Front, Back, Sides)',
-      'FREE Deodorizer (1x/Week - a $40 Value!)',
-      'FREE WYSIwash® (1x/Month - A $30 Value!)',
+      '!FREE Deodorizer (1x/Week - a $40 Value!)', // <-- NOT INCLUDED
+      '!FREE WYSIwash® (1x/Month - A $30 Value!)', // <-- NOT INCLUDED
       'FREE Treats Each Visit',
       'Pictures of Locked Gates',
       'Automated Reminders & Alerts',
@@ -73,7 +73,7 @@ const planDetails = {
     features: [
       'Yard+ Coverage (Front, Back, Sides)',
       'Waste Hauled Away', // <-- INCLUDED
-      'FREE Deodorizer (2x/Week - an $80 Value!)', // <-- UPDATED
+      'FREE Deodorizer (2x/Week - an $80 Value!)',
       'FREE WYSIwash® (1x/Month - A $30 Value!)',
       'FREE Treats Each Visit',
       'Pictures of Locked Gates',
@@ -1274,7 +1274,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
+                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-9a0 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
               >
                 {isSubmitting ? <span className="loader"></span> : 'Email My Quote'}
               </button>
