@@ -726,19 +726,41 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         }),
     };
     
-    const emailParams = {
+// --- NEW: Pre-build conditional HTML for EmailJS ---
+    // We do the logic here, not in the template
+    let term_discount_row_html = '';
+    let term_savings_row_html = '';
+
+    if (termDiscount > 0) {
+      term_discount_row_html = `
+        <div style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; margin-bottom: 8px;">
+          <span>${paymentSelection.term} Discount</span>
+          <span style="text-decoration: line-through;">$${termDiscount.toFixed(2)}</span>
+        </div>
+      `;
+      
+      term_savings_row_html = `
+        <div style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; margin-bottom: 8px; color: #166534; font-weight: 500;">
+          <span>${paymentSelection.term} Savings</span>
+          <span><strong>-$${termDiscount.toFixed(2)}</strong></span>
+        </div>
+      `;
+    }
+
+    // --- NEW: emailParams object with NO logic ---
+      const emailParams = {
         ...leadData,
         description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
         total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
         per_visit: `$${perVisitPrice}`,
         final_charge: `$${totalDueToday.toFixed(2)}`,
-        // NEW: Pass all savings fields
         total_savings: totalSavings.toFixed(2),
-        term_savings: termDiscount.toFixed(2),
         initial_savings: initialResetFee.toFixed(2),
-        has_term_savings: termDiscount > 0
-    };
-
+        
+        // NEW: Pass the pre-built HTML strings
+        term_discount_row: term_discount_row_html,
+        term_savings_row: term_savings_row_html
+     };
     // --- 3. Send ALL Data ---
     try {
       // ACTION 1 (The Cash & Service): Send to Zapier
