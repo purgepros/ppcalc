@@ -743,6 +743,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
       // ACTION 1 (The Cash & Service): Send to Zapier
       const zapierResponse = await fetch(ZAPIER_WEBHOOK_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(zapierPayload),
       });
 
@@ -1205,6 +1206,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       // ACTION 1 (The Cash & Service): Send to Zapier
       const zapierResponse = await fetch(ZAPIER_WEBHOOK_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(zapierPayload),
       });
 
