@@ -736,6 +736,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         total_savings: totalSavings.toFixed(2),
         term_savings: termDiscount.toFixed(2),
         initial_savings: initialResetFee.toFixed(2),
+        has_term_savings: termDiscount > 0
     };
 
     // --- 3. Send ALL Data ---
