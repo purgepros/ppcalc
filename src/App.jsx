@@ -18,10 +18,10 @@ const emailJsConfig = {
   serviceID: 'service_b0us6cq',
   publicKey: 'WV8jyfhbDQ7kuvIrx',
   templateIDs: {
-    subscription: 'TEMPLATE_ID_FOR_SUBSCRIPTION', // TODO: Replace this with your new EmailJS template ID
-    oneTime: 'TEMPLATE_ID_FOR_ONETIME',       // TODO: Replace this with your new EmailJS template ID
-    lead: 'TEMPLATE_ID_FOR_LEAD',           // TODO: Replace this with your new EmailJS template ID
-    exitIntent: 'TEMPLATE_ID_FOR_EXIT_INTENT',   // TODO: Replace this with your new EmailJS template ID
+    subscription: 'template_uwysfzx', // TODO: Replace this with your new EmailJS template ID
+    oneTime: 'template_kpbsiga',       // TODO: Replace this with your new EmailJS template ID
+    lead: 'template_wc2n8oc',           // TODO: Replace this with your new EmailJS template ID
+    exitIntent: 'template_ie5fsgp',   // TODO: Replace this with your new EmailJS template ID
   }
 };
 
