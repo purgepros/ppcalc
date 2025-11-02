@@ -12,11 +12,19 @@ const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/16707629/ui73nn
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAb7GvYrox5UEsP0Pt119qN9A9uEdb1Y7vonGU1MnJQJvrXkAzYaxVC4GJQt60BwE2wUHWMGqDP9wf7nFDNg8c00BG6j655d';
 
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c4f-aa25-3c221e72ada4';
+
+// NEW: Updated EmailJS config to use specific Template IDs
 const emailJsConfig = {
   serviceID: 'service_b0us6cq',
-  templateID: 'template_uwysfzx', // Customer-facing template
-  publicKey: 'WV8jyfhbDQ7kuvIrx'
+  publicKey: 'WV8jyfhbDQ7kuvIrx',
+  templateIDs: {
+    subscription: 'TEMPLATE_ID_FOR_SUBSCRIPTION', // TODO: Replace this with your new EmailJS template ID
+    oneTime: 'TEMPLATE_ID_FOR_ONETIME',       // TODO: Replace this with your new EmailJS template ID
+    lead: 'TEMPLATE_ID_FOR_LEAD',           // TODO: Replace this with your new EmailJS template ID
+    exitIntent: 'TEMPLATE_ID_FOR_EXIT_INTENT',   // TODO: Replace this with your new EmailJS template ID
+  }
 };
+
 const FACEBOOK_PIXEL_ID = '770811879146972';
 const APPROVED_ZIP_CODES = ['46011', '46012', '46013', '46014', '46015', '46016', '46032', '46033', '46034', '46035', '46036', '46037', '46038', '46039', '46040', '46041', '46048', '46049', '46055', '46056', '46060', '46061', '46062', '46063', '46064', '46065', '46068', '46069', '46071', '46072', '46074', '46075', '46076', '46077', '46082', '46085', '46163', '46201', '46202', '46203', '46204', '46205', '46206', '46207', '46208', '46209', '46211', '46214', '46216', '46217', '46218', '46219', '46220', '46221', '46222', '46223', '46224', '46225', '46226', '46227', '46228', '46229', '46230', '46231', '46234', '46235', '46236', '46237', '46239', '46240', '46241', '46242', '46244', '46247', '46249', '46250', '46251', '46253', '46254', '46255', '46256', '46259', '46260', '46266', '46268', '46278', '46280', '46282', '46283', '46285', '46290', '46291', '46295', '46296', '46298'];
 const FAVICON_URL = 'https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png';
@@ -154,9 +162,10 @@ const sendToWebhook = async (data) => {
 
 /**
  * Sends an email using EmailJS.
+ * @param {string} templateID - The specific EmailJS template ID to use.
  * @param {object} templateParams - The parameters for the email template.
  */
-const sendEmail = async (templateParams) => {
+const sendEmail = async (templateID, templateParams) => {
   if (!window.emailjs) {
     console.error('EmailJS is not loaded.');
     return;
@@ -164,7 +173,7 @@ const sendEmail = async (templateParams) => {
   try {
     await window.emailjs.send(
       emailJsConfig.serviceID,
-      emailJsConfig.templateID,
+      templateID, // Use the specific template ID
       templateParams,
       emailJsConfig.publicKey
     );
@@ -686,7 +695,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         totalDueToday: totalDueToday,
         savings: paymentSelection.savings, // The display string
         totalSavingsValue: totalSavings, // The number
-        email_type: 'subscription_confirmation', // <-- NEW: For smart email
       }
     };
     
@@ -709,7 +717,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         total_monthly_rate: packageSelection.finalMonthlyPrice,
         payment_term: paymentSelection.term,
         final_charge_amount: totalDueToday,
-        savings: paymentSelection.savings || 'N/A', // Use the display string
+        savings: paymentSelection.savings,
         quote_link: generateQuoteLink({
             zip: zipCode,
             dogCount: dogCount,
@@ -720,15 +728,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
     
     const emailParams = {
         ...leadData,
-        email_type: 'subscription_confirmation', // <-- NEW: For smart email
         description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
         total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
         per_visit: `$${perVisitPrice}`,
         final_charge: `$${totalDueToday.toFixed(2)}`,
-        savings: paymentSelection.savings || 'N/A',
-        term_savings: termDiscount.toFixed(2), // Send individual savings
-        initial_savings: initialResetFee.toFixed(2), // Send individual savings
+        // NEW: Pass all savings fields
         total_savings: totalSavings.toFixed(2),
+        term_savings: termDiscount.toFixed(2),
+        initial_savings: initialResetFee.toFixed(2),
     };
 
     // --- 3. Send ALL Data ---
@@ -748,10 +755,13 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
       await sendToWebhook(leadData);
       
       // ACTION 3: Send Confirmation Email
-      await sendEmail(emailParams);
+      await sendEmail(
+        emailJsConfig.templateIDs.subscription,
+        emailParams
+      );
 
       // ACTION 4: Fire FB Event
-      fbq('track', 'Purchase', { currency: "USD", value: totalDueToday });
+      fbq('track', 'CompleteRegistration');
 
       // All successful!
       setIsSubmitting(false);
@@ -962,7 +972,6 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
     emailParams = {
       ...formData,
       ...leadData,
-      email_type: 'lead_confirmation', // <-- NEW: For smart email
       description: title,
       total_monthly: isOneTimeForm ? '$99.99 (first 30 min)' : 'Custom Quote',
       per_visit: 'N/A',
@@ -977,7 +986,10 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
     await sendToWebhook(leadData);
     
     // 3. Send Email
-    await sendEmail(emailParams);
+    await sendEmail(
+      emailJsConfig.templateIDs.lead,
+      emailParams
+    );
 
     setIsSubmitting(false);
     setIsSubmitted(true);
@@ -1162,7 +1174,6 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         planName: 'One-Time Yard Reset',
         paymentTerm: 'One-Time Deposit', // This tells Zapier to run a "Charge" not "Subscription"
         totalDueToday: depositAmount,
-        email_type: 'onetime_confirmation', // <-- NEW: For smart email
       }
     };
     
@@ -1183,7 +1194,6 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
     
     const emailParams = {
         ...leadData,
-        email_type: 'onetime_confirmation', // <-- NEW: For smart email
         description: `One-Time Yard Reset (Deposit Paid)`,
         total_monthly: 'N/A',
         per_visit: 'N/A',
@@ -1207,9 +1217,12 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       await sendToWebhook(leadData);
       
       // ACTION 3: Send Confirmation Email
-      await sendEmail(emailParams);
+      await sendEmail(
+        emailJsConfig.templateIDs.oneTime,
+        emailParams
+      );
 
-      // ACTION 4: Fire FB Event
+      // ACTION 4: Fire FB Event (use 'Lead' or a custom 'OneTimePurchase' event)
       fbq('track', 'Purchase', { currency: "USD", value: depositAmount });
 
       // All successful!
@@ -1362,7 +1375,7 @@ const AlertsInfoModal = ({ onClose }) => (
       </ul>
       <button
         onClick={onClose}
-        className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
+        className="w-full mt-6 bg-gray-20g text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
       >
         Got it!
       </button>
@@ -1536,20 +1549,22 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
     await sendToWebhook(leadData);
 
     // 3. Send Email
-    await sendEmail({
-      email: email,
-      name: 'Valued Customer',
-      email_type: 'quote_email', // <-- NEW: For smart email
-      plan: currentPlan.name,
-      total_monthly: `$${currentPlan.price}/mo`,
-      dog_count: currentPlan.dogCount,
-      description: 'Here is the custom quote you built on our site. We hope to see you soon!',
-      notes: 'User captured on exit intent.',
-      quote_link: quote_link,
-      per_visit: `$${perVisitPrice}`, // Add per_visit price
-      final_charge: 'N/A',
-      savings: 'N/A',
-    });
+    await sendEmail(
+      emailJsConfig.templateIDs.exitIntent,
+      {
+        email: email,
+        name: 'Valued Customer',
+        plan: currentPlan.name,
+        total_monthly: `$${currentPlan.price}/mo`,
+        dog_count: currentPlan.dogCount,
+        description: 'Here is the custom quote you built on our site. We hope to see you soon!',
+        notes: 'User captured on exit intent.',
+        quote_link: quote_link,
+        per_visit: `$${perVisitPrice}`, // Add per_visit price
+        final_charge: 'N/A',
+        savings: 'N/A',
+      }
+    );
 
     setIsSubmitting(false);
     setIsSubmitted(true);
