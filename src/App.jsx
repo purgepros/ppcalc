@@ -170,10 +170,15 @@ const sendEmail = async (templateID, templateParams) => {
     console.error('EmailJS is not loaded.');
     return;
   }
+  // Fallback to a default template if the provided one is a placeholder
+  const templateToSend = templateID.startsWith('TEMPLATE_ID') 
+    ? emailJsConfig.templateIDs.subscription // Default to subscription
+    : templateID;
+
   try {
     await window.emailjs.send(
       emailJsConfig.serviceID,
-      templateID, // Use the specific template ID
+      templateToSend, // Use the specific template ID
       templateParams,
       emailJsConfig.publicKey
     );
@@ -726,7 +731,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         }),
     };
     
-// --- NEW: Pre-build conditional HTML for EmailJS ---
+    // --- NEW: Pre-build conditional HTML for EmailJS ---
     // We do the logic here, not in the template
     let term_discount_row_html = '';
     let term_savings_row_html = '';
@@ -753,14 +758,16 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
         total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
         per_visit: `$${perVisitPrice}`,
-        final_charge: `$${totalDueToday.toFixed(2)}`,
+        final_charge_amount: totalDueToday.toFixed(2), // Use the specific var
         total_savings: totalSavings.toFixed(2),
         initial_savings: initialResetFee.toFixed(2),
+        term_savings: termDiscount.toFixed(2),
         
         // NEW: Pass the pre-built HTML strings
         term_discount_row: term_discount_row_html,
         term_savings_row: term_savings_row_html
-     };
+      };
+
     // --- 3. Send ALL Data ---
     try {
       // ACTION 1 (The Cash & Service): Send to Zapier
@@ -1398,7 +1405,7 @@ const AlertsInfoModal = ({ onClose }) => (
       </ul>
       <button
         onClick={onClose}
-        className="w-full mt-6 bg-gray-20g text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
+        className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
       >
         Got it!
       </button>
@@ -1642,6 +1649,144 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
   );
 };
 
+// --- NEW: Admin Login Modal ---
+const AdminLoginModal = ({ onClose, onLoginSuccess }) => {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  
+  // TODO: Change this password!
+  const ADMIN_PASSWORD = 'admin123'; 
+  
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      onLoginSuccess();
+    } else {
+      setError('Invalid password.');
+      setPassword('');
+    }
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-gray-900 text-center">Admin Access</h3>
+        <p className="text-sm text-center text-gray-600 mt-2">Enter password to access the internal quote tool.</p>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={`w-full p-3 border-2 rounded-lg ${error ? 'border-red-500' : 'border-gray-300'}`}
+          />
+          {error && (
+            <p className="text-red-600 text-sm font-medium text-center">{error}</p>
+          )}
+          <button
+            type="submit"
+            className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-3 rounded-lg hover:bg-opacity-90 transition-all"
+          >
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// --- NEW: Admin Calculator ---
+const AdminCalculator = ({ onBack }) => {
+  const [estimatedMinutes, setEstimatedMinutes] = useState('');
+  const [desiredFrequency, setDesiredFrequency] = useState('weekly');
+  const [finalQuote, setFinalQuote] = useState(null);
+
+  const handleCalculate = () => {
+    // --- 1. Get Inputs from Tech ---
+    const minutes = parseFloat(estimatedMinutes);
+    if (!minutes || minutes <= 0) {
+      setFinalQuote(null);
+      return;
+    }
+
+    // --- 2. Define Business Constants ---
+    const internal_rate_per_minute = 2.50;
+    const visits_per_month_map = {
+        "weekly": 4.33,
+        "bi-weekly": 2.17,
+        "twice-weekly": 8.66
+    };
+    
+    // --- 3. Run the Calculation ---
+    const visits_multiplier = visits_per_month_map[desiredFrequency];
+    const price_per_visit = minutes * internal_rate_per_minute;
+    const base_monthly_price = price_per_visit * visits_multiplier;
+    
+    // --- 4. Round to a "Marketing" Price ---
+    const final_quote = Math.round(base_monthly_price / 5) * 5 + 4;
+    
+    // --- 5. Output to Tech ---
+    setFinalQuote(final_quote.toFixed(2));
+  };
+  
+  return (
+    <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Internal "Estate Plan" Calculator</h2>
+      
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="minutes" className="block text-sm font-medium text-gray-700">Estimated Minutes per Visit</label>
+          <input
+            type="number"
+            id="minutes"
+            value={estimatedMinutes}
+            onChange={(e) => setEstimatedMinutes(e.target.value)}
+            placeholder="e.g., 45"
+            className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1"
+          />
+        </div>
+        
+        <div>
+          <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">Desired Frequency</label>
+          <select
+            id="frequency"
+            value={desiredFrequency}
+            onChange={(e) => setDesiredFrequency(e.target.value)}
+            className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1"
+          >
+            <option value="weekly">Weekly</option>
+            <option value="bi-weekly">Bi-Weekly</option>
+            <option value="twice-weekly">Twice-Weekly</option>
+          </select>
+        </div>
+        
+        <button
+          onClick={handleCalculate}
+          className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all"
+        >
+          Calculate Quote
+        </button>
+        
+        {finalQuote && (
+          <div className="text-center bg-blue-50 p-4 rounded-lg">
+            <p className="text-lg font-medium text-slate-700">Recommended Monthly Rate:</p>
+            <p className="text-4xl font-extrabold text-slate-900">${finalQuote}</p>
+          </div>
+        )}
+      </div>
+      
+      <button
+        onClick={onBack}
+        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
+      >
+        &larr; Exit Admin Area
+      </button>
+    </div>
+  );
+};
+
 
 const Header = () => (
   <header className="py-6">
@@ -1653,13 +1798,34 @@ const Header = () => (
   </header>
 );
 
-const Footer = () => {
+const Footer = ({ onAdminTrigger }) => { // NEW: Accept prop
+  const [clickCount, setClickCount] = useState(0);
+
   useEffect(() => {
     const yearElement = document.getElementById('copyright-year');
     if (yearElement) {
       yearElement.textContent = new Date().getFullYear();
+      
+      // NEW: Admin click listener
+      const handleAdminClick = () => {
+        setClickCount(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 5) {
+            onAdminTrigger(); // Fire the trigger passed from App
+            return 0; // Reset count
+          }
+          return newCount;
+        });
+      };
+      
+      yearElement.addEventListener('click', handleAdminClick);
+      
+      // Cleanup
+      return () => {
+        yearElement.removeEventListener('click', handleAdminClick);
+      };
     }
-  }, []);
+  }, [onAdminTrigger]); // Add dependency
 
   return (
     <footer className="bg-[#1C1C1C] text-white mt-16">
@@ -1696,7 +1862,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-8 border-t border-gray-700 pt-6 text-center text-gray-500 text-sm">
-          &copy; <span id="copyright-year"></span> Purge Pros. All Rights Reserved.
+          &copy; <span id="copyright-year" style={{ cursor: 'pointer' }}></span> Purge Pros. All Rights Reserved.
         </div>
       </div>
     </footer>
@@ -1780,6 +1946,7 @@ const App = () => {
   const [showPackageReviewModal, setShowPackageReviewModal] = useState(false); // NEW
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false); // NEW: Admin
   
   // New state for the full funnel
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0 });
@@ -2164,6 +2331,13 @@ const App = () => {
               cardElement={cardElement}
             />
           )}
+          
+          {/* --- NEW: ADMIN CALCULATOR VIEW --- */}
+          {view === 'admin_calculator' && (
+            <AdminCalculator 
+              onBack={() => setView('zip')}
+            />
+          )}
 
         </div>
       </main>
@@ -2191,10 +2365,22 @@ const App = () => {
           onClose={() => setIsExitModalOpen(false)}
         />
       )}
-      <Footer />
+      
+      {showAdminLogin && (
+        <AdminLoginModal 
+          onClose={() => setShowAdminLogin(false)}
+          onLoginSuccess={() => {
+            setView('admin_calculator');
+            setShowAdminLogin(false);
+          }}
+        />
+      )}
+      
+      <Footer onAdminTrigger={() => setShowAdminLogin(true)} />
     </>
   );
 };
 
 export default App;
+
 
