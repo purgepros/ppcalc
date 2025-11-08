@@ -776,11 +776,34 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         body: JSON.stringify(automationPayload),
       });
 
-      const responseData = await automationResponse.json();
-
-      if (!automationResponse.ok || responseData.status !== 'success') {
-        // This catches payment failures from Stripe, passed back by Make.com
+      if (!automationResponse.ok) {
+        // The fetch itself failed (e.g., 400, 500 status)
+        // Try to parse an error message if Make.com sent one
         const errorData = await automationResponse.json().catch(() => null);
+        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
+      }
+
+      // If we are here, automationResponse.ok is true (e.g., 200 status)
+      // Now, we need to see WHAT Make.com sent back.
+      const responseText = await automationResponse.text();
+      let responseData;
+
+      try {
+        responseData = JSON.parse(responseText); // Try to parse as JSON
+      } catch (e) {
+        // It's not JSON. Is it the default "Accepted" message?
+        if (responseText.toLowerCase() === 'accepted') {
+          // Treat "Accepted" as a successful hand-off
+          responseData = { status: 'success' }; 
+        } else {
+          // It's some other unexpected text
+          throw new Error('Received an invalid response from the server.');
+        }
+      }
+
+      // Now we have a valid object in responseData
+      if (responseData.status !== 'success') {
+        // Make.com sent back a JSON error, e.g., {"status": "error", "message": "..."}
         throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
@@ -1236,11 +1259,34 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         body: JSON.stringify(automationPayload),
       });
 
-      const responseData = await automationResponse.json();
-
-      if (!automationResponse.ok || responseData.status !== 'success') {
-        // This catches payment failures from Stripe, passed back by Make.com
+      if (!automationResponse.ok) {
+        // The fetch itself failed (e.g., 400, 500 status)
+        // Try to parse an error message if Make.com sent one
         const errorData = await automationResponse.json().catch(() => null);
+        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
+      }
+
+      // If we are here, automationResponse.ok is true (e.g., 200 status)
+      // Now, we need to see WHAT Make.com sent back.
+      const responseText = await automationResponse.text();
+      let responseData;
+
+      try {
+        responseData = JSON.parse(responseText); // Try to parse as JSON
+      } catch (e) {
+        // It's not JSON. Is it the default "Accepted" message?
+        if (responseText.toLowerCase() === 'accepted') {
+          // Treat "Accepted" as a successful hand-off
+          responseData = { status: 'success' }; 
+        } else {
+          // It's some other unexpected text
+          throw new Error('Received an invalid response from the server.');
+        }
+      }
+
+      // Now we have a valid object in responseData
+      if (responseData.status !== 'success') {
+        // Make.com sent back a JSON error, e.g., {"status": "error", "message": "..."}
         throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
