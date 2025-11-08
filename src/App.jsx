@@ -776,21 +776,19 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         body: JSON.stringify(automationPayload),
       });
 
-      if (!automationResponse.ok) {
+      const responseData = await automationResponse.json();
+
+      if (!automationResponse.ok || responseData.status !== 'success') {
+        // This catches payment failures from Stripe, passed back by Make.com
         const errorData = await automationResponse.json().catch(() => null);
-        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
+        throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
-      // ACTION 2: Send to GHL (for records)
-      await sendToWebhook(leadData);
+      // ACTION 2: Send to GHL (REMOVED - Handled by Make.com)
       
-      // ACTION 3: Send Confirmation Email
-      await sendEmail(
-        emailJsConfig.templateIDs.subscription,
-        emailParams
-      );
+      // ACTION 3: Send Confirmation Email (REMOVED - Handled by Make.com)
 
-      // ACTION 4: Fire FB Event
+      // ACTION 4: Fire FB Event (This is now safe to run)
       fbq('track', 'CompleteRegistration');
 
       // All successful!
@@ -1238,21 +1236,19 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         body: JSON.stringify(automationPayload),
       });
 
-      if (!automationResponse.ok) {
+      const responseData = await automationResponse.json();
+
+      if (!automationResponse.ok || responseData.status !== 'success') {
+        // This catches payment failures from Stripe, passed back by Make.com
         const errorData = await automationResponse.json().catch(() => null);
-        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
+        throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
-      // ACTION 2: Send to GHL (for records)
-      await sendToWebhook(leadData);
+      // ACTION 2: Send to GHL (REMOVED - Handled by Make.com)
       
-      // ACTION 3: Send Confirmation Email
-      await sendEmail(
-        emailJsConfig.templateIDs.oneTime,
-        emailParams
-      );
+      // ACTION 3: Send Confirmation Email (REMOVED - Handled by Make.com)
 
-      // ACTION 4: Fire FB Event (use 'Lead' or a custom 'OneTimePurchase' event)
+      // ACTION 4: Fire FB Event (This is now safe to run)
       fbq('track', 'Purchase', { currency: "USD", value: depositAmount });
 
       // All successful!
