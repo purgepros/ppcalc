@@ -9,7 +9,7 @@ const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/16707629/ui73nn
 
 // Stripe PUBLISHABLE Key
 // This is safe to have in the front-end code.
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAb7GvYrox5UEsP0Pt119qN9A9uEdb1Y7vonGU1MnJQJvrXkAzYaxVC4GJQt60BwE2wUHWMGqDP9wf7nFDNg8c00BG6j655d';
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
 
 const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c4f-aa25-3c221e72ada4';
 
