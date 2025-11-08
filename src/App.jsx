@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Configuration ---
 
-// ZAPIER Webhook URL
+// MAKE.COM Webhook URL (formerly Zapier)
 // This is the "glue" that will receive the form data and payment token,
 // then send it to Stripe (to charge) and HCP (to create an account).
-const ZAPIER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/16707629/ui73nn9/';
+const AUTOMATION_WEBHOOK_URL = 'https://hook.us2.make.com/pcfctgdukrn6hqupmdjgf1ml38wuf4nb';
 
 // Stripe PUBLISHABLE Key
 // This is safe to have in the front-end code.
@@ -20,8 +20,8 @@ const emailJsConfig = {
   templateIDs: {
     subscription: 'template_uwysfzx', // TODO: Replace this with your new EmailJS template ID
     oneTime: 'template_kpbsiga',       // TODO: Replace this with your new EmailJS template ID
-    lead: 'template_wc2n8oc',           // TODO: Replace this with your new EmailJS template ID
-    exitIntent: 'template_ie5fsgp',   // TODO: Replace this with your new EmailJS template ID
+    lead: 'template_wc2n8oc',          // TODO: Replace this with your new EmailJS template ID
+    exitIntent: 'template_ie5fsgp',    // TODO: Replace this with your new EmailJS template ID
   }
 };
 
@@ -584,11 +584,11 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack }) => {
             onClick={() => onPaymentSelect(plan.term, plan.total, plan.savings, plan.savingsValue)}
             className={`w-full text-left p-6 border-2 bg-white rounded-xl transition-all hover:-translate-y-1 hover:border-blue-400 hover:shadow-lg ${plan.popular ? 'border-[var(--brand-green)] shadow-lg best-value-glow' : 'border-gray-300'}`}
           >
-             {plan.popular && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-white bg-[var(--brand-green)] px-3 py-0.5 rounded-full">
-                  Best Value
-                </span>
-              )}
+            {plan.popular && (
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold text-white bg-[var(--brand-green)] px-3 py-0.5 rounded-full">
+                Best Value
+              </span>
+            )}
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-2xl font-bold text-slate-800">{plan.term} Plan</h3>
               {plan.savings && (
@@ -598,7 +598,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack }) => {
               )}
             </div>
             <p className="text-3xl font-extrabold text-slate-900">{plan.priceLabel}</p>
-             {plan.savings && (
+            {plan.savings && (
                 <span className="text-sm font-bold text-[var(--brand-green)] mt-1 sm:hidden">
                   {plan.savings}
                 </span>
@@ -683,8 +683,8 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
 
     // --- 2. Build ALL Data Payloads ---
     
-    // --- Payload for Zapier (The "Glue") ---
-    const zapierPayload = {
+    // --- Payload for Automation (Make.com) ---
+    const automationPayload = {
       paymentMethodId: paymentMethod.id, // The secure token
       customer: {
         name: formData.name,
@@ -770,14 +770,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
 
     // --- 3. Send ALL Data ---
     try {
-      // ACTION 1 (The Cash & Service): Send to Zapier
-      const zapierResponse = await fetch(ZAPIER_WEBHOOK_URL, {
+      // ACTION 1 (The Cash & Service): Send to Automation Webhook
+      const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
-        body: JSON.stringify(zapierPayload),
+        body: JSON.stringify(automationPayload),
       });
 
-      if (!zapierResponse.ok) {
-        const errorData = await zapierResponse.json().catch(() => null);
+      if (!automationResponse.ok) {
+        const errorData = await automationResponse.json().catch(() => null);
         throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
@@ -854,7 +854,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
             <span className="font-semibold">-$99.99+</span>
           </div>
           
-           {termDiscount > 0 && (
+            {termDiscount > 0 && (
             <div className="flex justify-between text-green-600">
               <span className="font-semibold">{paymentSelection.term} Savings</span>
               <span className="font-semibold">-${termDiscount.toFixed(2)}</span>
@@ -892,7 +892,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
           
           {/* --- Stripe Payment Module --- */}
           <div className="p-3 border-2 border-gray-300 rounded-lg">
-             {/* This div is the mount point for the Stripe CardElement */}
+              {/* This div is the mount point for the Stripe CardElement */}
             <div id="card-element"></div>
           </div>
 
@@ -1189,8 +1189,8 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
 
     // --- 2. Build ALL Data Payloads ---
     
-    // --- Payload for Zapier (The "Glue") ---
-    const zapierPayload = {
+    // --- Payload for Automation (Make.com) ---
+    const automationPayload = {
       paymentMethodId: paymentMethod.id, // The secure token
       customer: {
         name: formData.name,
@@ -1202,7 +1202,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         zipCode: zipCode,
         dogCount: dogCount,
         planName: 'One-Time Yard Reset',
-        paymentTerm: 'One-Time Deposit', // This tells Zapier to run a "Charge" not "Subscription"
+        paymentTerm: 'One-Time Deposit', // This tells Automation to run a "Charge" not "Subscription"
         totalDueToday: depositAmount,
       }
     };
@@ -1232,14 +1232,14 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
 
     // --- 3. Send ALL Data ---
     try {
-      // ACTION 1 (The Cash & Service): Send to Zapier
-      const zapierResponse = await fetch(ZAPIER_WEBHOOK_URL, {
+      // ACTION 1 (The Cash & Service): Send to Automation
+      const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
-        body: JSON.stringify(zapierPayload),
+        body: JSON.stringify(automationPayload),
       });
 
-      if (!zapierResponse.ok) {
-        const errorData = await zapierResponse.json().catch(() => null);
+      if (!automationResponse.ok) {
+        const errorData = await automationResponse.json().catch(() => null);
         throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
@@ -1328,7 +1328,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
           
           {/* --- Stripe Payment Module --- */}
           <div className="p-3 border-2 border-gray-300 rounded-lg">
-             {/* This div is the mount point for the Stripe CardElement */}
+              {/* This div is the mount point for the Stripe CardElement */}
             <div id="card-element"></div>
           </div>
 
@@ -2199,9 +2199,9 @@ const App = () => {
           {/* --- Render Stripe Error --- */}
           {stripeError && (
              <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-              <p className="font-bold">Payment Error</p>
-              <p>{stripeError}</p>
-            </div>
+             <p className="font-bold">Payment Error</p>
+             <p>{stripeError}</p>
+           </div>
           )}
 
           {/* VIEW 1: ZIP */}
@@ -2382,5 +2382,3 @@ const App = () => {
 };
 
 export default App;
-
-
