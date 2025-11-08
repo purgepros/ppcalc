@@ -773,6 +773,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
       // ACTION 1 (The Cash & Service): Send to Automation Webhook
       const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(automationPayload),
       });
 
@@ -1256,6 +1257,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       // ACTION 1 (The Cash & Service): Send to Automation
       const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(automationPayload),
       });
 
