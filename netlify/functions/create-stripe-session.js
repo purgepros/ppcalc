@@ -9,7 +9,7 @@
  *
  * --- HOW TO DEPLOY ---
  * 1. Create this file in your project: `netlify/functions/create-stripe-session.js`
- * 2. Run: `npm install stripe emailjs-com node-fetch@2`
+ * 2. Run: `npm install stripe @emailjs/nodejs node-fetch@2`
  * 3. Go to your Netlify site settings -> "Build & deploy" -> "Environment"
  * 4. Add your Environment Variables.
  *
@@ -17,16 +17,14 @@
 
 // We use `require` syntax in Netlify functions
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const emailjs = require('emailjs-com');
+const emailjs = require('@emailjs/nodejs'); // <-- FIX 1: Using Node.js library
 const fetch = require('node-fetch'); // Netlify functions don't have browser 'fetch'
 
 // --- 1. THE PRICE MAP ---
 // This maps your app's state directly to the Stripe Price IDs you provided.
 // ========================================================================
-// TODO: ACTION REQUIRED!
-// Create a 37th product in Stripe for the "$99.99 One-Time Yard Reset"
-// Get its Price ID (e.g., `price_...`) and paste it here.
-const ONE_TIME_DEPOSIT_PRICE_ID = 'price_YOUR_ONETIME_DEPOSIT_ID_HERE';
+// FIX 2: Your new One-Time Price ID is now included.
+const ONE_TIME_DEPOSIT_PRICE_ID = 'price_1SS2h6GelkvkkUqXn5QoA37X';
 // ========================================================================
 
 const SUBSCRIPTION_PRICE_MAP = {
@@ -178,7 +176,7 @@ exports.handler = async (event) => {
       });
     } catch (e) {
       console.error('GHL Webhook failed:', e);
-      // We don't stop the process, as payment was successful
+        // We don't stop the process
     }
     
     // B. Send EmailJS Confirmation
@@ -188,11 +186,15 @@ exports.handler = async (event) => {
         ? process.env.EMAILJS_TEMPLATE_ID_ONETIME
         : process.env.EMAILJS_TEMPLATE_ID_SUBSCRIPTION;
         
+      // FIX 1: Using new library structure with Private Key
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         template,
         emailParams,
-        process.env.EMAILJS_PUBLIC_KEY
+        {
+          publicKey: process.env.EMAILJS_PUBLIC_KEY,
+          privateKey: process.env.EMAILJS_PRIVATE_KEY, // <-- Added this
+        }
       );
     } catch (e) {
       console.error('EmailJS send failed:', e);

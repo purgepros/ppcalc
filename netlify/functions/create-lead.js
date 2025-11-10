@@ -9,7 +9,7 @@
  */
 
 // We use `require` syntax in Netlify functions
-const emailjs = require('emailjs-com');
+const emailjs = require('@emailjs/nodejs'); // <-- FIX 1: Using Node.js library
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
@@ -45,11 +45,15 @@ exports.handler = async (event) => {
           throw new Error('Email template configuration error.');
       }
 
+      // FIX 1: Using new library structure with Private Key
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         templateIdToSend, // Use the specific template
         emailParams,
-        process.env.EMAILJS_PUBLIC_KEY
+        {
+          publicKey: process.env.EMAILJS_PUBLIC_KEY,
+          privateKey: process.env.EMAILJS_PRIVATE_KEY, // <-- Added this
+        }
       );
     } catch (e) {
       console.error('EmailJS send failed:', e);
