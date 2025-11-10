@@ -31,19 +31,19 @@ exports.handler = async (event) => {
       });
     } catch (e) {
       console.error('GHL Webhook failed:', e.g);
-      // We don't stop the process
-    }
-
-    // --- 2. Send EmailJS Confirmation ---
-    try {
-      // Determine which email template to use based on the 'leadType'
-      // sent from the frontend.
-      const templateIdToSend = leadType === 'exitIntent'
-        ? process.env.EMAILJS_TEMPLATE_ID_EXIT_INTENT // 'template_ie5fsgp'
-        : process.env.EMAILJS_TEMPLATE_ID_LEAD;      // 'template_wc2n8oc'
+      // In your old code, you used 'template_wc2n8oc' (LEAD) for the LeadForm
+      // and 'template_ie5fsgp' (exitIntent) for the Exit Intent.
+      // We will now use the environment variables for this.
         
+      let templateIdToSend;
+      if (leadType === 'exitIntent') {
+         templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_EXIT_INTENT;
+      } else {
+         templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_LEAD;
+      }
+      
       if (!templateIdToSend) {
-          console.error('EmailJS template ID not found for leadType:', leadType);
+          console.error('EmailJS template ID not found for leadType:', leadType, 'Check environment variables.');
           throw new Error('Email template configuration error.');
       }
 

@@ -9,16 +9,9 @@
  *
  * --- HOW TO DEPLOY ---
  * 1. Create this file in your project: `netlify/functions/create-stripe-session.js`
- * 2. Run: `npm install stripe emailjs-com`
+ * 2. Run: `npm install stripe emailjs-com node-fetch@2`
  * 3. Go to your Netlify site settings -> "Build & deploy" -> "Environment"
- * 4. Add these Environment Variables:
- * - STRIPE_SECRET_KEY: Your Stripe *secret* key (sk_test_... or sk_live_...)
- * - GOHIGHLEVEL_WEBHOOK_URL: 'https://services.leadconnectorhq.com/hooks/...'
- * - EMAILJS_SERVICE_ID: 'service_b0us6cq'
- * - EMAILJS_PUBLIC_KEY: 'WV8jyfhbDQ7kuvIrx'
- * - EMAILJS_TEMPLATE_ID_SUBSCRIPTION: 'template_uwysfzx'
- * - EMAILJS_TEMPLATE_ID_ONETIME: 'template_kpbsiga'
- * - EMAILJS_TEMPLATE_ID_LEAD: 'template_wc2n8oc'
+ * 4. Add your Environment Variables.
  *
  */
 
@@ -33,7 +26,7 @@ const fetch = require('node-fetch'); // Netlify functions don't have browser 'fe
 // TODO: ACTION REQUIRED!
 // Create a 37th product in Stripe for the "$99.99 One-Time Yard Reset"
 // Get its Price ID (e.g., `price_...`) and paste it here.
-const ONE_TIME_DEPOSIT_PRICE_ID = 'price_1SRytpGelkvkkUqXVUXzxFAs';
+const ONE_TIME_DEPOSIT_PRICE_ID = 'price_YOUR_ONETIME_DEPOSIT_ID_HERE';
 // ========================================================================
 
 const SUBSCRIPTION_PRICE_MAP = {
@@ -137,7 +130,7 @@ exports.handler = async (event) => {
     if (quote.paymentTerm === 'One-Time Deposit') {
       // --- IT'S A ONE-TIME CHARGE ---
       isOneTime = true;
-      if (ONE_TIME_DEPOSIT_PRICE_ID === 'price_1SRytpGelkvkkUqXVUXzxFAs') {
+      if (ONE_TIME_DEPOSIT_PRICE_ID === 'price_YOUR_ONETIME_DEPOSIT_ID_HERE') {
          throw new Error('Server is not configured: One-Time Price ID is missing.');
       }
       
