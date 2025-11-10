@@ -697,7 +697,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
         total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
         per_visit: `$${perVisitPrice}`,
-        final_charge_amount: totalDueToday.toFixed(2), // Use the specific var
+        final_charge: totalDueToday.toFixed(2), // <-- THIS LINE IS NOW FIXED
         total_savings: totalSavings.toFixed(2),
         initial_savings: initialResetFee.toFixed(2),
         term_savings: termDiscount.toFixed(2),
