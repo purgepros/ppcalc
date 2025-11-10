@@ -2,28 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Configuration ---
 
-// MAKE.COM Webhook URL (formerly Zapier)
-// This is the "glue" that will receive the form data and payment token,
-// then send it to Stripe (to charge) and HCP (to create an account).
-const AUTOMATION_WEBHOOK_URL = 'https://hook.us2.make.com/pcfctgdukrn6hqupmdjgf1ml38wuf4nb';
+// NEW: This is now your *backend* function's endpoint.
+// We've removed the Make.com URL.
+const AUTOMATION_WEBHOOK_URL = '/.netlify/functions/create-stripe-session';
 
-// Stripe PUBLISHABLE Key
-// This is safe to have in the front-end code.
+// GHL Webhook URL (REMOVED from frontend, now lives securely in the backend)
+// const GOHIGHLEVEL_WEBHOOK_URL = '...';
+
+// Stripe PUBLISHABLE Key (This is safe to keep here)
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
 
-const GOHIGHLEVEL_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c4f-aa25-3c221e72ada4';
-
-// NEW: Updated EmailJS config to use specific Template IDs
-const emailJsConfig = {
-  serviceID: 'service_b0us6cq',
-  publicKey: 'WV8jyfhbDQ7kuvIrx',
-  templateIDs: {
-    subscription: 'template_uwysfzx', // TODO: Replace this with your new EmailJS template ID
-    oneTime: 'template_kpbsiga',       // TODO: Replace this with your new EmailJS template ID
-    lead: 'template_wc2n8oc',          // TODO: Replace this with your new EmailJS template ID
-    exitIntent: 'template_ie5fsgp',    // TODO: Replace this with your new EmailJS template ID
-  }
-};
+// EmailJS config (REMOVED from frontend, now lives securely in the backend)
+// const emailJsConfig = { ... };
 
 const FACEBOOK_PIXEL_ID = '770811879146972';
 const APPROVED_ZIP_CODES = ['46011', '46012', '46013', '46014', '46015', '46016', '46032', '46033', '46034', '46035', '46036', '46037', '46038', '46039', '46040', '46041', '46048', '46049', '46055', '46056', '46060', '46061', '46062', '46063', '46064', '46065', '46068', '46069', '46071', '46072', '46074', '46075', '46076', '46077', '46082', '46085', '46163', '46201', '46202', '46203', '46204', '46205', '46206', '46207', '46208', '46209', '46211', '46214', '46216', '46217', '46218', '46219', '46220', '46221', '46222', '46223', '46224', '46225', '46226', '46227', '46228', '46229', '46230', '46231', '46234', '46235', '46236', '46237', '46239', '46240', '46241', '46242', '46244', '46247', '46249', '46250', '46251', '46253', '46254', '46255', '46256', '46259', '46260', '46266', '46268', '46278', '46280', '46282', '46283', '46285', '46290', '46291', '46295', '46296', '46298'];
@@ -146,11 +136,12 @@ const setFavicon = (href) => {
 
 /**
  * Sends lead data to the GHL webhook.
- * @param {object} data - The lead data to send.
+ * NEW: This function is now ONLY used for non-payment leads.
+ * Payment-related webhooks are handled by the backend function.
 */
-const sendToWebhook = async (data) => {
+const sendToWebhook = async (data, url) => {
   try {
-    await fetch(GOHIGHLEVEL_WEBHOOK_URL, {
+    await fetch(url, { // Use the URL passed to it
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
@@ -162,25 +153,21 @@ const sendToWebhook = async (data) => {
 
 /**
  * Sends an email using EmailJS.
- * @param {string} templateID - The specific EmailJS template ID to use.
- * @param {object} templateParams - The parameters for the email template.
+ * NEW: This function is now ONLY used for non-payment leads.
+ * Payment-related emails are handled by the backend function.
  */
-const sendEmail = async (templateID, templateParams) => {
+const sendEmail = async (templateID, templateParams, serviceID, publicKey) => {
   if (!window.emailjs) {
     console.error('EmailJS is not loaded.');
     return;
   }
-  // Fallback to a default template if the provided one is a placeholder
-  const templateToSend = templateID.startsWith('TEMPLATE_ID') 
-    ? emailJsConfig.templateIDs.subscription // Default to subscription
-    : templateID;
-
+  
   try {
     await window.emailjs.send(
-      emailJsConfig.serviceID,
-      templateToSend, // Use the specific template ID
+      serviceID,
+      templateID,
       templateParams,
-      emailJsConfig.publicKey
+      publicKey
     );
   } catch (error) {
     console.error('EmailJS Send Error:', error);
@@ -599,10 +586,10 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack }) => {
             </div>
             <p className="text-3xl font-extrabold text-slate-900">{plan.priceLabel}</p>
             {plan.savings && (
-                <span className="text-sm font-bold text-[var(--brand-green)] mt-1 sm:hidden">
-                  {plan.savings}
-                </span>
-              )}
+              <span className="text-sm font-bold text-[var(--brand-green)] mt-1 sm:hidden">
+                {plan.savings}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -682,28 +669,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
     }
 
     // --- 2. Build ALL Data Payloads ---
+    // These payloads are now for our *backend*, not Make.com
     
-    // --- Payload for Automation (Make.com) ---
-    const automationPayload = {
-      paymentMethodId: paymentMethod.id, // The secure token
-      customer: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-      },
-      quote: {
-        zipCode: zipCode,
-        dogCount: dogCount,
-        planName: packageSelection.name,
-        paymentTerm: paymentSelection.term,
-        totalDueToday: totalDueToday,
-        savings: paymentSelection.savings, // The display string
-        totalSavingsValue: totalSavings, // The number
-      }
-    };
-    
-    // --- Payload for GHL & EmailJS (No sensitive data) ---
+    // --- Payload for GHL & EmailJS (Backend will use this) ---
     // Calculate per_visit for the email
     let perVisitPrice = 'N/A';
     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
@@ -731,8 +699,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         }),
     };
     
-    // --- NEW: Pre-build conditional HTML for EmailJS ---
-    // We do the logic here, not in the template
+    // --- Pre-build conditional HTML for EmailJS ---
     let term_discount_row_html = '';
     let term_savings_row_html = '';
 
@@ -752,7 +719,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
       `;
     }
 
-    // --- NEW: emailParams object with NO logic ---
+    // --- emailParams object (Backend will use this) ---
       const emailParams = {
         ...leadData,
         description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
@@ -768,49 +735,47 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         term_savings_row: term_savings_row_html
       };
 
-    // --- 3. Send ALL Data ---
+    // --- FINAL PAYLOAD for our Netlify Function ---
+    // This wrapper contains everything our backend needs.
+    const backendPayload = {
+      paymentMethodId: paymentMethod.id,
+      customer: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+      },
+      quote: {
+        zipCode: zipCode,
+        dogCount: dogCount,
+        planName: packageSelection.name,
+        paymentTerm: paymentSelection.term,
+      },
+      // We also send the pre-formatted data for GHL and EmailJS
+      leadData: leadData, 
+      emailParams: emailParams,
+    };
+
+    // --- 3. Send to our NEW Backend ---
     try {
-      // ACTION 1 (The Cash & Service): Send to Automation Webhook
+      // ACTION 1: Call our Netlify Function
       const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(automationPayload),
+        body: JSON.stringify(backendPayload),
       });
 
-      if (!automationResponse.ok) {
-        // The fetch itself failed (e.g., 400, 500 status)
-        // Try to parse an error message if Make.com sent one
-        const errorData = await automationResponse.json().catch(() => null);
-        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
-      }
+      const responseData = await automationResponse.json();
 
-      // If we are here, automationResponse.ok is true (e.g., 200 status)
-      // Now, we need to see WHAT Make.com sent back.
-      const responseText = await automationResponse.text();
-      let responseData;
-
-      try {
-        responseData = JSON.parse(responseText); // Try to parse as JSON
-      } catch (e) {
-        // It's not JSON. Is it the default "Accepted" message?
-        if (responseText.toLowerCase() === 'accepted') {
-          // Treat "Accepted" as a successful hand-off
-          responseData = { status: 'success' }; 
-        } else {
-          // It's some other unexpected text
-          throw new Error('Received an invalid response from the server.');
-        }
-      }
-
-      // Now we have a valid object in responseData
-      if (responseData.status !== 'success') {
-        // Make.com sent back a JSON error, e.g., {"status": "error", "message": "..."}
+      if (!automationResponse.ok || responseData.status !== 'success') {
+        // The backend function itself threw an error (e.g., Stripe failed)
+        // The backend function returns a { message: '...' }
         throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
-      // ACTION 2: Send to GHL (REMOVED - Handled by Make.com)
+      // ACTION 2: GHL (REMOVED - Handled by backend)
       
-      // ACTION 3: Send Confirmation Email (REMOVED - Handled by Make.com)
+      // ACTION 3: Email (REMOVED - Handled by backend)
 
       // ACTION 4: Fire FB Event (This is now safe to run)
       fbq('track', 'CompleteRegistration');
@@ -963,7 +928,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
  * VIEW 3A / One-Time: The Lead Form (Custom Quote & One-Time)
  * This is now *only* for non-payment leads (Custom Quote, One-Time)
  */
-const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false }) => {
+const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false, emailJsConfig, ghlWebhookUrl }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -1034,13 +999,15 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
     // 1. Fire FB event
     fbq('track', fbTrackEvent);
     
-    // 2. Send to Webhook
-    await sendToWebhook(leadData);
+    // 2. Send to Webhook (using the non-payment GHL webhook)
+    await sendToWebhook(leadData, ghlWebhookUrl);
     
-    // 3. Send Email
+    // 3. Send Email (using the non-payment EmailJS)
     await sendEmail(
       emailJsConfig.templateIDs.lead,
-      emailParams
+      emailParams,
+      emailJsConfig.serviceID,
+      emailJsConfig.publicKey
     );
 
     setIsSubmitting(false);
@@ -1211,25 +1178,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
 
     // --- 2. Build ALL Data Payloads ---
     
-    // --- Payload for Automation (Make.com) ---
-    const automationPayload = {
-      paymentMethodId: paymentMethod.id, // The secure token
-      customer: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-      },
-      quote: {
-        zipCode: zipCode,
-        dogCount: dogCount,
-        planName: 'One-Time Yard Reset',
-        paymentTerm: 'One-Time Deposit', // This tells Automation to run a "Charge" not "Subscription"
-        totalDueToday: depositAmount,
-      }
-    };
-    
-    // --- Payload for GHL & EmailJS (No sensitive data) ---
+    // --- Payload for GHL & EmailJS (Backend will use this) ---
     const leadData = {
         ...formData,
         zip: zipCode,
@@ -1252,49 +1201,45 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         final_charge: `$${depositAmount.toFixed(2)} (Deposit)`,
     };
 
-    // --- 3. Send ALL Data ---
+    // --- FINAL PAYLOAD for our Netlify Function ---
+    const backendPayload = {
+      paymentMethodId: paymentMethod.id,
+      customer: {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+      },
+      quote: {
+        zipCode: zipCode,
+        dogCount: dogCount,
+        planName: 'One-Time Yard Reset',
+        paymentTerm: 'One-Time Deposit', // This tells our backend to run a "Charge"
+      },
+      // We also send the pre-formatted data for GHL and EmailJS
+      leadData: leadData, 
+      emailParams: emailParams,
+    };
+
+    // --- 3. Send to our NEW Backend ---
     try {
-      // ACTION 1 (The Cash & Service): Send to Automation
+      // ACTION 1: Call our Netlify Function
       const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(automationPayload),
+        body: JSON.stringify(backendPayload),
       });
 
-      if (!automationResponse.ok) {
-        // The fetch itself failed (e.g., 400, 500 status)
-        // Try to parse an error message if Make.com sent one
-        const errorData = await automationResponse.json().catch(() => null);
-        throw new Error(errorData?.message || 'Payment processing failed. Please check your card details and try again.');
-      }
+      const responseData = await automationResponse.json();
 
-      // If we are here, automationResponse.ok is true (e.g., 200 status)
-      // Now, we need to see WHAT Make.com sent back.
-      const responseText = await automationResponse.text();
-      let responseData;
-
-      try {
-        responseData = JSON.parse(responseText); // Try to parse as JSON
-      } catch (e) {
-        // It's not JSON. Is it the default "Accepted" message?
-        if (responseText.toLowerCase() === 'accepted') {
-          // Treat "Accepted" as a successful hand-off
-          responseData = { status: 'success' }; 
-        } else {
-          // It's some other unexpected text
-          throw new Error('Received an invalid response from the server.');
-        }
-      }
-
-      // Now we have a valid object in responseData
-      if (responseData.status !== 'success') {
-        // Make.com sent back a JSON error, e.g., {"status": "error", "message": "..."}
+      if (!automationResponse.ok || responseData.status !== 'success') {
+        // The backend function itself threw an error
         throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
       
-      // ACTION 2: Send to GHL (REMOVED - Handled by Make.com)
+      // ACTION 2: GHL (REMOVED - Handled by backend)
       
-      // ACTION 3: Send Confirmation Email (REMOVED - Handled by Make.com)
+      // ACTION 3: Email (REMOVED - Handled by backend)
 
       // ACTION 4: Fire FB Event (This is now safe to run)
       fbq('track', 'Purchase', { currency: "USD", value: depositAmount });
@@ -1574,7 +1519,7 @@ const PricingInfoModal = ({ onClose }) => (
   </div>
 );
 
-const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
+const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, emailJsConfig, ghlWebhookUrl }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -1620,7 +1565,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
     fbq('track', 'Lead');
 
     // 2. Send to Webhook
-    await sendToWebhook(leadData);
+    await sendToWebhook(leadData, ghlWebhookUrl);
 
     // 3. Send Email
     await sendEmail(
@@ -1637,7 +1582,9 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
         per_visit: `$${perVisitPrice}`, // Add per_visit price
         final_charge: 'N/A',
         savings: 'N/A',
-      }
+      },
+      emailJsConfig.serviceID,
+      emailJsConfig.publicKey
     );
 
     setIsSubmitting(false);
@@ -1699,7 +1646,7 @@ const AdminLoginModal = ({ onClose, onLoginSuccess }) => {
   const [error, setError] = useState('');
   
   // TODO: Change this password!
-  const ADMIN_PASSWORD = 'admin123'; 
+  const ADMIN_PASSWORD = 'admin123';  
   
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1978,6 +1925,19 @@ const GlobalStyles = () => (
 
 // --- Main App Component ---
 
+// NEW: We need to pass these constants to the non-payment forms
+// We can define them once here.
+const GOHIGHLEVEL_LEAD_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c4f-aa25-3c221e72ada4';
+const emailJsConfigForLeads = {
+  serviceID: 'service_b0us6cq',
+  publicKey: 'WV8jyfhbDQ7kuvIrx',
+  templateIDs: {
+    lead: 'template_wc2n8oc',       // For Custom Quote / Bailout
+    exitIntent: 'template_ie5fsgp',     // For Exit Intent
+  }
+};
+
+
 const App = () => {
   // State
   const [view, setView] = useState('zip'); // 'zip' -> 'sorter' -> 'custom_quote' OR 'packages' -> 'payment_plan' -> 'checkout'
@@ -2012,7 +1972,7 @@ const App = () => {
     
     initFacebookPixel();
     
-    // --- Load EmailJS SDK ---
+    // --- Load EmailJS SDK (for non-payment leads) ---
     loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', 'emailjs-sdk')
       .catch(error => console.error("Failed to load EmailJS", error));
 
@@ -2320,6 +2280,8 @@ const App = () => {
               onSubmitSuccess={handleFormSubmissionSuccess}
               onBack={() => setView('sorter')}
               isOneTimeForm={false}
+              emailJsConfig={emailJsConfigForLeads} // Pass non-payment configs
+              ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // Pass non-payment configs
             />
           )}
           
@@ -2407,6 +2369,8 @@ const App = () => {
           zipCode={zipCode}
           yardSize={yardSize}
           onClose={() => setIsExitModalOpen(false)}
+          emailJsConfig={emailJsConfigForLeads} // Pass non-payment configs
+          ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // Pass non-payment configs
         />
       )}
       
