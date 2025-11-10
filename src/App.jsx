@@ -136,43 +136,15 @@ const setFavicon = (href) => {
 
 /**
  * Sends lead data to the GHL webhook.
- * NEW: This function is now ONLY used for non-payment leads.
- * Payment-related webhooks are handled by the backend function.
+ * NEW: This function is now DELETED. The backend handles all webhooks.
 */
-const sendToWebhook = async (data, url) => {
-  try {
-    await fetch(url, { // Use the URL passed to it
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-  } catch (error) {
-    console.error('Webhook Fetch Error:', error);
-  }
-};
+// const sendToWebhook = async (data, url) => { ... };
 
 /**
  * Sends an email using EmailJS.
- * NEW: This function is now ONLY used for non-payment leads.
- * Payment-related emails are handled by the backend function.
+ * NEW: This function is now DELETED. The backend handles all emails.
  */
-const sendEmail = async (templateID, templateParams, serviceID, publicKey) => {
-  if (!window.emailjs) {
-    console.error('EmailJS is not loaded.');
-    return;
-  }
-  
-  try {
-    await window.emailjs.send(
-      serviceID,
-      templateID,
-      templateParams,
-      publicKey
-    );
-  } catch (error) {
-    console.error('EmailJS Send Error:', error);
-  }
-};
+// const sendEmail = async (templateID, templateParams, serviceID, publicKey) => { ... };
 
 /**
  * --- Generates a shareable quote link ---
@@ -928,7 +900,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
  * VIEW 3A / One-Time: The Lead Form (Custom Quote & One-Time)
  * This is now *only* for non-payment leads (Custom Quote, One-Time)
  */
-const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false, emailJsConfig, ghlWebhookUrl }) => {
+const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -996,24 +968,39 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
       savings: 'N/A',
     };
     
+    // --- NEW: Create backend payload ---
+    const backendPayload = {
+      leadData: leadData,
+      emailParams: emailParams,
+      leadType: 'lead', // This tells the backend to use the LEAD template
+    };
+
     // 1. Fire FB event
     fbq('track', fbTrackEvent);
     
-    // 2. Send to Webhook (using the non-payment GHL webhook)
-    await sendToWebhook(leadData, ghlWebhookUrl);
-    
-    // 3. Send Email (using the non-payment EmailJS)
-    await sendEmail(
-      emailJsConfig.templateIDs.lead,
-      emailParams,
-      emailJsConfig.serviceID,
-      emailJsConfig.publicKey
-    );
+    // 2. Send to NEW /create-lead backend
+    try {
+      const response = await fetch('/.netlify/functions/create-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(backendPayload),
+      });
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    if (onSubmitSuccess) {
-      onSubmitSuccess();
+      if (!response.ok) {
+        throw new Error('An error occurred submitting your request.');
+      }
+      
+      // 3. Send Email (REMOVED - Handled by backend)
+
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      if (onSubmitSuccess) {
+        onSubmitSuccess();
+      }
+    } catch (err) {
+      console.error('Lead form submission error:', err);
+      setError('Could not submit your request. Please try again later.');
+      setIsSubmitting(false);
     }
   };
 
@@ -1519,7 +1506,7 @@ const PricingInfoModal = ({ onClose }) => (
   </div>
 );
 
-const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, emailJsConfig, ghlWebhookUrl }) => {
+const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -1561,35 +1548,54 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, emailJsConfi
       quote_link: quote_link,
     };
 
+    // --- NEW: Create email params and backend payload ---
+    const emailParams = {
+      email: email,
+      name: 'Valued Customer',
+      plan: currentPlan.name,
+      total_monthly: `$${currentPlan.price}/mo`,
+      dog_count: currentPlan.dogCount,
+      description: 'Here is the custom quote you built on our site. We hope to see you soon!',
+      notes: 'User captured on exit intent.',
+      quote_link: quote_link,
+      per_visit: `$${perVisitPrice}`, // Add per_visit price
+      final_charge: 'N/A',
+      savings: 'N/A',
+    };
+    
+    const backendPayload = {
+      leadData: leadData,
+      emailParams: emailParams,
+      leadType: 'exitIntent', // This tells the backend to use the EXIT_INTENT template
+    };
+
     // 1. Fire FB Event
     fbq('track', 'Lead');
 
-    // 2. Send to Webhook
-    await sendToWebhook(leadData, ghlWebhookUrl);
+    // 2. Send to NEW /create-lead backend
+    try {
+      const response = await fetch('/.netlify/functions/create-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(backendPayload),
+      });
 
-    // 3. Send Email
-    await sendEmail(
-      emailJsConfig.templateIDs.exitIntent,
-      {
-        email: email,
-        name: 'Valued Customer',
-        plan: currentPlan.name,
-        total_monthly: `$${currentPlan.price}/mo`,
-        dog_count: currentPlan.dogCount,
-        description: 'Here is the custom quote you built on our site. We hope to see you soon!',
-        notes: 'User captured on exit intent.',
-        quote_link: quote_link,
-        per_visit: `$${perVisitPrice}`, // Add per_visit price
-        final_charge: 'N/A',
-        savings: 'N/A',
-      },
-      emailJsConfig.serviceID,
-      emailJsConfig.publicKey
-    );
+      if (!response.ok) {
+        throw new Error('An error occurred sending the email.');
+      }
+      
+      // 3. Send Email (REMOVED - Handled by backend)
 
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setTimeout(onClose, 2500);
+      setIsSubmitting(false);
+      setIsSubmitted(true);
+      setTimeout(onClose, 2500);
+      
+    } catch (err) {
+      console.error('Exit intent submission error:', err);
+      setIsSubmitting(false);
+      // Don't show an error, just close
+      onClose();
+    }
   };
 
   return (
@@ -1925,17 +1931,10 @@ const GlobalStyles = () => (
 
 // --- Main App Component ---
 
-// NEW: We need to pass these constants to the non-payment forms
-// We can define them once here.
-const GOHIGHLEVEL_LEAD_WEBHOOK_URL = 'https://services.leadconnectorhq.com/hooks/YzqccfNpAoMTt4EZO92d/webhook-trigger/7447af3a-4358-4c4f-aa25-3c221e72ada4';
-const emailJsConfigForLeads = {
-  serviceID: 'service_b0us6cq',
-  publicKey: 'WV8jyfhbDQ7kuvIrx',
-  templateIDs: {
-    lead: 'template_wc2n8oc',       // For Custom Quote / Bailout
-    exitIntent: 'template_ie5fsgp',     // For Exit Intent
-  }
-};
+// NEW: These constants are GONE. They are no longer in the frontend code.
+// Netlify's scanner will no longer find them.
+// const GOHIGHLEVEL_LEAD_WEBHOOK_URL = '...';
+// const emailJsConfigForLeads = { ... };
 
 
 const App = () => {
@@ -2280,8 +2279,8 @@ const App = () => {
               onSubmitSuccess={handleFormSubmissionSuccess}
               onBack={() => setView('sorter')}
               isOneTimeForm={false}
-              emailJsConfig={emailJsConfigForLeads} // Pass non-payment configs
-              ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // Pass non-payment configs
+              // emailJsConfig={emailJsConfigForLeads} // REMOVED
+              // ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // REMOVED
             />
           )}
           
@@ -2369,8 +2368,8 @@ const App = () => {
           zipCode={zipCode}
           yardSize={yardSize}
           onClose={() => setIsExitModalOpen(false)}
-          emailJsConfig={emailJsConfigForLeads} // Pass non-payment configs
-          ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // Pass non-payment configs
+          // emailJsConfig={emailJsConfigForLeads} // REMOVED
+          // ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // REMOVED
         />
       )}
       
