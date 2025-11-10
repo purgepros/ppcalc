@@ -31,8 +31,6 @@ exports.handler = async (event) => {
       });
     } catch (e) {
       console.error('GHL Webhook failed:', e.g);
-      // In your old code, you used 'template_wc2n8oc' (LEAD) for the LeadForm
-      // and 'template_ie5fsgp' (exitIntent) for the Exit Intent.
       // We will now use the environment variables for this.
         
       let templateIdToSend;
