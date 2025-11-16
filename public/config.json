@@ -1,0 +1,73 @@
+{
+  "FACEBOOK_PIXEL_ID": "770811879146972",
+  "APPROVED_ZIP_CODES": [
+    "46011", "46012", "46013", "46014", "46015", "46016", "46032", "46033", 
+    "46034", "46035", "46036", "46037", "46038", "46039", "46040", "46041", 
+    "46048", "46049", "46055", "46056", "46060", "46061", "46062", "46063", 
+    "46064", "46065", "46068", "46069", "46071", "46072", "46074", "46075", 
+    "46076", "46077", "46082", "46085", "46163", "46201", "46202", "46203", 
+    "46204", "46205", "46206", "46207", "46208", "46209", "46211", "46214", 
+    "46216", "46217", "46218", "46219", "46220", "46221", "46222", "46223", 
+    "46224", "46225", "46226", "46227", "46228", "46229", "46230", "46231", 
+    "46234", "46235", "46236", "46237", "46239", "46240", "46241", "46242", 
+    "46244", "46247", "46249", "46250", "46251", "46253", "46254", "46255", 
+    "46256", "46259", "46260", "46266", "46268", "46278", "46280", "46282", 
+    "46283", "46285", "46290", "46291", "46295", "46296", "46298"
+  ],
+  "FAVICON_URL": "https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png",
+  "basePrices": {
+    "biWeekly": 89,
+    "weekly": 109,
+    "twiceWeekly": 169
+  },
+  "dogFeeMap": {
+    "1-2": 0,
+    "3": 15,
+    "4": 30,
+    "5": 45
+  },
+  "planDetails": {
+    "biWeekly": {
+      "name": "Bi-Weekly Reset",
+      "priceKey": "biWeekly",
+      "frequency": "Service Every 2 Weeks",
+      "features": [
+        "Yard+ Coverage (Front, Back, Sides)",
+        "FREE Treats Each Visit",
+        "Pictures of Locked Gates",
+        "Automated Reminders & Alerts",
+        "!FREE Deodorizer (1x/Week - a $40 Value!)",
+        "!FREE WYSIwash® (1x/Month - A $30 Value!)",
+        "!Waste Hauled Away"
+      ]
+    },
+    "weekly": {
+      "name": "Pristine-Clean",
+      "priceKey": "weekly",
+      "frequency": "Service Every Week",
+      "features": [
+        "Yard+ Coverage (Front, Back, Sides)",
+        "Waste Hauled Away",
+        "FREE Deodorizer (1x/Week - a $40 Value!)",
+        "FREE WYSIwash® (1x/Month - A $30 Value!)",
+        "FREE Treats Each Visit",
+        "Pictures of Locked Gates",
+        "Automated Reminders & Alerts"
+      ]
+    },
+    "twiceWeekly": {
+      "name": "Pristine-Plus",
+      "priceKey": "twiceWeekly",
+      "frequency": "Service 2x Per Week",
+      "features": [
+        "Yard+ Coverage (Front, Back, Sides)",
+        "Waste Hauled Away",
+        "FREE Deodorizer (2x/Week - an $80 Value!)",
+        "FREE WYSIwash® (1x/Month - A $30 Value!)",
+        "FREE Treats Each Visit",
+        "Pictures of Locked Gates",
+        "Automated Reminders & Alerts"
+      ]
+    }
+  }
+}
