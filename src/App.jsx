@@ -3,11 +3,12 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 // --- FIX 3: Import Firebase for Site component ---
-import { initializeApp } from 'firebase/app';
+// Import 'getApp' and 'getApps' for robust initialization
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 // 2. Lazily load the AdminPanel so it doesn't slow down your main site
-const AdminPanel = lazy(() => import('./AdminPanel'));
+const AdminPanel = lazy(() => import('./AdminPanel.jsx')); // <-- FIX: Added .jsx extension
 
 // --- Helper Functions ---
 
@@ -130,7 +131,8 @@ const FullPageLoader = ({ error = null }) => (
     {error ? (
       <div className="max-w-lg w-full bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded-lg shadow-md">
         <h3 className="font-bold text-lg mb-2">Application Error</h3>
-        <p className="mb-4">Could not load application configuration. Please check that `public/config.json` exists and is valid JSON.</p>
+        {/* FIX 1: Removed the static/misleading error message */}
+        <p className="mb-4">Could not load application configuration.</p>
         <pre className="text-sm bg-red-50 p-2 rounded">
           {error.message ? error.message : String(error)}
         </pre>
@@ -1684,6 +1686,7 @@ const Site = () => {
   const [db, setDb] = useState(null);
 
   useEffect(() => {
+    // FIX 2: More robust Firebase initialization
     try {
       const firebaseConfig = {
         apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -1693,18 +1696,19 @@ const Site = () => {
         messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
         appId: import.meta.env.VITE_FIREBASE_APP_ID
       };
-      // Give this instance a unique name to avoid conflicts with AdminPanel's instance
-      const app = initializeApp(firebaseConfig, "site");
+
+      let app;
+      // Check if the "site" app is already initialized
+      if (getApps().some(app => app.name === 'site')) {
+        app = getApp('site');
+      } else {
+        // Initialize the "site" app
+        app = initializeApp(firebaseConfig, "site");
+      }
       setDb(getFirestore(app));
     } catch (e) {
-      if (!/already exists/.test(e.message)) {
-        console.error("Firebase init error", e);
-        setConfigError(new Error("Could not initialize app configuration."));
-      } else {
-        // App already initialized, just get the instance
-        const app = initializeApp(firebaseConfig); // Get default app
-        setDb(getFirestore(app));
-      }
+      console.error("Firebase init error", e);
+      setConfigError(new Error("Could not initialize app configuration."));
     }
   }, []);
 
@@ -1799,7 +1803,23 @@ const Site = () => {
                     const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
                     setStripeInstance(stripe);
                     const elements = stripe.elements();
-                    const card = elements.create('card', { /* ... style ... */ });
+                    const card = elements.create('card', { 
+                      style: {
+                        base: {
+                          color: "#32325d",
+                          fontFamily: 'Inter, sans-serif',
+                          fontSmoothing: "antialiased",
+                          fontSize: "16px",
+                          "::placeholder": {
+                            color: "#aab7c4",
+                          },
+                        },
+                        invalid: {
+                          color: "#fa755a",
+                          iconColor: "#fa755a",
+                        },
+                      }
+                    });
                     setCardElement(card);
                   } else {
                     console.error("Stripe.js loaded but window.Stripe is not available.");
@@ -1817,8 +1837,62 @@ const Site = () => {
             });
         }
       } catch (error) {
+        // This is the "client is offline" error block
         console.error("Failed to load app configuration from Firestore:", error);
-        setConfigError(error);
+        // We will try the fallback to config.json if Firestore fails
+        console.warn("Firestore failed, falling back to public/config.json");
+        fetch('/config.json')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status} - Could not find config.json`);
+            }
+            return response.json();
+          })
+          .then(config => {
+            setAppConfig(config);
+            // ... (rest of the setup logic from above) ...
+            document.title = 'Purge Pros Pet Waste Removal - Pricing';
+            if (config.data.FAVICON_URL) setFavicon(config.data.FAVICON_URL);
+            if (config.data.FACEBOOK_PIXEL_ID) initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+            loadScript('https://js.stripe.com/v3/', 'stripe-js')
+              .then(() => {
+                if (window.Stripe) {
+                  const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
+                  setStripeInstance(stripe);
+                  const elements = stripe.elements();
+                  const card = elements.create('card', { 
+                    style: {
+                      base: {
+                        color: "#32325d",
+                        fontFamily: 'Inter, sans-serif',
+                        fontSmoothing: "antialiased",
+                        fontSize: "16px",
+                        "::placeholder": {
+                          color: "#aab7c4",
+                        },
+                      },
+                      invalid: {
+                        color: "#fa755a",
+                        iconColor: "#fa755a",
+                      },
+                    }
+                  });
+                  setCardElement(card);
+                } else {
+                  console.error("Stripe.js loaded but window.Stripe is not available.");
+                  setStripeError("Failed to initialize payment system.");
+                }
+              })
+              .catch(error => {
+                console.error("Failed to load Stripe.js", error);
+                setStripeError("Failed to load payment system. Please refresh.");
+              });
+          })
+          .catch(fallbackError => {
+            // If BOTH Firestore and config.json fail, show the final error
+            console.error("Failed to load config from both Firestore and fallback:", fallbackError);
+            setConfigError(fallbackError);
+          });
       }
     };
     
