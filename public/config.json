@@ -1,73 +1,167 @@
 {
-  "FACEBOOK_PIXEL_ID": "770811879146972",
-  "APPROVED_ZIP_CODES": [
-    "46011", "46012", "46013", "46014", "46015", "46016", "46032", "46033", 
-    "46034", "46035", "46036", "46037", "46038", "46039", "46040", "46041", 
-    "46048", "46049", "46055", "46056", "46060", "46061", "46062", "46063", 
-    "46064", "46065", "46068", "46069", "46071", "46072", "46074", "46075", 
-    "46076", "46077", "46082", "46085", "46163", "46201", "46202", "46203", 
-    "46204", "46205", "46206", "46207", "46208", "46209", "46211", "46214", 
-    "46216", "46217", "46218", "46219", "46220", "46221", "46222", "46223", 
-    "46224", "46225", "46226", "46227", "46228", "46229", "46230", "46231", 
-    "46234", "46235", "46236", "46237", "46239", "46240", "46241", "46242", 
-    "46244", "46247", "46249", "46250", "46251", "46253", "46254", "46255", 
-    "46256", "46259", "46260", "46266", "46268", "46278", "46280", "46282", 
-    "46283", "46285", "46290", "46291", "46295", "46296", "46298"
-  ],
-  "FAVICON_URL": "https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png",
-  "basePrices": {
-    "biWeekly": 89,
-    "weekly": 109,
-    "twiceWeekly": 169
-  },
-  "dogFeeMap": {
-    "1-2": 0,
-    "3": 15,
-    "4": 30,
-    "5": 45
-  },
-  "planDetails": {
-    "biWeekly": {
-      "name": "Bi-Weekly Reset",
-      "priceKey": "biWeekly",
-      "frequency": "Service Every 2 Weeks",
-      "features": [
-        "Yard+ Coverage (Front, Back, Sides)",
-        "FREE Treats Each Visit",
-        "Pictures of Locked Gates",
-        "Automated Reminders & Alerts",
-        "!FREE Deodorizer (1x/Week - a $40 Value!)",
-        "!FREE WYSIwash® (1x/Month - A $30 Value!)",
-        "!Waste Hauled Away"
-      ]
+  "data": {
+    "FACEBOOK_PIXEL_ID": "770811879146972",
+    "APPROVED_ZIP_CODES": [
+      "46011", "46012", "46013", "46014", "46015", "46016", "46032", "46033",
+      "46034", "46035", "46036", "46037", "46038", "46039", "46040", "46041",
+      "46048", "46049", "46055", "46056", "46060", "46061", "46062", "46063",
+      "46064", "46065", "46068", "46069", "46071", "46072", "46074", "46075",
+      "46076", "46077", "46082", "46085", "46163", "46201", "46202", "46203",
+      "46204", "46205", "46206", "46207", "46208", "46209", "46211", "46214",
+      "46216", "46217", "46218", "46219", "46220", "46221", "46222", "46223",
+      "46224", "46225", "46226", "46227", "46228", "46229", "46230", "46231",
+      "46234", "46235", "46236", "46237", "46239", "46240", "46241", "46242",
+      "46244", "46247", "46249", "46250", "46251", "46253", "46254", "46255",
+      "46256", "46259", "46260", "46266", "46268", "46278", "46280", "46282",
+      "46283", "46285", "46290", "46291", "46295", "46296", "46298"
+    ],
+    "FAVICON_URL": "https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png",
+    "basePrices": {
+      "biWeekly": 89,
+      "weekly": 109,
+      "twiceWeekly": 169
     },
-    "weekly": {
-      "name": "Pristine-Clean",
-      "priceKey": "weekly",
-      "frequency": "Service Every Week",
-      "features": [
-        "Yard+ Coverage (Front, Back, Sides)",
-        "Waste Hauled Away",
-        "FREE Deodorizer (1x/Week - a $40 Value!)",
-        "FREE WYSIwash® (1x/Month - A $30 Value!)",
-        "FREE Treats Each Visit",
-        "Pictures of Locked Gates",
-        "Automated Reminders & Alerts"
-      ]
+    "dogFeeMap": {
+      "1-2": 0,
+      "3": 15,
+      "4": 30,
+      "5": 45
     },
-    "twiceWeekly": {
-      "name": "Pristine-Plus",
-      "priceKey": "twiceWeekly",
-      "frequency": "Service 2x Per Week",
-      "features": [
-        "Yard+ Coverage (Front, Back, Sides)",
-        "Waste Hauled Away",
-        "FREE Deodorizer (2x/Week - an $80 Value!)",
-        "FREE WYSIwash® (1x/Month - A $30 Value!)",
-        "FREE Treats Each Visit",
-        "Pictures of Locked Gates",
-        "Automated Reminders & Alerts"
-      ]
+    "planDetails": {
+      "biWeekly": {
+        "name": "Bi-Weekly Reset",
+        "priceKey": "biWeekly",
+        "frequency": "Service Every 2 Weeks",
+        "features": [
+          "Yard+ Coverage (Front, Back, Sides)",
+          "FREE Treats Each Visit",
+          "Pictures of Locked Gates",
+          "Automated Reminders & Alerts",
+          "!FREE Deodorizer (1x/Week - a $40 Value!)",
+          "!FREE WYSIwash® (1x/Month - A $30 Value!)",
+          "!Waste Hauled Away"
+        ]
+      },
+      "weekly": {
+        "name": "Pristine-Clean",
+        "priceKey": "weekly",
+        "frequency": "Service Every Week",
+        "features": [
+          "Yard+ Coverage (Front, Back, Sides)",
+          "Waste Hauled Away",
+          "FREE Deodorizer (1x/Week - a $40 Value!)",
+          "FREE WYSIwash® (1x/Month - A $30 Value!)",
+          "FREE Treats Each Visit",
+          "Pictures of Locked Gates",
+          "Automated Reminders & Alerts"
+        ]
+      },
+      "twiceWeekly": {
+        "name": "Pristine-Plus",
+        "priceKey": "twiceWeekly",
+        "frequency": "Service 2x Per Week",
+        "features": [
+          "Yard+ Coverage (Front, Back, Sides)",
+          "Waste Hauled Away",
+          "FREE Deodorizer (2x/Week - an $80 Value!)",
+          "FREE WYSIwash® (1x/Month - A $30 Value!)",
+          "FREE Treats Each Visit",
+          "Pictures of Locked Gates",
+          "Automated Reminders & Alerts"
+        ]
+      }
+    }
+  },
+  "text": {
+    "globals": {
+      "specialOfferTitle": "Special Offer:",
+      "specialOfferBody": "All new plans include a <strong>FREE First Cleanup!</strong> We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST! <strong>(A $99.99+ Value)</strong>."
+    },
+    "zipView": {
+      "title": "Enter your zip code to see our plans."
+    },
+    "sorterView": {
+      "yardTitle": "1. What is your property size?",
+      "dogTitle": "2. How many dogs do you have?"
+    },
+    "packagesView": {
+      "title": "3. Choose Your 'Pristine Yard' Plan",
+      "oneTimeLink": "Looking for a One-Time Cleanup?"
+    },
+    "paymentPlanView": {
+      "title": "4. Choose Your Payment Plan & Lock In Savings"
+    },
+    "checkoutView": {
+      "title": "Final Step: Complete Your Order",
+      "whatHappensNextTitle": "Here's What Happens Next:",
+      "whatHappensNextBody": "Your payment today covers your <strong>first {term} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.<br/><br/>After checkout, a team member will call you within 24 hours to schedule **two** separate appointments:<br/>1. Your 100% <strong>FREE 'Initial Yard Reset'</strong> ($99.99+ value).<br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).",
+      "bailoutLink": "Prefer to set up your account over the phone? Click here."
+    },
+    "oneTimeView": {
+      "title": "The \"One-Time Yard Reset\"",
+      "subTitle": "For the first 30 minutes",
+      "description": "Perfect for first-time cleanups or special events. This price includes 30 minutes of service. Additional time is billed at $1/minute.",
+      "estatePrompt": "This service is for properties up to 1/2 acre. For larger properties, please ",
+      "estateLinkText": "request an 'Estate Quote'",
+      "psTitle": "P.S. Why pay $100 for one day?",
+      "psBody": "Our <strong>'Pristine-Clean' Weekly Plan</strong> is only ${price}/month.",
+      "psLinkText": "Click here to see our plans!"
+    },
+    "oneTimeCheckoutView": {
+      "title": "Book Your \"One-Time Yard Reset\"",
+      "whatHappensNextTitle": "Here's What Happens Next:",
+      "whatHappensNextBody": "Your $99.99 deposit is due today to book your service. This covers the first 30 minutes of cleanup.<br/><br/><strong>Additional time ($1/min) will be charged to this card *after* the service is complete.</strong> A team member will call you within 24 hours to get your cleanup on the schedule!"
+    },
+    "customQuoteView": {
+      "title": "You Qualify for a Custom 'Estate' Quote!",
+      "descMultiDog": "We love dogs! Properties with 6 or more dogs require a custom service plan. Please provide your info, and we will contact you for a free consultation.",
+      "descEstate": "Your property qualifies for our 'Estate Plan.' This requires a custom flat-rate quote. Please provide your info, and we will contact you for a free consultation."
+    },
+    "leadForm": {
+      "backLink": "&larr; Go Back",
+      "changeZipLink": "&larr; Change Zip Code"
+    },
+    "modals": {
+      "serviceInfo": {
+        "title": "About Our FREE Add-Ons",
+        "body": [
+          "<strong>What is WYSIwash®?</strong> Our WYSIwash® Sanitizer is a hospital-grade, pet-safe disinfectant designed to kill harmful viruses and bacteria like Parvovirus and Giardia, ensuring your yard is not just clean, but sanitary.",
+          "Our Deodorizer and WYSIwash® Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.",
+          "To be effective, these treatments must be applied to a non-frozen ground. Service is typically paused during Indiana's frost months (roughly October - April).",
+          "Because these are free, value-added services, their seasonal availability does not affect your flat-rate monthly price."
+        ]
+      },
+      "alertsInfo": {
+        "title": "About Our Automated Alerts",
+        "body": "We keep you in the loop every step of the way! Our system sends automated text messages for:",
+        "bullets": [
+          "<strong>Service Reminders:</strong> Sent the night before to confirm your upcoming service.",
+          "<strong>ETAs:</strong> Sent the day of service with a narrowed-down arrival window.",
+          "<strong>On The Way:</strong> A text to let you know our tech is en route.",
+          "<strong>Service Complete:</strong> A final alert (with a photo of your locked gate) once the job is done!"
+        ]
+      },
+      "pricingInfo": {
+        "title": "How Billing is Calculated",
+        "body": [
+          "To give you a simple and predictable bill, our monthly plans are based on the total number of visits you'll receive over a full year, averaged into equal payments."
+        ],
+        "bullets": [
+          "<b>Weekly Plan:</b> 52 visits/year &divide; 12 months = 4.33 visits/mo",
+          "<b>Bi-Weekly Plan:</b> 26 visits/year &divide; 12 months = 2.17 visits/mo"
+        ],
+        "footer": "This is why some months you'll see us 4 times and others 5 (for a weekly plan), but your bill remains the same flat rate."
+      },
+      "exitIntent": {
+        "title": "Leaving So Soon?",
+        "body": "Before you go, let us email you this quote! We'll also include our <strong>Free 5-Point Pet Safety Checklist for Yards</strong>."
+      }
+    },
+    "footer": {
+      "address": "5625 N GERMAN CHURCH RD. UNIT 2036, INDIANAPOLIS INDIANA 46235",
+      "phone1": "(317) 699-7667",
+      "phone2": "(317) 961-5865",
+      "email": "matt@itspurgepros.com"
     }
   }
 }
