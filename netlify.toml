@@ -1,9 +1,0 @@
-# This file tells Netlify how to build your site.
-
-[build]
-  [build.processing]
-    [build.processing.js]
-      # This tells the Netlify scanner to disable the "smart detection"
-      # that flags keys like the Firebase public apiKey.
-      # This is safe because the Firebase apiKey IS designed to be public.
-      secrets_scan_smart_detection_enabled = false
