@@ -1,93 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Configuration ---
-
-// NEW: This is now your *backend* function's endpoint.
-// We've removed the Make.com URL.
 const AUTOMATION_WEBHOOK_URL = '/.netlify/functions/create-stripe-session';
-
-// GHL Webhook URL (REMOVED from frontend, now lives securely in the backend)
-// const GOHIGHLEVEL_WEBHOOK_URL = '...';
-
-// Stripe PUBLISHABLE Key (This is safe to keep here)
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
 
-// EmailJS config (REMOVED from frontend, now lives securely in the backend)
-// const emailJsConfig = { ... };
-
-const FACEBOOK_PIXEL_ID = '770811879146972';
-const APPROVED_ZIP_CODES = ['46011', '46012', '46013', '46014', '46015', '46016', '46032', '46033', '46034', '46035', '46036', '46037', '46038', '46039', '46040', '46041', '46048', '46049', '46055', '46056', '46060', '46061', '46062', '46063', '46064', '46065', '46068', '46069', '46071', '46072', '46074', '46075', '46076', '46077', '46082', '46085', '46163', '46201', '46202', '46203', '46204', '46205', '46206', '46207', '46208', '46209', '46211', '46214', '46216', '46217', '46218', '46219', '46220', '46221', '46222', '46223', '46224', '46225', '46226', '46227', '46228', '46229', '46230', '46231', '46234', '46235', '46236', '46237', '46239', '46240', '46241', '46242', '46244', '46247', '46249', '46250', '46251', '46253', '46254', '46255', '46256', '46259', '46260', '46266', '46268', '46278', '46280', '46282', '46283', '46285', '46290', '46291', '46295', '46296', '46298'];
-const FAVICON_URL = 'https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png';
-
-// --- Base Prices ---
-const basePrices = {
-  biWeekly: 89,
-  weekly: 109,
-  twiceWeekly: 169,
-};
-
-// --- Dog Fee Map ---
-const dogFeeMap = {
-  '1-2': 0,
-  '3': 15,
-  '4': 30,
-  '5': 45,
-};
-
-// --- Plan Details ---
-const planDetails = {
-  biWeekly: {
-    name: 'Bi-Weekly Reset',
-    price: basePrices.biWeekly,
-    frequency: 'Service Every 2 Weeks',
-    features: [
-      'Yard+ Coverage (Front, Back, Sides)',
-      'FREE Treats Each Visit',
-      'Pictures of Locked Gates',
-      'Automated Reminders & Alerts',
-      '!FREE Deodorizer (1x/Week - a $40 Value!)', // <-- NOT INCLUDED
-      '!FREE WYSIwash® (1x/Month - A $30 Value!)', // <-- NOT INCLUDED
-      '!Waste Hauled Away', // <-- NOT INCLUDED (shows red X)
-    ],
-  },
-  weekly: {
-    name: 'Pristine-Clean',
-    price: basePrices.weekly,
-    frequency: 'Service Every Week',
-    features: [
-      'Yard+ Coverage (Front, Back, Sides)',
-      'Waste Hauled Away', // <-- INCLUDED
-      'FREE Deodorizer (1x/Week - a $40 Value!)',
-      'FREE WYSIwash® (1x/Month - A $30 Value!)',
-      'FREE Treats Each Visit',
-      'Pictures of Locked Gates',
-      'Automated Reminders & Alerts',
-    ],
-  },
-  twiceWeekly: {
-    name: 'Pristine-Plus',
-    price: basePrices.twiceWeekly,
-    frequency: 'Service 2x Per Week',
-    features: [
-      'Yard+ Coverage (Front, Back, Sides)',
-      'Waste Hauled Away', // <-- INCLUDED
-      'FREE Deodorizer (2x/Week - an $80 Value!)',
-      'FREE WYSIwash® (1x/Month - A $30 Value!)',
-      'FREE Treats Each Visit',
-      'Pictures of Locked Gates',
-      'Automated Reminders & Alerts',
-    ],
-  },
-};
-
 // --- Helper Functions ---
-
-/**
- * Loads an external script dynamically.
- * @param {string} src - The URL of the script to load.
- * @param {string} id - An ID to assign to the script element.
- * @returns {Promise<void>}
- */
 const loadScript = (src, id) => {
   return new Promise((resolve, reject) => {
     if (document.getElementById(id)) {
@@ -104,11 +21,9 @@ const loadScript = (src, id) => {
   });
 };
 
-/**
- * Initializes the Facebook Pixel.
- */
-const initFacebookPixel = () => {
-  if (window.fbq) return; // Already initialized
+const initFacebookPixel = (pixelId) => {
+  if (!pixelId) return; 
+  if (window.fbq) return; 
   !function(f,b,e,v,n,t,s)
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -117,15 +32,12 @@ const initFacebookPixel = () => {
   t.src=v;s=b.getElementsByTagName(e)[0];
   s.parentNode.insertBefore(t,s)}(window, document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', FACEBOOK_PIXEL_ID);
+  fbq('init', pixelId);
   fbq('track', 'PageView');
 };
 
-/**
- * Sets the website's favicon.
- * @param {string} href - The URL of the favicon.
- */
 const setFavicon = (href) => {
+  if (!href) return;
   let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
   link.type = 'image/png';
   link.rel = 'shortcut icon';
@@ -133,71 +45,37 @@ const setFavicon = (href) => {
   document.getElementsByTagName('head')[0].appendChild(link);
 };
 
-
-/**
- * Sends lead data to the GHL webhook.
- * NEW: This function is now DELETED. The backend handles all webhooks.
-*/
-// const sendToWebhook = async (data, url) => { ... };
-
-/**
- * Sends an email using EmailJS.
- * NEW: This function is now DELETED. The backend handles all emails.
- */
-// const sendEmail = async (templateID, templateParams, serviceID, publicKey) => { ... };
-
-/**
- * --- Generates a shareable quote link ---
- * @param {object} quoteState - An object with current selections
- * @returns {string} - A full URL with query parameters
- */
 const generateQuoteLink = (quoteState) => {
   const baseUrl = window.location.origin + window.location.pathname;
   const params = new URLSearchParams();
-  
   if (quoteState.zip) params.set('zip', quoteState.zip);
   if (quoteState.yardSize) params.set('yardSize', quoteState.yardSize);
   if (quoteState.dogCount) params.set('dogCount', quoteState.dogCount);
   if (quoteState.plan) params.set('plan', quoteState.plan);
   if (quoteState.paymentTerm) params.set('paymentTerm', quoteState.paymentTerm);
-
   return `${baseUrl}?${params.toString()}`;
 };
 
-
-// --- Exit Intent Hook ---
-/**
- * @param {boolean} isFormSubmitted - Pass true if the main form was submitted, to prevent the modal.
- * @param {function} onIntent - Callback to fire when exit intent is detected.
- */
 const useExitIntent = (isFormSubmitted, onIntent) => {
   useEffect(() => {
-    if (isFormSubmitted) return; // Don't run if form is already submitted
-
-    // Add a delay to prevent firing on page load
+    if (isFormSubmitted) return; 
     const timerId = setTimeout(() => {
       const handleMouseLeave = (e) => {
-        // Check if mouse is near the top of the viewport
         if (e.clientY <= 0) {
           const hasSeenModal = sessionStorage.getItem('seenExitIntentModal');
           if (!hasSeenModal) {
-            onIntent(); // Fire the callback
+            onIntent(); 
             sessionStorage.setItem('seenExitIntentModal', 'true');
           }
         }
       };
       document.addEventListener('mouseleave', handleMouseLeave);
-
-      // Cleanup
       return () => {
         document.removeEventListener('mouseleave', handleMouseLeave);
       };
-    }, 1500); // 1.5 second delay
-
-    // Cleanup timer if component unmounts
+    }, 1500); 
     return () => clearTimeout(timerId);
-
-  }, [isFormSubmitted, onIntent]); // Re-check if form gets submitted
+  }, [isFormSubmitted, onIntent]);
 };
 
 
@@ -206,7 +84,7 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
 /**
  * VIEW 1: The Gate (Zip Code Validator)
  */
-const ZipCodeValidator = ({ onZipValidated }) => {
+const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
 
@@ -216,18 +94,17 @@ const ZipCodeValidator = ({ onZipValidated }) => {
       setError('Please enter a valid 5-digit ZIP code.');
       return;
     }
-    if (!APPROVED_ZIP_CODES.includes(zip)) {
+    if (!approvedZipCodes.includes(zip)) {
       setError("We're sorry, but we do not service this area at this time.");
       return;
     }
-    // Valid zip
     setError('');
     onZipValidated(zip);
   };
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Enter your zip code to see our plans.</h2>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="tel"
@@ -259,19 +136,19 @@ const ZipCodeValidator = ({ onZipValidated }) => {
 /**
  * VIEW 2: The Sorter (Yard Size & Dog Count)
  */
-const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) => {
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, dogFeeMap, text, globalsText, leadFormText }) => {
   const [yardSize, setYardSize] = useState(initialYardSize);
   const [dogCount, setDogCount] = useState(initialDogCount);
 
   const handleSubmit = () => {
-    const fee = dogFeeMap[dogCount] ?? 0; // Default to 0 if 6+
+    const fee = dogFeeMap[dogCount] ?? 0;
     onSortComplete(yardSize, dogCount, fee);
   };
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">1. What is your property size?</h2>
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">{text.yardTitle}</h2>
         <div className="space-y-4">
           <YardButton
             title="Standard Residential Lot"
@@ -291,16 +168,15 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) =>
       </div>
 
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">2. How many dogs do you have?</h2>
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text.dogTitle}</h2>
         <select
           value={dogCount}
           onChange={(e) => setDogCount(e.target.value)}
           className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg"
         >
-          <option value="1-2">1-2 Dogs</option>
-          <option value="3">3 Dogs</option>
-          <option value="4">4 Dogs</option>
-          <option value="5">5 Dogs</option>
+          {Object.keys(dogFeeMap).map(key => (
+            <option key={key} value={key}>{key} Dogs</option>
+          ))}
           <option value="6+">6+ Dogs</option>
         </select>
       </div>
@@ -308,8 +184,8 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) =>
       <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3 special-offer-glow">
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
-          <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup!</strong> We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST! <strong>(A $99.99+ Value)</strong>.</p>
+          <p className="font-bold text-lg">{globalsText.specialOfferTitle}</p>
+          <p className="text-sm font-semibold" dangerouslySetInnerHTML={{ __html: globalsText.specialOfferBody }} />
         </div>
       </div>
 
@@ -323,9 +199,8 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount }) =>
       <button
         onClick={onBack}
         className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-6"
-      >
-        &larr; Change Zip Code
-      </button>
+        dangerouslySetInnerHTML={{ __html: leadFormText.changeZipLink }}
+      />
     </div>
   );
 };
@@ -353,48 +228,51 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
 );
 
 /**
- * VIEW 3B: The "Package Selection" (The Grand Slam)
+ * VIEW 3B: The "Package Selection"
  */
-const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick }) => {
-  const plans = [
-    { key: 'biWeekly', ...planDetails.biWeekly, finalPrice: planDetails.biWeekly.price + dogFee },
-    { key: 'weekly', ...planDetails.weekly, finalPrice: planDetails.weekly.price + dogFee, popular: true },
-    { key: 'twiceWeekly', ...planDetails.twiceWeekly, finalPrice: planDetails.twiceWeekly.price + dogFee },
-  ];
+const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick, planDetails, basePrices, text, globalsText, leadFormText }) => {
+  
+  const plans = useMemo(() => {
+    return Object.keys(planDetails).map((key) => {
+      const plan = planDetails[key];
+      const basePrice = basePrices[plan.priceKey] || 0;
+      return {
+        key: key,
+        ...plan,
+        finalPrice: basePrice + dogFee,
+        popular: key === 'weekly', 
+      };
+    });
+  }, [planDetails, basePrices, dogFee]);
   
   const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Selections</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">3. Choose Your 'Pristine Yard' Plan</h2>
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4" dangerouslySetInnerHTML={{ __html: leadFormText.backLink }} />
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       
       <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3 special-offer-glow">
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
-          <p className="font-bold text-lg">Special Offer:</p>
-          <p className="text-sm font-semibold">All new plans include a <strong>FREE First Cleanup!</strong> We even waive your one-time initial setup fee so you start with a perfect yard, at NO COST! <strong>(A $99.99+ Value)</strong>.</p>
+          <p className="font-bold text-lg">{globalsText.specialOfferTitle}</p>
+          <p className="text-sm font-semibold" dangerouslySetInnerHTML={{ __html: globalsText.specialOfferBody }} />
         </div>
       </div>
 
       <div className="space-y-4">
         {plans.map((plan) => {
-          // Sort features: FREE items first, then standard, then excluded
           const sortedFeatures = [...plan.features].sort((a, b) => {
             const aExcluded = a.startsWith('!');
             const bExcluded = b.startsWith('!');
             const aFree = a.toUpperCase().startsWith('FREE');
             const bFree = b.toUpperCase().startsWith('FREE');
-
-            if (aExcluded && !bExcluded) return 1;  // a (excluded) goes to bottom
-            if (!aExcluded && bExcluded) return -1; // b (excluded) goes to bottom
-            if (aExcluded && bExcluded) return 0;   // both excluded, keep order
-
-            // Neither is excluded
-            if (aFree && !bFree) return -1; // a (free) goes first
-            if (!aFree && bFree) return 1;  // b (free) goes first
-
-            return 0; // both free or both not free, keep order
+            if (aExcluded && !bExcluded) return 1;
+            if (!aExcluded && bExcluded) return -1;
+            if (aExcluded && bExcluded) return 0;
+            if (aFree && !bFree) return -1;
+            if (!aFree && bFree) return 1;
+            return 0;
           });
 
           return (
@@ -411,7 +289,6 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
               </div>
               
               <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
-                {/* 1. Dog Household */}
                 <li className="flex items-start text-slate-600">
                   <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <div className="flex-grow">
@@ -419,7 +296,6 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
                   </div>
                 </li>
                 
-                {/* 2. Frequency */}
                 <li className="flex items-start text-slate-600">
                   <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   <div className="flex-grow">
@@ -427,17 +303,14 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
                   </div>
                 </li>
 
-                {/* 3. The rest of the features (FREE, standard, excluded) */}
                 {sortedFeatures.map((feature, index) => {
                   const isIncluded = !feature.startsWith('!');
                   let featureText = isIncluded ? feature : feature.substring(1);
                   let featureSubtext = '';
-
-                  // Check for the subtext
                   if (featureText.includes('(') && featureText.endsWith(')')) {
                     const parts = featureText.split('(');
-                    featureText = parts[0].trim(); // "FREE Deodorizer"
-                    featureSubtext = `(${parts[1]}`; // "(1x/Week - a $40 Value!)"
+                    featureText = parts[0].trim();
+                    featureSubtext = `(${parts[1]}`;
                   }
                   
                   return (
@@ -459,13 +332,11 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
                         )}
                       </div>
                       
-                      {/* Info button for Deodorizer/WYSIwash (check original feature string) */}
                       {(feature.includes('Deodorizer') || feature.includes('WYSIwash')) && isIncluded && (
                         <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125 flex-shrink-0">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
                         </button>
                       )}
-                      {/* Info button for Alerts (check original feature string) */}
                       {(feature.includes('Automated Reminders')) && isIncluded && (
                         <button onClick={onAlertsInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125 flex-shrink-0">
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
@@ -491,49 +362,28 @@ const PackageSelector = ({ dogFee, dogCount, onPlanSelect, onBack, onOneTimeClic
         onClick={onOneTimeClick}
         className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
       >
-        Looking for a One-Time Cleanup?
+        {text.oneTimeLink}
       </button>
     </div>
   );
 };
 
 /**
- * --- NEW: VIEW 4: The "Cash Multiplier" ---
- * This is the new View 4, as requested in the blueprint.
+ * VIEW 4: The "Cash Multiplier"
  */
-const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack }) => {
+const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, text, leadFormText }) => {
   
   const monthly = packageSelection.finalMonthlyPrice;
-  
   const plans = [
-    {
-      term: 'Monthly',
-      priceLabel: `$${monthly}/month`,
-      total: monthly,
-      savings: null,
-      savingsValue: 0,
-    },
-    {
-      term: 'Quarterly',
-      priceLabel: `$${(monthly * 3) - 30} / 3 Months`,
-      total: (monthly * 3) - 30,
-      savings: 'You save $30!',
-      savingsValue: 30,
-    },
-    {
-      term: 'Annual',
-      priceLabel: `$${monthly * 11} / Year`,
-      total: monthly * 11,
-      savings: `You save $${monthly} - 1 Month FREE!`,
-      savingsValue: monthly,
-      popular: true,
-    }
+    { term: 'Monthly', priceLabel: `$${monthly}/month`, total: monthly, savings: null, savingsValue: 0 },
+    { term: 'Quarterly', priceLabel: `$${(monthly * 3) - 30} / 3 Months`, total: (monthly * 3) - 30, savings: 'You save $30!', savingsValue: 30 },
+    { term: 'Annual', priceLabel: `$${monthly * 11} / Year`, total: monthly * 11, savings: `You save $${monthly} - 1 Month FREE!`, savingsValue: monthly, popular: true }
   ];
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">4. Choose Your Payment Plan & Lock In Savings</h2>
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4" dangerouslySetInnerHTML={{ __html: leadFormText.backLink }} />
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       <p className="text-center text-slate-600 mb-6 -mt-4">You've selected the <strong>{packageSelection.name}</strong> plan.</p>
       
       <div className="space-y-4">
@@ -571,35 +421,22 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack }) => {
 
 
 /**
- * --- NEW: VIEW 5: The "Checkout" (The "Slimy Fuck" Fix) ---
- * This is the final checkout page with the itemized order summary.
+ * VIEW 5: The "Checkout"
  */
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    terms: false,
-  });
-  
+const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, planDetails, text, leadFormText }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
 
-  // --- Calculate Order Summary ---
   const initialResetFee = 99.99;
   const termDiscount = paymentSelection.savingsValue || 0;
   const totalSavings = initialResetFee + termDiscount;
   const totalDueToday = paymentSelection.total;
 
-  // --- Form Handlers ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = async (e) => {
@@ -610,28 +447,17 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
       setError('You must agree to the Terms of Service.');
       return;
     }
-    
     if (!stripeInstance || !cardElement) {
-      // Stripe.js has not yet loaded.
       setError('Payment system is not ready. Please wait a moment and try again.');
       return;
     }
 
     setIsSubmitting(true);
 
-    // --- 1. Create Stripe Payment Method ---
     const { error: stripeError, paymentMethod } = await stripeInstance.createPaymentMethod({
       type: 'card',
       card: cardElement,
-      billing_details: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: {
-            line1: formData.address, // Stripe can use this for validation
-            postal_code: zipCode,
-        }
-      },
+      billing_details: { name: formData.name, email: formData.email, phone: formData.phone, address: { line1: formData.address, postal_code: zipCode } },
     });
 
     if (stripeError) {
@@ -640,11 +466,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
       return;
     }
 
-    // --- 2. Build ALL Data Payloads ---
-    // These payloads are now for our *backend*, not Make.com
-    
-    // --- Payload for GHL & EmailJS (Backend will use this) ---
-    // Calculate per_visit for the email
     let perVisitPrice = 'N/A';
     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
     if (planKey) {
@@ -663,100 +484,51 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
         payment_term: paymentSelection.term,
         final_charge_amount: totalDueToday,
         savings: paymentSelection.savings,
-        quote_link: generateQuoteLink({
-            zip: zipCode,
-            dogCount: dogCount,
-            plan: packageSelection.name,
-            paymentTerm: paymentSelection.term,
-        }),
+        quote_link: generateQuoteLink({ zip: zipCode, dogCount: dogCount, plan: packageSelection.name, paymentTerm: paymentSelection.term }),
     };
     
-    // --- Pre-build conditional HTML for EmailJS ---
     let term_discount_row_html = '';
     let term_savings_row_html = '';
-
     if (termDiscount > 0) {
-      term_discount_row_html = `
-        <div style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; margin-bottom: 8px;">
-          <span>${paymentSelection.term} Discount</span>
-          <span style="text-decoration: line-through;">$${termDiscount.toFixed(2)}</span>
-        </div>
-      `;
-      
-      term_savings_row_html = `
-        <div style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; margin-bottom: 8px; color: #166534; font-weight: 500;">
-          <span>${paymentSelection.term} Savings</span>
-          <span><strong>-$${termDiscount.toFixed(2)}</strong></span>
-        </div>
-      `;
+      term_discount_row_html = `<div style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; margin-bottom: 8px;"><span>${paymentSelection.term} Discount</span><span style="text-decoration: line-through;">$${termDiscount.toFixed(2)}</span></div>`;
+      term_savings_row_html = `<div style="display: -webkit-box; display: -ms-flexbox; display: flex; -webkit-box-pack: justify; -ms-flex-pack: justify; justify-content: space-between; margin-bottom: 8px; color: #166534; font-weight: 500;"><span>${paymentSelection.term} Savings</span><span><strong>-$${termDiscount.toFixed(2)}</strong></span></div>`;
     }
 
-    // --- emailParams object (Backend will use this) ---
-      const emailParams = {
+    const emailParams = {
         ...leadData,
         description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
         total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
         per_visit: `$${perVisitPrice}`,
-        final_charge: totalDueToday.toFixed(2), // <-- THIS LINE IS NOW FIXED
+        final_charge: totalDueToday.toFixed(2),
         total_savings: totalSavings.toFixed(2),
         initial_savings: initialResetFee.toFixed(2),
         term_savings: termDiscount.toFixed(2),
-        
-        // NEW: Pass the pre-built HTML strings
         term_discount_row: term_discount_row_html,
         term_savings_row: term_savings_row_html
       };
 
-    // --- FINAL PAYLOAD for our Netlify Function ---
-    // This wrapper contains everything our backend needs.
     const backendPayload = {
       paymentMethodId: paymentMethod.id,
-      customer: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-      },
-      quote: {
-        zipCode: zipCode,
-        dogCount: dogCount,
-        planName: packageSelection.name,
-        paymentTerm: paymentSelection.term,
-      },
-      // We also send the pre-formatted data for GHL and EmailJS
+      customer: { name: formData.name, email: formData.email, phone: formData.phone, address: formData.address },
+      quote: { zipCode: zipCode, dogCount: dogCount, planName: packageSelection.name, paymentTerm: paymentSelection.term },
       leadData: leadData, 
       emailParams: emailParams,
     };
 
-    // --- 3. Send to our NEW Backend ---
     try {
-      // ACTION 1: Call our Netlify Function
       const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(backendPayload),
       });
-
       const responseData = await automationResponse.json();
-
       if (!automationResponse.ok || responseData.status !== 'success') {
-        // The backend function itself threw an error (e.g., Stripe failed)
-        // The backend function returns a { message: '...' }
         throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
-      
-      // ACTION 2: GHL (REMOVED - Handled by backend)
-      
-      // ACTION 3: Email (REMOVED - Handled by backend)
-
-      // ACTION 4: Fire FB Event (This is now safe to run)
-      fbq('track', 'CompleteRegistration');
-
-      // All successful!
+      if (window.fbq) fbq('track', 'CompleteRegistration');
       setIsSubmitting(false);
       setIsSubmitted(true);
       onSubmitSuccess();
-
     } catch (err) {
       console.error('Submission Error:', err);
       setError(err.message || 'An unknown error occurred.');
@@ -764,7 +536,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
     }
   };
   
-  // --- Thank You View ---
   if (isSubmitted) {
     return (
       <div className="bg-white p-8 rounded-xl shadow-lg text-center fade-in">
@@ -779,116 +550,59 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
     );
   }
   
-  // --- Main Checkout Form View ---
+  // Prepare dynamic text for "What Happens Next"
+  const whatHappensNextTerm = paymentSelection.term === 'Annual' ? '12 months' : (paymentSelection.term === 'Quarterly' ? '3 months' : 'month');
+  const whatHappensNextBody = text.whatHappensNextBody.replace('{term}', whatHappensNextTerm);
+
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Payment Plan</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Final Step: Complete Your Order</h2>
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4" dangerouslySetInnerHTML={{ __html: leadFormText.backLink }} />
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       
-      {/* --- NEW: UI COMPONENT 1: The Order Summary --- */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
         <h3 className="text-lg font-bold text-slate-800 mb-2 text-center">Your Order Summary</h3>
         <p className="text-center text-green-600 font-semibold text-lg mb-4">You're saving ${totalSavings.toFixed(2)}+ today!</p>
-        
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-slate-600">{packageSelection.name} ({paymentSelection.term} Plan)</span>
-            <span className="font-medium text-slate-900">${paymentSelection.total.toFixed(2)}</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-slate-600">One-Time Initial Yard Reset</span>
-            <span className="font-medium text-slate-900 line-through">$99.99+</span>
-          </div>
-          
-          {termDiscount > 0 && (
-            <div className="flex justify-between">
-              <span className="text-slate-600">{paymentSelection.term} Discount</span>
-              <span className="font-medium text-slate-900 line-through">${termDiscount.toFixed(2)}</span>
-            </div>
-          )}
-          
-          <div className="flex justify-between text-green-600">
-            <span className="font-semibold">Your "Free First Clean" Bonus</span>
-            <span className="font-semibold">-$99.99+</span>
-          </div>
-          
-            {termDiscount > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span className="font-semibold">{paymentSelection.term} Savings</span>
-              <span className="font-semibold">-${termDiscount.toFixed(2)}</span>
-            </div>
-          )}
-          
-          <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl">
-            <span className="font-bold text-slate-900">Total Due Today:</span>
-            <span className="font-extrabold text-slate-900">${totalDueToday.toFixed(2)}</span>
-          </div>
+          <div className="flex justify-between"><span className="text-slate-600">{packageSelection.name} ({paymentSelection.term} Plan)</span><span className="font-medium text-slate-900">${paymentSelection.total.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-slate-600">One-Time Initial Yard Reset</span><span className="font-medium text-slate-900 line-through">$99.99+</span></div>
+          {termDiscount > 0 && (<div className="flex justify-between"><span className="text-slate-600">{paymentSelection.term} Discount</span><span className="font-medium text-slate-900 line-through">${termDiscount.toFixed(2)}</span></div>)}
+          <div className="flex justify-between text-green-600"><span className="font-semibold">Your "Free First Clean" Bonus</span><span className="font-semibold">-$99.99+</span></div>
+          {termDiscount > 0 && (<div className="flex justify-between text-green-600"><span className="font-semibold">{paymentSelection.term} Savings</span><span className="font-semibold">-${termDiscount.toFixed(2)}</span></div>)}
+          <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl"><span className="font-bold text-slate-900">Total Due Today:</span><span className="font-extrabold text-slate-900">${totalDueToday.toFixed(2)}</span></div>
         </div>
       </div>
       
-      {/* --- NEW: UI COMPONENT 2: The Clarification Text --- */}
       <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-900 p-4 rounded-r-lg mb-6">
-        <p className="font-bold">Here's What Happens Next:</p>
-        <p className="text-sm">
-          Your payment today covers your <strong>first {paymentSelection.term === 'Annual' ? '12 months' : (paymentSelection.term === 'Quarterly' ? '3 months' : 'month')} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.
-        </p>
-        <p className="text-sm mt-2">
-          After checkout, a team member will call you within 24 hours to schedule **two** separate appointments:
-          <br/>1. Your 100% <strong>FREE 'Initial Yard Reset'</strong> ($99.99+ value).
-          <br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).
-        </p>
+        <p className="font-bold">{text.whatHappensNextTitle}</p>
+        <p className="text-sm" dangerouslySetInnerHTML={{ __html: whatHappensNextBody }} />
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* --- UI COMPONENT 3: The Form --- */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-slate-800">Enter Your Details & Payment</h3>
           <input type="text" name="name" placeholder="Full Name*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.name} />
           <input type="email" name="email" placeholder="Email Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.email} />
           <input type="tel" name="phone" placeholder="Phone Number*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.phone} />
           <input type="text" name="address" placeholder="Service Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.address} />
-          
-          {/* --- Stripe Payment Module --- */}
-          <div className="p-3 border-2 border-gray-300 rounded-lg">
-              {/* This div is the mount point for the Stripe CardElement */}
-            <div id="card-element"></div>
-          </div>
-
+          <div className="p-3 border-2 border-gray-300 rounded-lg"><div id="card-element"></div></div>
           <div className="pt-2">
             <label className="flex items-start text-xs text-gray-500 cursor-pointer" htmlFor="terms-consent-checkout">
               <input type="checkbox" id="terms-consent-checkout" name="terms" checked={formData.terms} onChange={handleChange} className="mt-0.5 mr-3 h-5 w-5 rounded border-gray-300 text-[var(--brand-blue)] focus:ring-[var(--brand-blue)] flex-shrink-0" />
-              <div>
-                <span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.
-              </div>
+              <div><span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.</div>
             </label>
           </div>
-
-          {/* --- Error Display --- */}
-          {error && (
-            <p className="text-red-600 text-sm font-medium text-center p-3 bg-red-50 rounded-lg">{error}</p>
-          )}
-
-          {/* --- Submit Button --- */}
+          {error && (<p className="text-red-600 text-sm font-medium text-center p-3 bg-red-50 rounded-lg">{error}</p>)}
           <div className="border-t pt-6">
-            <button
-              type="submit"
-              disabled={isSubmitting || !stripeInstance}
-              className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
-            >
+            <button type="submit" disabled={isSubmitting || !stripeInstance} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14">
               {isSubmitting ? <span className="loader"></span> : `Pay $${totalDueToday.toFixed(2)} & Start Service`}
             </button>
           </div>
         </div>
       </form>
 
-      {/* --- The "Bailout" Link --- */}
       <div className="text-center mt-6">
-        <button
-          onClick={onBailout}
-          className="text-sm text-gray-600 hover:text-blue-600 hover:underline"
-        >
-          Prefer to set up your account over the phone? Click here.
+        <button onClick={onBailout} className="text-sm text-gray-600 hover:text-blue-600 hover:underline">
+          {text.bailoutLink}
         </button>
       </div>
     </div>
@@ -897,28 +611,17 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, o
 
 
 /**
- * VIEW 3A / One-Time: The Lead Form (Custom Quote & One-Time)
- * This is now *only* for non-payment leads (Custom Quote, One-Time)
+ * VIEW 3A: Custom Quote Lead Form
  */
-const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    notes: '',
-    terms: false,
-  });
+const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, isOneTimeForm = false, text, leadFormText }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', notes: '', terms: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = async (e) => {
@@ -949,49 +652,33 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
     }
 
     leadData = {
-      ...formData,
-      zip: zipCode,
-      lead_status: leadStatus,
-      quote_type: quoteType,
-      plan: planName,
-      dog_count: dogCount,
+      ...formData, zip: zipCode, lead_status: leadStatus, quote_type: quoteType, plan: planName, dog_count: dogCount,
       quote_link: generateQuoteLink(quoteLinkState),
     };
     
     emailParams = {
-      ...formData,
-      ...leadData,
-      description: title,
+      ...formData, ...leadData, description: title,
       total_monthly: isOneTimeForm ? '$99.99 (first 30 min)' : 'Custom Quote',
-      per_visit: 'N/A',
-      final_charge: 'N/A',
-      savings: 'N/A',
+      per_visit: 'N/A', final_charge: 'N/A', savings: 'N/A',
     };
     
-    // --- NEW: Create backend payload ---
     const backendPayload = {
       leadData: leadData,
       emailParams: emailParams,
-      leadType: 'lead', // This tells the backend to use the LEAD template
+      leadType: 'lead',
     };
 
-    // 1. Fire FB event
-    fbq('track', fbTrackEvent);
+    if (window.fbq) fbq('track', fbTrackEvent);
     
-    // 2. Send to NEW /create-lead backend
     try {
       const response = await fetch('/.netlify/functions/create-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(backendPayload),
       });
-
       if (!response.ok) {
         throw new Error('An error occurred submitting your request.');
       }
-      
-      // 3. Send Email (REMOVED - Handled by backend)
-
       setIsSubmitting(false);
       setIsSubmitted(true);
       if (onSubmitSuccess) {
@@ -1026,115 +713,53 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
       <h2 className="text-2xl font-bold text-slate-800 text-center">{title}</h2>
       <p className="text-slate-600 mt-2 text-center mb-6">{description}</p>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          name="name"
-          placeholder="Full Name*"
-          required
-          className="w-full p-3 border-2 border-gray-300 rounded-lg"
-          onChange={handleChange}
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address*"
-          required
-          className="w-full p-3 border-2 border-gray-300 rounded-lg"
-          onChange={handleChange}
-        />
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone Number*"
-          required
-          className="w-full p-3 border-2 border-gray-300 rounded-lg"
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="address"
-          placeholder="Service Address*"
-          required
-          className="w-full p-3 border-2 border-gray-300 rounded-lg"
-          onChange={handleChange}
-        />
-        <textarea
-          name="notes"
-          placeholder="Additional Notes (optional)"
-          rows="2"
-          className="w-full p-3 border-2 border-gray-300 rounded-lg"
-          onChange={handleChange}
-        />
+        <input type="text" name="name" placeholder="Full Name*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} />
+        <input type="email" name="email" placeholder="Email Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} />
+        <input type="tel" name="phone" placeholder="Phone Number*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} />
+        <input type="text" name="address" placeholder="Service Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} />
+        <textarea name="notes" placeholder="Additional Notes (optional)" rows="2" className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} />
         <div className="pt-2">
           <label className="flex items-start text-xs text-gray-500 cursor-pointer" htmlFor="terms-consent">
-            <input
-              type="checkbox"
-              id="terms-consent"
-              name="terms"
-              checked={formData.terms}
-              onChange={handleChange}
-              className="mt-0.5 mr-3 h-5 w-5 rounded border-gray-300 text-[var(--brand-blue)] focus:ring-[var(--brand-blue)] flex-shrink-0"
-            />
-            <div>
-              <span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.
-            </div>
+            <input type="checkbox" id="terms-consent" name="terms" checked={formData.terms} onChange={handleChange} className="mt-0.5 mr-3 h-5 w-5 rounded border-gray-300 text-[var(--brand-blue)] focus:ring-[var(--brand-blue)] flex-shrink-0" />
+            <div><span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.</div>
           </label>
         </div>
-        {error && (
-          <p className="text-red-600 text-sm font-medium text-center">{error}</p>
-        )}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
-        >
+        {error && (<p className="text-red-600 text-sm font-medium text-center">{error}</p>)}
+        <button type="submit" disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14">
           {isSubmitting ? <span className="loader"></span> : 'Request My Quote'}
         </button>
       </form>
       <button
         onClick={onBack}
         className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-6"
-      >
-        &larr; Go Back
-      </button>
+        dangerouslySetInnerHTML={{ __html: leadFormText.backLink }}
+      />
     </div>
   );
 };
 
-// --- NEW: VIEW 5B: One-Time Cleanup Checkout Form ---
-const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, stripeInstance, cardElement }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    terms: false,
-  });
-  
+/**
+ * VIEW 5B: One-Time Cleanup Checkout
+ */
+const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, stripeInstance, cardElement, text, leadFormText }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState('');
-
   const depositAmount = 99.99;
 
-  // --- Form Handlers ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
     if (!formData.terms) {
       setError('You must agree to the Terms of Service.');
       return;
     }
-    
     if (!stripeInstance || !cardElement) {
       setError('Payment system is not ready. Please wait a moment and try again.');
       return;
@@ -1142,19 +767,10 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
 
     setIsSubmitting(true);
 
-    // --- 1. Create Stripe Payment Method ---
     const { error: stripeError, paymentMethod } = await stripeInstance.createPaymentMethod({
       type: 'card',
       card: cardElement,
-      billing_details: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: {
-            line1: formData.address,
-            postal_code: zipCode,
-        }
-      },
+      billing_details: { name: formData.name, email: formData.email, phone: formData.phone, address: { line1: formData.address, postal_code: zipCode } },
     });
 
     if (stripeError) {
@@ -1162,80 +778,40 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       setIsSubmitting(false);
       return;
     }
-
-    // --- 2. Build ALL Data Payloads ---
     
-    // --- Payload for GHL & EmailJS (Backend will use this) ---
     const leadData = {
-        ...formData,
-        zip: zipCode,
-        lead_status: 'Complete - PAID (One-Time)',
-        quote_type: 'One-Time Yard Reset',
-        plan: 'One-Time Yard Reset',
-        dog_count: dogCount,
-        total_monthly_rate: 'N/A',
-        payment_term: 'One-Time Deposit',
-        final_charge_amount: depositAmount,
-        savings: 'N/A',
-        quote_link: '', // No quote link for one-time
+        ...formData, zip: zipCode, lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset',
+        plan: 'One-Time Yard Reset', dog_count: dogCount, total_monthly_rate: 'N/A', payment_term: 'One-Time Deposit',
+        final_charge_amount: depositAmount, savings: 'N/A', quote_link: '',
     };
     
     const emailParams = {
-        ...leadData,
-        description: `One-Time Yard Reset (Deposit Paid)`,
-        total_monthly: 'N/A',
-        per_visit: 'N/A',
-        final_charge: `$${depositAmount.toFixed(2)} (Deposit)`,
+        ...leadData, description: `One-Time Yard Reset (Deposit Paid)`, total_monthly: 'N/A',
+        per_visit: 'N/A', final_charge: `$${depositAmount.toFixed(2)} (Deposit)`,
     };
 
-    // --- FINAL PAYLOAD for our Netlify Function ---
     const backendPayload = {
       paymentMethodId: paymentMethod.id,
-      customer: {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-      },
-      quote: {
-        zipCode: zipCode,
-        dogCount: dogCount,
-        planName: 'One-Time Yard Reset',
-        paymentTerm: 'One-Time Deposit', // This tells our backend to run a "Charge"
-      },
-      // We also send the pre-formatted data for GHL and EmailJS
+      customer: { name: formData.name, email: formData.email, phone: formData.phone, address: formData.address },
+      quote: { zipCode: zipCode, dogCount: dogCount, planName: 'One-Time Yard Reset', paymentTerm: 'One-Time Deposit' },
       leadData: leadData, 
       emailParams: emailParams,
     };
 
-    // --- 3. Send to our NEW Backend ---
     try {
-      // ACTION 1: Call our Netlify Function
       const automationResponse = await fetch(AUTOMATION_WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(backendPayload),
       });
-
       const responseData = await automationResponse.json();
-
       if (!automationResponse.ok || responseData.status !== 'success') {
-        // The backend function itself threw an error
         throw new Error(responseData.message || 'Payment processing failed. Please check your card details and try again.');
       }
-      
-      // ACTION 2: GHL (REMOVED - Handled by backend)
-      
-      // ACTION 3: Email (REMOVED - Handled by backend)
-
-      // ACTION 4: Fire FB Event (This is now safe to run)
-      fbq('track', 'Purchase', { currency: "USD", value: depositAmount });
-
-      // All successful!
+      if (window.fbq) fbq('track', 'Purchase', { currency: "USD", value: depositAmount });
       setIsSubmitting(false);
       setIsSubmitted(true);
       onSubmitSuccess();
-
     } catch (err) {
       console.error('Submission Error:', err);
       setError(err.message || 'An unknown error occurred.');
@@ -1243,7 +819,6 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
     }
   };
   
-  // --- Thank You View ---
   if (isSubmitted) {
     return (
       <div className="bg-white p-8 rounded-xl shadow-lg text-center fade-in">
@@ -1258,77 +833,42 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
     );
   }
   
-  // --- Main Checkout Form View ---
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Options</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Book Your "One-Time Yard Reset"</h2>
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4" dangerouslySetInnerHTML={{ __html: leadFormText.backLink }} />
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       
-      {/* --- Order Summary --- */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
         <h3 className="text-lg font-bold text-slate-800 mb-2 text-center">Your Order Summary</h3>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-slate-600">One-Time Yard Reset</span>
-            <span className="font-medium text-slate-900">$99.99</span>
-          </div>
-          <div className="flex justify-between text-slate-600">
-            <span className="text-slate-600">(Covers first 30 minutes)</span>
-          </div>
-          <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl">
-            <span className="font-bold text-slate-900">Total Deposit Due Today:</span>
-            <span className="font-extrabold text-slate-900">${depositAmount.toFixed(2)}</span>
-          </div>
+          <div className="flex justify-between"><span className="text-slate-600">One-Time Yard Reset</span><span className="font-medium text-slate-900">$99.99</span></div>
+          <div className="flex justify-between text-slate-600"><span className="text-slate-600">(Covers first 30 minutes)</span></div>
+          <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl"><span className="font-bold text-slate-900">Total Deposit Due Today:</span><span className="font-extrabold text-slate-900">${depositAmount.toFixed(2)}</span></div>
         </div>
       </div>
       
-      {/* --- Clarification Text --- */}
       <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-900 p-4 rounded-r-lg mb-6">
-        <p className="font-bold">Here's What Happens Next:</p>
-        <p className="text-sm">
-          Your $99.99 deposit is due today to book your service. This covers the first 30 minutes of cleanup.
-        </p>
-        <p className="text-sm mt-2">
-          <strong>Additional time ($1/min) will be charged to this card *after* the service is complete.</strong> A team member will call you within 24 hours to get your cleanup on the schedule!
-        </p>
+        <p className="font-bold">{text.whatHappensNextTitle}</p>
+        <p className="text-sm" dangerouslySetInnerHTML={{ __html: text.whatHappensNextBody }} />
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* --- The Form --- */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-slate-800">Enter Your Details & Payment</h3>
           <input type="text" name="name" placeholder="Full Name*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.name} />
           <input type="email" name="email" placeholder="Email Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.email} />
           <input type="tel" name="phone" placeholder="Phone Number*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.phone} />
           <input type="text" name="address" placeholder="Service Address*" required className="w-full p-3 border-2 border-gray-300 rounded-lg" onChange={handleChange} value={formData.address} />
-          
-          {/* --- Stripe Payment Module --- */}
-          <div className="p-3 border-2 border-gray-300 rounded-lg">
-              {/* This div is the mount point for the Stripe CardElement */}
-            <div id="card-element"></div>
-          </div>
-
+          <div className="p-3 border-2 border-gray-300 rounded-lg"><div id="card-element"></div></div>
           <div className="pt-2">
             <label className="flex items-start text-xs text-gray-500 cursor-pointer" htmlFor="terms-consent-onetime">
               <input type="checkbox" id="terms-consent-onetime" name="terms" checked={formData.terms} onChange={handleChange} className="mt-0.5 mr-3 h-5 w-5 rounded border-gray-300 text-[var(--brand-blue)] focus:ring-[var(--brand-blue)] flex-shrink-0" />
-              <div>
-                <span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.
-              </div>
+              <div><span className="text-red-500 font-bold">*</span> I agree to the <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Terms of Service</a> & <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[var(--brand-blue)] font-semibold underline">Privacy Policy</a>. I also agree to receive calls and texts for marketing and service communication. Msg & data rates may apply. Reply STOP to opt out.</div>
             </label>
           </div>
-
-          {/* --- Error Display --- */}
-          {error && (
-            <p className="text-red-600 text-sm font-medium text-center p-3 bg-red-50 rounded-lg">{error}</p>
-          )}
-
-          {/* --- Submit Button --- */}
+          {error && (<p className="text-red-600 text-sm font-medium text-center p-3 bg-red-50 rounded-lg">{error}</p>)}
           <div className="border-t pt-6">
-            <button
-              type="submit"
-              disabled={isSubmitting || !stripeInstance}
-              className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
-            >
+            <button type="submit" disabled={isSubmitting || !stripeInstance} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14">
               {isSubmitting ? <span className="loader"></span> : `Pay $${depositAmount.toFixed(2)} Deposit`}
             </button>
           </div>
@@ -1339,141 +879,110 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
 };
 
 
-const ServiceInfoModal = ({ onClose }) => (
+/**
+ * Modals
+ */
+const ServiceInfoModal = ({ onClose, text }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-      <h3 className="text-lg font-bold text-gray-900">About Our FREE Add-Ons</h3>
-      <p className="text-sm text-gray-600 mt-4">
-        <strong>What is WYSIwash®?</strong> Our WYSIwash® Sanitizer is a hospital-grade, pet-safe disinfectant designed to kill harmful viruses and bacteria like Parvovirus and Giardia, ensuring your yard is not just clean, but sanitary.
-      </p>
-      <p className="text-sm text-gray-600 mt-2">
-        Our Deodorizer and WYSIwash® Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.
-      </p>
-      <p className="text-sm text-gray-600 mt-2">
-        To be effective, these treatments must be applied to a non-frozen ground. Service is typically paused during Indiana's frost months (roughly October - April).
-      </p>
-      <p className="text-sm text-gray-500 mt-4">
-        Because these are free, value-added services, their seasonal availability does not affect your flat-rate monthly price.
-      </p>
-      <button
-        onClick={onClose}
-        className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
-      >
+      <h3 className="text-lg font-bold text-gray-900">{text.title}</h3>
+      {text.body.map((p, i) => (
+        <p key={i} className="text-sm text-gray-600 mt-2" dangerouslySetInnerHTML={{ __html: p }} />
+      ))}
+      <button onClick={onClose} className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
         Got it!
       </button>
     </div>
   </div>
 );
 
-// --- NEW: Alerts Info Modal ---
-const AlertsInfoModal = ({ onClose }) => (
+const AlertsInfoModal = ({ onClose, text }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
     <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-      <h3 className="text-lg font-bold text-gray-900">About Our Automated Alerts</h3>
-      <p className="text-sm text-gray-600 mt-4">
-        We keep you in the loop every step of the way! Our system sends automated text messages for:
-      </p>
+      <h3 className="text-lg font-bold text-gray-900">{text.title}</h3>
+      <p className="text-sm text-gray-600 mt-4">{text.body}</p>
       <ul className="text-sm text-gray-600 mt-2 list-disc list-inside space-y-1">
-        <li><strong>Service Reminders:</strong> Sent the night before to confirm your upcoming service.</li>
-        <li><strong>ETAs:</strong> Sent the day of service with a narrowed-down arrival window.</li>
-        <li><strong>On The Way:</strong> A text to let you know our tech is en route.</li>
-        <li><strong>Service Complete:</strong> A final alert (with a photo of your locked gate) once the job is done!</li>
+        {text.bullets.map((b, i) => (
+          <li key={i} dangerouslySetInnerHTML={{ __html: b }} />
+        ))}
       </ul>
-      <button
-        onClick={onClose}
-        className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
-      >
+      <button onClick={onClose} className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
         Got it!
       </button>
     </div>
   </div>
 );
 
-// --- NEW: Package Review Modal ---
+const PricingInfoModal = ({ onClose, text }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <h3 className="text-lg font-bold text-gray-900">{text.title}</h3>
+      {text.body.map((p, i) => (
+        <p key={i} className="text-sm text-gray-600 mt-4" dangerouslySetInnerHTML={{ __html: p }} />
+      ))}
+      <ul className="text-sm text-gray-600 mt-2 list-disc list-inside space-y-1">
+        {text.bullets.map((b, i) => (
+          <li key={i} dangerouslySetInnerHTML={{ __html: b }} />
+        ))}
+      </ul>
+      <p className="text-sm text-gray-600 mt-2">{text.footer}</p>
+      <button onClick={onClose} className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
+        Got it!
+      </button>
+    </div>
+  </div>
+);
+
 const PackageReviewModal = ({ onClose, planName, frequency, features, dogCount }) => {
   const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
-  
-  // Sort features: FREE items first, then standard, then excluded
   const sortedFeatures = [...features].sort((a, b) => {
     const aExcluded = a.startsWith('!');
     const bExcluded = b.startsWith('!');
     const aFree = a.toUpperCase().startsWith('FREE');
     const bFree = b.toUpperCase().startsWith('FREE');
-
-    if (aExcluded && !bExcluded) return 1;  // a (excluded) goes to bottom
-    if (!aExcluded && bExcluded) return -1; // b (excluded) goes to bottom
-    if (aExcluded && bExcluded) return 0;   // both excluded, keep order
-
-    // Neither is excluded
-    if (aFree && !bFree) return -1; // a (free) goes first
-    if (!aFree && bFree) return 1;  // b (free) goes first
-
-    return 0; // both free or both not free, keep order
+    if (aExcluded && !bExcluded) return 1;
+    if (!aExcluded && bExcluded) return -1;
+    if (aExcluded && bExcluded) return 0;
+    if (aFree && !bFree) return -1;
+    if (!aFree && bFree) return 1;
+    return 0;
   });
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-gray-900">Plan Details: {planName}</h3>
-        
         <ul className="space-y-3 mt-4 text-left">
-          {/* 1. Dog Household */}
           <li className="flex items-start text-slate-600">
             <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <div className="flex-grow">
-              <span>Service for {dogText} Household</span>
-            </div>
+            <div className="flex-grow"><span>Service for {dogText} Household</span></div>
           </li>
-          
-          {/* 2. Frequency */}
           <li className="flex items-start text-slate-600">
             <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <div className="flex-grow">
-              <span>{frequency}</span>
-            </div>
+            <div className="flex-grow"><span>{frequency}</span></div>
           </li>
-
-          {/* 3. The rest of the features */}
           {sortedFeatures.map((feature, index) => {
             const isIncluded = !feature.startsWith('!');
             let featureText = isIncluded ? feature : feature.substring(1);
             let featureSubtext = '';
-
-            // Check for the subtext
             if (featureText.includes('(') && featureText.endsWith(')')) {
               const parts = featureText.split('(');
-              featureText = parts[0].trim(); // "FREE Deodorizer"
-              featureSubtext = `(${parts[1]}`; // "(1x/Week - a $40 Value!)"
+              featureText = parts[0].trim();
+              featureSubtext = `(${parts[1]}`;
             }
-
             return (
               <li key={index} className={`flex items-start ${isIncluded ? 'text-slate-600' : 'text-slate-400 line-through'}`}>
-                {isIncluded ? (
-                  <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                ) : (
-                   <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                   </svg>
-                )}
-                
+                {isIncluded ? (<svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>) 
+                : (<svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>)}
                 <div className="flex-grow">
                   <span>{featureText}</span>
-                  {featureSubtext && (
-                    <span className="block text-xs text-slate-500 -mt-1">
-                      {featureSubtext}
-                    </span>
-                  )}
+                  {featureSubtext && (<span className="block text-xs text-slate-500 -mt-1">{featureSubtext}</span>)}
                 </div>
-                
               </li>
             );
           })}
         </ul>
-        
-        <button
-          onClick={onClose}
-          className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
-        >
+        <button onClick={onClose} className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
           Got it!
         </button>
       </div>
@@ -1481,119 +990,65 @@ const PackageReviewModal = ({ onClose, planName, frequency, features, dogCount }
   );
 };
 
-
-const PricingInfoModal = ({ onClose }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-      <h3 className="text-lg font-bold text-gray-900">How Billing is Calculated</h3>
-      <p className="text-sm text-gray-600 mt-4">
-        To give you a simple and predictable bill, our monthly plans are based on the total number of visits you'll receive over a full year, averaged into equal payments.
-      </p>
-      <ul className="text-sm text-gray-600 mt-2 list-disc list-inside space-y-1">
-        <li><b>Weekly Plan:</b> 52 visits/year &divide; 12 months = 4.33 visits/mo</li>
-        <li><b>Bi-Weekly Plan:</b> 26 visits/year &divide; 12 months = 2.17 visits/mo</li>
-      </ul>
-      <p className="text-sm text-gray-600 mt-2">
-        This is why some months you'll see us 4 times and others 5 (for a weekly plan), but your bill remains the same flat rate.
-      </p>
-      <button
-        onClick={onClose}
-        className="w-full mt-6 bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300"
-      >
-        Got it!
-      </button>
-    </div>
-  </div>
-);
-
-const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
+const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, planDetails, text }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   
-  // Calculate per_visit for the exit modal email
   let perVisitPrice = 'N/A';
   if (currentPlan && currentPlan.name) {
       const planKey = Object.keys(planDetails).find(key => planDetails[key].name === currentPlan.name);
       if (planKey) {
-        // Find visitsPerMonth
         const visitsPerMonth = { biWeekly: 26/12, weekly: 52/12, twiceWeekly: 104/12 };
         perVisitPrice = (currentPlan.price / visitsPerMonth[planKey]).toFixed(2);
       }
   }
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
     setIsSubmitting(true);
 
-    const quoteState = {
-      zip: zipCode,
-      yardSize: yardSize,
-      dogCount: currentPlan.dogCount,
-      plan: currentPlan.name,
-    };
+    const quoteState = { zip: zipCode, yardSize: yardSize, dogCount: currentPlan.dogCount, plan: currentPlan.name };
     const quote_link = generateQuoteLink(quoteState);
 
     const leadData = {
-      email: email,
-      zip: zipCode,
-      lead_status: 'Exit Intent - Emailed Quote',
-      quote_type: currentPlan.name,
-      plan: currentPlan.name,
-      total_monthly: currentPlan.price,
-      dog_count: currentPlan.dogCount,
-      notes: 'User captured on exit intent.',
-      quote_link: quote_link,
+      email: email, zip: zipCode, lead_status: 'Exit Intent - Emailed Quote', quote_type: currentPlan.name,
+      plan: currentPlan.name, total_monthly: currentPlan.price, dog_count: currentPlan.dogCount,
+      notes: 'User captured on exit intent.', quote_link: quote_link,
     };
 
-    // --- NEW: Create email params and backend payload ---
     const emailParams = {
-      email: email,
-      name: 'Valued Customer',
-      plan: currentPlan.name,
-      total_monthly: `$${currentPlan.price}/mo`,
-      dog_count: currentPlan.dogCount,
+      email: email, name: 'Valued Customer', plan: currentPlan.name,
+      total_monthly: `$${currentPlan.price}/mo`, dog_count: currentPlan.dogCount,
       description: 'Here is the custom quote you built on our site. We hope to see you soon!',
-      notes: 'User captured on exit intent.',
-      quote_link: quote_link,
-      per_visit: `$${perVisitPrice}`, // Add per_visit price
-      final_charge: 'N/A',
-      savings: 'N/A',
+      notes: 'User captured on exit intent.', quote_link: quote_link,
+      per_visit: `$${perVisitPrice}`, final_charge: 'N/A', savings: 'N/A',
     };
     
     const backendPayload = {
       leadData: leadData,
       emailParams: emailParams,
-      leadType: 'exitIntent', // This tells the backend to use the EXIT_INTENT template
+      leadType: 'exitIntent',
     };
 
-    // 1. Fire FB Event
-    fbq('track', 'Lead');
+    if (window.fbq) fbq('track', 'Lead');
 
-    // 2. Send to NEW /create-lead backend
     try {
       const response = await fetch('/.netlify/functions/create-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(backendPayload),
       });
-
       if (!response.ok) {
         throw new Error('An error occurred sending the email.');
       }
-      
-      // 3. Send Email (REMOVED - Handled by backend)
-
       setIsSubmitting(false);
       setIsSubmitted(true);
       setTimeout(onClose, 2500);
-      
     } catch (err) {
       console.error('Exit intent submission error:', err);
       setIsSubmitting(false);
-      // Don't show an error, just close
       onClose();
     }
   };
@@ -1611,32 +1066,15 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
           </div>
         ) : (
           <>
-            <h3 className="text-2xl font-bold text-gray-900 text-center">Leaving So Soon?</h3>
-            <p className="text-sm text-gray-600 mt-4 text-center">
-              Before you go, let us email you this quote! We'll also include our <strong>Free 5-Point Pet Safety Checklist for Yards</strong>.
-            </p>
+            <h3 className="text-2xl font-bold text-gray-900 text-center">{text.title}</h3>
+            <p className="text-sm text-gray-600 mt-4 text-center" dangerouslySetInnerHTML={{ __html: text.body }} />
             <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              <input
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 border-2 border-gray-300 rounded-lg"
-              />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14"
-              >
+              <input type="email" name="email" placeholder="Email Address" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-3 border-2 border-gray-300 rounded-lg" />
+              <button type="submit" disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl flex items-center justify-center h-14">
                 {isSubmitting ? <span className="loader"></span> : 'Email My Quote'}
               </button>
             </form>
-            <button
-              onClick={onClose}
-              className="w-full mt-4 text-gray-500 text-sm font-medium text-center hover:text-gray-800"
-            >
+            <button onClick={onClose} className="w-full mt-4 text-gray-500 text-sm font-medium text-center hover:text-gray-800">
               No Thanks
             </button>
           </>
@@ -1646,13 +1084,10 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize }) => {
   );
 };
 
-// --- NEW: Admin Login Modal ---
 const AdminLoginModal = ({ onClose, onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  
-  // TODO: Change this password!
-  const ADMIN_PASSWORD = 'admin123';  
+  const ADMIN_PASSWORD = 'admin123';
   
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1670,22 +1105,9 @@ const AdminLoginModal = ({ onClose, onLoginSuccess }) => {
         <h3 className="text-lg font-bold text-gray-900 text-center">Admin Access</h3>
         <p className="text-sm text-center text-gray-600 mt-2">Enter password to access the internal quote tool.</p>
         <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full p-3 border-2 rounded-lg ${error ? 'border-red-500' : 'border-gray-300'}`}
-          />
-          {error && (
-            <p className="text-red-600 text-sm font-medium text-center">{error}</p>
-          )}
-          <button
-            type="submit"
-            className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-3 rounded-lg hover:bg-opacity-90 transition-all"
-          >
+          <input type="password" name="password" placeholder="Password" required value={password} onChange={(e) => setPassword(e.target.value)} className={`w-full p-3 border-2 rounded-lg ${error ? 'border-red-500' : 'border-gray-300'}`} />
+          {error && (<p className="text-red-600 text-sm font-medium text-center">{error}</p>)}
+          <button type="submit" className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-3 rounded-lg hover:bg-opacity-90 transition-all">
             Login
           </button>
         </form>
@@ -1694,78 +1116,45 @@ const AdminLoginModal = ({ onClose, onLoginSuccess }) => {
   );
 };
 
-// --- NEW: Admin Calculator ---
 const AdminCalculator = ({ onBack }) => {
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
   const [desiredFrequency, setDesiredFrequency] = useState('weekly');
   const [finalQuote, setFinalQuote] = useState(null);
 
   const handleCalculate = () => {
-    // --- 1. Get Inputs from Tech ---
     const minutes = parseFloat(estimatedMinutes);
     if (!minutes || minutes <= 0) {
       setFinalQuote(null);
       return;
     }
-
-    // --- 2. Define Business Constants ---
     const internal_rate_per_minute = 2.50;
-    const visits_per_month_map = {
-        "weekly": 4.33,
-        "bi-weekly": 2.17,
-        "twice-weekly": 8.66
-    };
-    
-    // --- 3. Run the Calculation ---
+    const visits_per_month_map = { "weekly": 4.33, "bi-weekly": 2.17, "twice-weekly": 8.66 };
     const visits_multiplier = visits_per_month_map[desiredFrequency];
     const price_per_visit = minutes * internal_rate_per_minute;
     const base_monthly_price = price_per_visit * visits_multiplier;
-    
-    // --- 4. Round to a "Marketing" Price ---
     const final_quote = Math.round(base_monthly_price / 5) * 5 + 4;
-    
-    // --- 5. Output to Tech ---
     setFinalQuote(final_quote.toFixed(2));
   };
   
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Internal "Estate Plan" Calculator</h2>
-      
       <div className="space-y-4">
         <div>
           <label htmlFor="minutes" className="block text-sm font-medium text-gray-700">Estimated Minutes per Visit</label>
-          <input
-            type="number"
-            id="minutes"
-            value={estimatedMinutes}
-            onChange={(e) => setEstimatedMinutes(e.target.value)}
-            placeholder="e.g., 45"
-            className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1"
-          />
+          <input type="number" id="minutes" value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(e.target.value)} placeholder="e.g., 45" className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1" />
         </div>
-        
         <div>
           <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">Desired Frequency</label>
-          <select
-            id="frequency"
-            value={desiredFrequency}
-            onChange={(e) => setDesiredFrequency(e.target.value)}
-            className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1"
-          >
+          <select id="frequency" value={desiredFrequency} onChange={(e) => setDesiredFrequency(e.target.value)} className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1">
             <option value="weekly">Weekly</option>
             <option value="bi-weekly">Bi-Weekly</option>
             <option value="twice-weekly">Twice-Weekly</option>
           </select>
         </div>
-        
-        <button
-          onClick={handleCalculate}
-          className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all"
-        >
+        <button onClick={handleCalculate} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all">
           Calculate Quote
         </button>
-        
         {finalQuote && (
           <div className="text-center bg-blue-50 p-4 rounded-lg">
             <p className="text-lg font-medium text-slate-700">Recommended Monthly Rate:</p>
@@ -1773,11 +1162,7 @@ const AdminCalculator = ({ onBack }) => {
           </div>
         )}
       </div>
-      
-      <button
-        onClick={onBack}
-        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
-      >
+      <button onClick={onBack} className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8">
         &larr; Exit Admin Area
       </button>
     </div>
@@ -1795,34 +1180,29 @@ const Header = () => (
   </header>
 );
 
-const Footer = ({ onAdminTrigger }) => { // NEW: Accept prop
+const Footer = ({ onAdminTrigger, text }) => { 
   const [clickCount, setClickCount] = useState(0);
 
   useEffect(() => {
     const yearElement = document.getElementById('copyright-year');
     if (yearElement) {
       yearElement.textContent = new Date().getFullYear();
-      
-      // NEW: Admin click listener
       const handleAdminClick = () => {
         setClickCount(prev => {
           const newCount = prev + 1;
           if (newCount >= 5) {
-            onAdminTrigger(); // Fire the trigger passed from App
-            return 0; // Reset count
+            onAdminTrigger();
+            return 0;
           }
           return newCount;
         });
       };
-      
       yearElement.addEventListener('click', handleAdminClick);
-      
-      // Cleanup
       return () => {
         yearElement.removeEventListener('click', handleAdminClick);
       };
     }
-  }, [onAdminTrigger]); // Add dependency
+  }, [onAdminTrigger]); 
 
   return (
     <footer className="bg-[#1C1C1C] text-white mt-16">
@@ -1851,10 +1231,10 @@ const Footer = ({ onAdminTrigger }) => { // NEW: Accept prop
           <div>
             <h3 className="text-lg font-bold mb-4">Locations</h3>
             <ul className="space-y-2 text-gray-400">
-              <li>5625 N GERMAN CHURCH RD. UNIT 2036, INDIANAPOLIS INDIANA 46235</li>
-              <li><a href="tel:3176997667" className="hover:text-white hover:underline">(317) 699-7667</a></li>
-              <li><a href="tel:3179615865" className="hover:text-white hover:underline">(317) 961-5865</a></li>
-              <li><a href="mailto:matt@itspurgepros.com" className="hover:text-white hover:underline">matt@itspurgepros.com</a></li>
+              <li>{text.address}</li>
+              <li><a href={`tel:${text.phone1}`} className="hover:text-white hover:underline">{text.phone1}</a></li>
+              <li><a href={`tel:${text.phone2}`} className="hover:text-white hover:underline">{text.phone2}</a></li>
+              <li><a href={`mailto:${text.email}`} className="hover:text-white hover:underline">{text.email}</a></li>
             </ul>
           </div>
         </div>
@@ -1868,254 +1248,170 @@ const Footer = ({ onAdminTrigger }) => { // NEW: Accept prop
 
 const GlobalStyles = () => (
   <style dangerouslySetInnerHTML={{ __html: `
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      background-image: url('https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68e43822ccdd18bea416654b.png');
-      background-repeat: repeat;
-    }
-    :root {
-      --brand-blue: #00A9E0;
-      --brand-green: #22c55e;
-    }
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; background-image: url('https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68e43822ccdd18bea416654b.png'); background-repeat: repeat; }
+    :root { --brand-blue: #00A9E0; --brand-green: #22c55e; }
     @keyframes fadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.5s ease-out forwards; }
-    
-    .loader {
-      width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.5);
-      border-top-color: #FFF; border-radius: 50%;
-      animation: rotation 0.8s linear infinite;
-    }
+    .loader { width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.5); border-top-color: #FFF; border-radius: 50%; animation: rotation 0.8s linear infinite; }
+    .full-page-loader { display: flex; align-items: center; justify-content: center; min-height: 80vh; width: 100%; }
+    .full-page-loader .loader { width: 48px; height: 48px; border-color: rgba(0,0,0,0.1); border-top-color: var(--brand-blue); }
     @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    
-    /* NEW: Stripe Card Element Styling */
-    #card-element {
-      padding: 10px 0;
-    }
-    .StripeElement {
-      box-sizing: border-box;
-      height: 40px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background-color: white;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    }
-    .StripeElement--focus {
-      border-color: #3182ce;
-      box-shadow: 0 0 0 3px rgba(66,153,225,0.5);
-    }
-    .StripeElement--invalid {
-      border-color: #fa755a;
-    }
-    .StripeElement--webkit-autofill {
-      background-color: #fefde5 !important;
-    }
-    
-    /* NEW: Glow Effects */
-    @keyframes pulse-green {
-      0%, 100% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.7); border-color: rgba(34, 197, 94, 1); }
-      50% { box-shadow: 0 0 20px rgba(34, 197, 94, 1); border-color: rgba(34, 197, 94, 1); }
-    }
-    @keyframes pulse-shadow {
-      0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 10px rgba(34, 197, 94, 0.5); }
-      50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 20px rgba(34, 197, 94, 1); }
-    }
-    .best-value-glow {
-      animation: pulse-green 2s infinite;
-    }
-    .special-offer-glow {
-      animation: pulse-shadow 2.5s infinite;
-    }
+    #card-element { padding: 10px 0; }
+    .StripeElement { box-sizing: border-box; height: 40px; padding: 10px 12px; border-radius: 8px; background-color: white; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+    .StripeElement--focus { border-color: #3182ce; box-shadow: 0 0 0 3px rgba(66,153,225,0.5); }
+    .StripeElement--invalid { border-color: #fa755a; }
+    .StripeElement--webkit-autofill { background-color: #fefde5 !important; }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.7); border-color: rgba(34, 197, 94, 1); } 50% { box-shadow: 0 0 20px rgba(34, 197, 94, 1); border-color: rgba(34, 197, 94, 1); } }
+    @keyframes pulse-shadow { 0%, 100% { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 10px rgba(34, 197, 94, 0.5); } 50% { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 20px rgba(34, 197, 94, 1); } }
+    .best-value-glow { animation: pulse-green 2s infinite; }
+    .special-offer-glow { animation: pulse-shadow 2.5s infinite; }
   `}} />
 );
 
+const FullPageLoader = () => (
+  <div className="full-page-loader">
+    <span className="loader"></span>
+  </div>
+);
+
+
 // --- Main App Component ---
 
-// NEW: These constants are GONE. They are no longer in the frontend code.
-// Netlify's scanner will no longer find them.
-// const GOHIGHLEVEL_LEAD_WEBHOOK_URL = '...';
-// const emailJsConfigForLeads = { ... };
-
-
 const App = () => {
-  // State
-  const [view, setView] = useState('zip'); // 'zip' -> 'sorter' -> 'custom_quote' OR 'packages' -> 'payment_plan' -> 'checkout'
+  const [appConfig, setAppConfig] = useState(null); // Will hold all data from config.json
+  const [view, setView] = useState('zip'); 
   const [zipCode, setZipCode] = useState('');
   const [yardSize, setYardSize] = useState('standard');
   const [dogCount, setDogCount] = useState('1-2');
   const [multiDogFee, setMultiDogFee] = useState(0);
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [showAlertsModal, setShowAlertsModal] = useState(false); // NEW
-  const [showPackageReviewModal, setShowPackageReviewModal] = useState(false); // NEW
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const [showPackageReviewModal, setShowPackageReviewModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false); // NEW: Admin
-  
-  // New state for the full funnel
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0 });
-  const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', total: 0, savings: null, savingsValue: 0 }); // NEW
+  const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', total: 0, savings: null, savingsValue: 0 });
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-
-  // --- NEW: Stripe state objects ---
   const [stripeInstance, setStripeInstance] = useState(null);
   const [cardElement, setCardElement] = useState(null);
   const [stripeError, setStripeError] = useState(null);
   
-  // Load external scripts and init pixel on mount
   useEffect(() => {
-    // --- Set Page Title ---
-    document.title = 'Purge Pros Pet Waste Removal - Pricing';
-    
-    // --- Add Favicon ---
-    setFavicon(FAVICON_URL);
-    
-    initFacebookPixel();
-    
-    // --- Load EmailJS SDK (for non-payment leads) ---
-    loadScript('https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js', 'emailjs-sdk')
-      .catch(error => console.error("Failed to load EmailJS", error));
-
-    // --- NEW: Load Stripe.js v3 ---
-    loadScript('https://js.stripe.com/v3/', 'stripe-js')
-      .then(() => {
-        if (window.Stripe) {
-          const stripe = window.Stripe(STRIPE_PUBLISHABLE_KEY);
-          setStripeInstance(stripe);
-          
-          // --- Mount Stripe Card Element ---
-          // This must be done *after* Stripe.js is loaded
-          const elements = stripe.elements();
-          const card = elements.create('card', {
-            style: {
-              base: {
-                color: "#32325d",
-                fontFamily: 'Inter, sans-serif',
-                fontSmoothing: "antialiased",
-                fontSize: "16px",
-                "::placeholder": {
-                  color: "#aab7c4",
-                },
-              },
-              invalid: {
-                color: "#fa755a",
-                iconColor: "#fa755a",
-              },
+    fetch('/config.json')
+      .then(response => response.json())
+      .then(config => {
+        setAppConfig(config);
+        
+        document.title = 'Purge Pros Pet Waste Removal - Pricing';
+        setFavicon(config.data.FAVICON_URL);
+        initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+        
+        loadScript('https://js.stripe.com/v3/', 'stripe-js')
+          .then(() => {
+            if (window.Stripe) {
+              const stripe = window.Stripe(STRIPE_PUBLISHABLE_KEY);
+              setStripeInstance(stripe);
+              const elements = stripe.elements();
+              const card = elements.create('card', {
+                style: {
+                  base: { color: "#32325d", fontFamily: 'Inter, sans-serif', fontSmoothing: "antialiased", fontSize: "16px", "::placeholder": { color: "#aab7c4" } },
+                  invalid: { color: "#fa755a", iconColor: "#fa755a" },
+                }
+              });
+              setCardElement(card);
+            } else {
+              console.error("Stripe.js loaded but window.Stripe is not available.");
+              setStripeError("Failed to initialize payment system.");
             }
+          })
+          .catch(error => {
+            console.error("Failed to load Stripe.js", error);
+            setStripeError("Failed to load payment system. Please refresh.");
           });
-          setCardElement(card);
+
+        const params = new URLSearchParams(window.location.search);
+        const urlZip = params.get('zip');
+        const urlYardSize = params.get('yardSize');
+        const urlDogCount = params.get('dogCount');
+        const urlPlan = params.get('plan');
+        const urlPaymentTerm = params.get('paymentTerm');
+
+        if (urlZip && config.data.APPROVED_ZIP_CODES.includes(urlZip)) {
+          setZipCode(urlZip);
           
-          // We need to mount it *after* the 'checkout' view renders the #card-element div
-          // This is a bit tricky, so we'll re-check in the 'checkout' view useEffect
+          if (urlYardSize === 'estate') {
+            setYardSize('estate');
+            setDogCount(urlDogCount || '1-2');
+            setView('custom_quote');
+            return;
+          }
+
+          if (urlYardSize) setYardSize(urlYardSize);
+          
+          if (urlDogCount) {
+            if (config.data.dogFeeMap[urlDogCount] !== undefined) {
+              setDogCount(urlDogCount);
+              setMultiDogFee(config.data.dogFeeMap[urlDogCount]);
+            } else if (urlDogCount === '6+') {
+              setDogCount('6+');
+              setView('custom_quote');
+              return;
+            }
+          }
+          
+          if (urlPlan && urlPaymentTerm) {
+            const planKey = Object.keys(config.data.planDetails).find(key => config.data.planDetails[key].name === urlPlan);
+            if (planKey) {
+              const basePrice = config.data.basePrices[config.data.planDetails[planKey].priceKey] || 0;
+              const dogFee = config.data.dogFeeMap[urlDogCount] || 0;
+              const finalPrice = basePrice + dogFee;
+              setPackageSelection({ name: urlPlan, finalMonthlyPrice: finalPrice });
+              
+              const monthly = finalPrice;
+              const plans = {
+                'Monthly': { term: 'Monthly', total: monthly, savings: null, savingsValue: 0 },
+                'Quarterly': { term: 'Quarterly', total: (monthly * 3) - 30, savings: 'You save $30!', savingsValue: 30 },
+                'Annual': { term: 'Annual', total: monthly * 11, savings: `You save $${monthly} - 1 Month FREE!`, savingsValue: monthly },
+              };
+              
+              if (plans[urlPaymentTerm]) {
+                setPaymentSelection(plans[urlPaymentTerm]);
+                setView('checkout'); 
+                return;
+              }
+            }
+          }
+          setView('sorter');
         } else {
-          console.error("Stripe.js loaded but window.Stripe is not available.");
-          setStripeError("Failed to initialize payment system.");
+          setView('zip');
         }
       })
       .catch(error => {
-        console.error("Failed to load Stripe.js", error);
-        setStripeError("Failed to load payment system. Please refresh.");
+        console.error("Failed to load app configuration:", error);
       });
+      
+  }, []); 
 
-    // --- URL Parameter "Transposer" Logic ---
-    const params = new URLSearchParams(window.location.search);
-    const urlZip = params.get('zip');
-    const urlYardSize = params.get('yardSize');
-    const urlDogCount = params.get('dogCount');
-    const urlPlan = params.get('plan');
-    const urlPaymentTerm = params.get('paymentTerm'); // NEW
-
-    if (urlZip && APPROVED_ZIP_CODES.includes(urlZip)) {
-      setZipCode(urlZip);
-      
-      if (urlYardSize === 'estate') {
-        setYardSize('estate');
-        setDogCount(urlDogCount || '1-2');
-        setView('custom_quote');
-        return;
-      }
-
-      if (urlYardSize) setYardSize(urlYardSize);
-      
-      if (urlDogCount) {
-        if (dogFeeMap[urlDogCount] !== undefined) {
-          setDogCount(urlDogCount);
-          setMultiDogFee(dogFeeMap[urlDogCount]);
-        } else if (urlDogCount === '6+') {
-          setDogCount('6+');
-          setView('custom_quote');
-          return;
-        }
-      }
-      
-      // Check for full plan and term to jump to checkout
-      if (urlPlan && urlPaymentTerm) {
-        const planKey = Object.keys(planDetails).find(key => planDetails[key].name === urlPlan);
-        if (planKey) {
-          const finalPrice = planDetails[planKey].price + (dogFeeMap[urlDogCount] || 0);
-          setPackageSelection({ name: urlPlan, finalMonthlyPrice: finalPrice });
-          
-          // Calculate payment selection
-          const monthly = finalPrice;
-          const plans = {
-            'Monthly': { term: 'Monthly', total: monthly, savings: null, savingsValue: 0 },
-            'Quarterly': { term: 'Quarterly', total: (monthly * 3) - 30, savings: 'You save $30!', savingsValue: 30 },
-            'Annual': { term: 'Annual', total: monthly * 11, savings: `You save $${monthly} - 1 Month FREE!`, savingsValue: monthly },
-          };
-          
-          if (plans[urlPaymentTerm]) {
-            setPaymentSelection(plans[urlPaymentTerm]);
-            setView('checkout'); 
-            return;
-          }
-        }
-      }
-      
-      // Fallback to sorter if zip is valid but other params aren't
-      setView('sorter');
-      
-    } else {
-      setView('zip');
-    }
-  }, []); // Run once on mount
-
-  // --- NEW: Effect to mount card element ---
-  // This effect runs when the view changes to 'checkout' or 'onetime_checkout'
   useEffect(() => {
     if ((view === 'checkout' || view === 'onetime_checkout') && cardElement) {
-      // Find the mount point
       const mountPoint = document.getElementById('card-element');
       if (mountPoint) {
-        // Use a small delay to ensure the DOM is ready
         setTimeout(() => {
-          try {
-            cardElement.mount('#card-element');
-          } catch (e) {
-            // It might already be mounted, which is fine
-            if (e.message.includes('already mounted')) {
-              // ignore
-            } else {
-              console.error("Error mounting card:", e.message);
-            }
+          try { cardElement.mount('#card-element'); } catch (e) {
+            if (!e.message.includes('already mounted')) console.error("Error mounting card:", e.message);
           }
         }, 100);
       }
     } else if (cardElement) {
-      // If we're not in checkout, unmount it
-      try {
-        cardElement.unmount();
-      } catch (e) {
-        // ignore if not mounted
-      }
+      try { cardElement.unmount(); } catch (e) { /* ignore */ }
     }
   }, [view, cardElement]);
 
-  // --- NEW: Scroll to top on view change ---
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
 
-
-  // --- Exit Intent Hook ---
   const handleExitIntent = () => {
     if (view !== 'zip' && !view.includes('checkout') && !isFormSubmitted) {
       setIsExitModalOpen(true);
@@ -2127,102 +1423,78 @@ const App = () => {
     setIsFormSubmitted(true);
     setIsExitModalOpen(false); 
   };
-
-  const handleZipValidation = (validZip) => {
-    setZipCode(validZip);
-    setView('sorter');
-  };
-
+  const handleZipValidation = (validZip) => { setZipCode(validZip); setView('sorter'); };
   const handleSorterComplete = (size, dogs, fee) => {
-    setYardSize(size);
-    setDogCount(dogs);
-    setMultiDogFee(fee);
-
-    if (size === 'estate' || dogs === '6+') {
-      setView('custom_quote');
-    } else {
-      setView('packages');
-    }
+    setYardSize(size); setDogCount(dogs); setMultiDogFee(fee);
+    if (size === 'estate' || dogs === '6+') { setView('custom_quote'); } else { setView('packages'); }
   };
-  
-  // VIEW 3B -> VIEW 4
-  const handlePlanSelect = (planName, finalMonthlyPrice) => {
-    setPackageSelection({ name: planName, finalMonthlyPrice: finalMonthlyPrice });
-    setView('payment_plan'); // NEW: Go to payment plan selector
-  };
-
-  // NEW: VIEW 4 -> VIEW 5
-  const handlePaymentPlanSelect = (term, total, savings, savingsValue) => {
-    setPaymentSelection({ term, total, savings, savingsValue });
-    setView('checkout');
-  };
-
-  // NEW: "Bailout" link
-  const handleBailout = () => {
-    setView('custom_quote');
-  };
-  
+  const handlePlanSelect = (planName, finalMonthlyPrice) => { setPackageSelection({ name: planName, finalMonthlyPrice: finalMonthlyPrice }); setView('payment_plan'); };
+  const handlePaymentPlanSelect = (term, total, savings, savingsValue) => { setPaymentSelection({ term, total, savings, savingsValue }); setView('checkout'); };
+  const handleBailout = () => { setView('custom_quote'); };
   
   const CurrentPlanForExitModal = useMemo(() => {
+    if (!appConfig) return null; 
     const planName = packageSelection.name || 'Pristine-Clean';
-    const planKey = Object.keys(planDetails).find(key => planDetails[key].name === planName) || 'weekly';
-    const plan = planDetails[planKey];
-    const totalMonthlyPrice = plan.price + multiDogFee;
-    
-    return { 
-      ...plan, 
-      price: totalMonthlyPrice,
-      dogCount: dogCount,
-    };
-  }, [packageSelection, multiDogFee, dogCount]);
+    const planKey = Object.keys(appConfig.data.planDetails).find(key => appConfig.data.planDetails[key].name === planName) || 'weekly';
+    const plan = appConfig.data.planDetails[planKey];
+    const basePrice = appConfig.data.basePrices[plan.priceKey] || 0;
+    const totalMonthlyPrice = basePrice + multiDogFee;
+    return { ...plan, price: totalMonthlyPrice, dogCount: dogCount };
+  }, [appConfig, packageSelection, multiDogFee, dogCount]);
   
-  // NEW: Get features for the selected plan for the review modal
   const selectedPlanFeatures = useMemo(() => {
-     if (!packageSelection.name) return [];
-     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
-     return planDetails[planKey]?.features || [];
-  }, [packageSelection.name]);
+     if (!appConfig || !packageSelection.name) return [];
+     const planKey = Object.keys(appConfig.data.planDetails).find(key => appConfig.data.planDetails[key].name === packageSelection.name);
+     return appConfig.data.planDetails[planKey]?.features || [];
+  }, [appConfig, packageSelection.name]);
   
-  // NEW: Get frequency for the selected plan
   const selectedPlanFrequency = useMemo(() => {
-     if (!packageSelection.name) return '';
-     const planKey = Object.keys(planDetails).find(key => planDetails[key].name === packageSelection.name);
-     return planDetails[planKey]?.frequency || '';
-  }, [packageSelection.name]);
+     if (!appConfig || !packageSelection.name) return '';
+     const planKey = Object.keys(appConfig.data.planDetails).find(key => appConfig.data.planDetails[key].name === packageSelection.name);
+     return appConfig.data.planDetails[planKey]?.frequency || '';
+  }, [appConfig, packageSelection.name]);
   
+
+  if (!appConfig) {
+    return (
+      <>
+        <GlobalStyles />
+        <Header />
+        <main className="container mx-auto px-4 py-8"><FullPageLoader /></main>
+        <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }} />
+      </>
+    );
+  }
 
   return (
     <>
       <GlobalStyles />
       <Header />
-      
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-xl mx-auto">
-          
-          {/* --- Render Stripe Error --- */}
-          {stripeError && (
-             <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-             <p className="font-bold">Payment Error</p>
-             <p>{stripeError}</p>
-           </div>
-          )}
+          {stripeError && (<div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert"><p className="font-bold">Payment Error</p><p>{stripeError}</p></div>)}
 
-          {/* VIEW 1: ZIP */}
           {view === 'zip' && (
-            <ZipCodeValidator onZipValidated={handleZipValidation} />
+            <ZipCodeValidator 
+              onZipValidated={handleZipValidation}
+              approvedZipCodes={appConfig.data.APPROVED_ZIP_CODES}
+              text={appConfig.text.zipView}
+            />
           )}
 
-          {/* VIEW 2: SORTER */}
           {view === 'sorter' && (
             <Sorter
               onSortComplete={handleSorterComplete}
               onBack={() => setView('zip')}
               initialYardSize={yardSize}
               initialDogCount={dogCount}
+              dogFeeMap={appConfig.data.dogFeeMap}
+              text={appConfig.text.sorterView}
+              globalsText={appConfig.text.globals}
+              leadFormText={appConfig.text.leadForm}
             />
           )}
           
-          {/* VIEW 3B: PACKAGES */}
           {view === 'packages' && (
             <PackageSelector
               dogFee={multiDogFee}
@@ -2231,113 +1503,98 @@ const App = () => {
               onBack={() => setView('sorter')}
               onOneTimeClick={() => setView('onetime')}
               onInfoClick={() => setShowInfoModal(true)}
-              onAlertsInfoClick={() => setShowAlertsModal(true)} // NEW
+              onAlertsInfoClick={() => setShowAlertsModal(true)}
+              planDetails={appConfig.data.planDetails}
+              basePrices={appConfig.data.basePrices}
+              text={appConfig.text.packagesView}
+              globalsText={appConfig.text.globals}
+              leadFormText={appConfig.text.leadForm}
             />
           )}
           
-          {/* NEW: VIEW 4: PAYMENT PLAN */}
           {view === 'payment_plan' && (
             <PaymentPlanSelector
               packageSelection={packageSelection}
               onPaymentSelect={handlePaymentPlanSelect}
               onBack={() => setView('packages')}
+              text={appConfig.text.paymentPlanView}
+              leadFormText={appConfig.text.leadForm}
             />
           )}
 
-          {/* NEW: VIEW 5: CHECKOUT */}
           {view === 'checkout' && (
             <CheckoutForm
               packageSelection={packageSelection}
-              paymentSelection={paymentSelection} // Pass in payment selection
+              paymentSelection={paymentSelection}
               zipCode={zipCode}
               dogCount={dogCount}
-              onBack={() => {
-                cardElement?.unmount(); // Unmount before leaving
-                setView('payment_plan'); // Go back to payment plan
-              }}
-              onBailout={() => {
-                cardElement?.unmount(); // Unmount before leaving
-                handleBailout();
-              }}
+              onBack={() => { cardElement?.unmount(); setView('payment_plan'); }}
+              onBailout={() => { cardElement?.unmount(); handleBailout(); }}
               onSubmitSuccess={handleFormSubmissionSuccess}
-              stripeInstance={stripeInstance} // Pass Stripe objects
-              cardElement={cardElement}       // Pass CardElement
-              onPackageReviewClick={() => setShowPackageReviewModal(true)}
+              stripeInstance={stripeInstance}
+              cardElement={cardElement}
+              planDetails={appConfig.data.planDetails}
+              text={appConfig.text.checkoutView}
+              leadFormText={appConfig.text.leadForm}
             />
           )}
           
-          {/* VIEW 3A: CUSTOM QUOTE */}
           {view === 'custom_quote' && (
             <LeadForm
-              title="You Qualify for a Custom 'Estate' Quote!"
-              description={dogCount === '6+'
-                ? "We love dogs! Properties with 6 or more dogs require a custom service plan. Please provide your info, and we will contact you for a free consultation."
-                : "Your property qualifies for our 'Estate Plan.' This requires a custom flat-rate quote. Please provide your info, and we will contact you for a free consultation."
-              }
+              title={appConfig.text.customQuoteView.title}
+              description={dogCount === '6+' ? appConfig.text.customQuoteView.descMultiDog : appConfig.text.customQuoteView.descEstate}
               zipCode={zipCode}
               dogCount={dogCount}
               onSubmitSuccess={handleFormSubmissionSuccess}
               onBack={() => setView('sorter')}
               isOneTimeForm={false}
-              // emailJsConfig={emailJsConfigForLeads} // REMOVED
-              // ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // REMOVED
+              leadFormText={appConfig.text.leadForm}
             />
           )}
           
-          {/* ONE-TIME CLEANUP VIEWS */}
           {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
-              <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">The "One-Time Yard Reset"</h2>
-              
+              <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4" dangerouslySetInnerHTML={{ __html: appConfig.text.leadForm.backLink }} />
+              <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{appConfig.text.oneTimeView.title}</h2>
               <div className="text-center my-6 py-4 border-y border-gray-200">
                 <span className="text-5xl font-extrabold text-slate-900">$99.99</span>
-                <p className="text-sm text-slate-500 mt-1">For the first 30 minutes</p>
-
+                <p className="text-sm text-slate-500 mt-1">{appConfig.text.oneTimeView.subTitle}</p>
               </div>
-
-              <p className="text-slate-600 text-center mb-4">
-                Perfect for first-time cleanups or special events. This price includes 30 minutes of service. Additional time is billed at $1/minute.
-              </p>
+              <p className="text-slate-600 text-center mb-4">{appConfig.text.oneTimeView.description}</p>
               <p className="text-slate-600 text-center text-sm mb-6">
-                This service is for properties up to 1/2 acre. For larger properties, please <button onClick={() => { setView('custom_quote'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">request an 'Estate Quote'</button>.
+                {appConfig.text.oneTimeView.estatePrompt}
+                <button onClick={() => { setView('custom_quote'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">
+                  {appConfig.text.oneTimeView.estateLinkText}
+                </button>.
               </p>
-
               <div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg mb-6">
-                <p className="font-bold">P.S. Why pay $100 for one day?</p>
+                <p className="font-bold">{appConfig.text.oneTimeView.psTitle}</p>
                 <p className="text-sm">
-                  Our <strong>'Pristine-Clean' Weekly Plan</strong> is only ${basePrices.weekly + multiDogFee}/month. 
+                  <span dangerouslySetInnerHTML={{ __html: appConfig.text.oneTimeView.psBody.replace('{price}', (appConfig.data.basePrices.weekly + multiDogFee)) }} />
                   <button onClick={() => setView('packages')} className="font-bold underline ml-1 hover:text-green-600">
-                    Click here to see our plans!
+                    {appConfig.text.oneTimeView.psLinkText}
                   </button>
                 </p>
               </div>
-
-              <button
-                onClick={() => setView('onetime_checkout')}
-                className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
-              >
+              <button onClick={() => setView('onetime_checkout')} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all duration-200 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl">
                 Book One-Time Cleanup
               </button>
             </div>
           )}
           
-          {/* --- NEW: ONE-TIME CHECKOUT VIEW --- */}
           {view === 'onetime_checkout' && (
             <OneTimeCheckoutForm
               zipCode={zipCode}
               dogCount={dogCount}
-              onBack={() => {
-                cardElement?.unmount(); // Unmount before leaving
-                setView('onetime');
-              }}
+              onBack={() => { cardElement?.unmount(); setView('onetime'); }}
               onSubmitSuccess={handleFormSubmissionSuccess}
               stripeInstance={stripeInstance}
               cardElement={cardElement}
+              text={appConfig.text.oneTimeCheckoutView}
+              leadFormText={appConfig.text.leadForm}
             />
           )}
           
-          {/* --- NEW: ADMIN CALCULATOR VIEW --- */}
           {view === 'admin_calculator' && (
             <AdminCalculator 
               onBack={() => setView('zip')}
@@ -2348,9 +1605,9 @@ const App = () => {
       </main>
       
       {/* --- ALL MODALS --- */}
-      {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} />}
-      {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} />}
-      {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} />}
+      {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} text={appConfig.text.modals.serviceInfo} />}
+      {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={appConfig.text.modals.alertsInfo} />}
+      {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={appConfig.text.modals.pricingInfo} />}
       
       {showPackageReviewModal && (
         <PackageReviewModal
@@ -2362,28 +1619,25 @@ const App = () => {
         />
       )}
       
-      {isExitModalOpen && (
+      {isExitModalOpen && CurrentPlanForExitModal && (
         <ExitIntentModal
           currentPlan={CurrentPlanForExitModal}
           zipCode={zipCode}
           yardSize={yardSize}
           onClose={() => setIsExitModalOpen(false)}
-          // emailJsConfig={emailJsConfigForLeads} // REMOVED
-          // ghlWebhookUrl={GOHIGHLEVEL_LEAD_WEBHOOK_URL} // REMOVED
+          planDetails={appConfig.data.planDetails}
+          text={appConfig.text.modals.exitIntent}
         />
       )}
       
       {showAdminLogin && (
         <AdminLoginModal 
           onClose={() => setShowAdminLogin(false)}
-          onLoginSuccess={() => {
-            setView('admin_calculator');
-            setShowAdminLogin(false);
-          }}
+          onLoginSuccess={() => { setView('admin_calculator'); setShowAdminLogin(false); }}
         />
       )}
       
-      <Footer onAdminTrigger={() => setShowAdminLogin(true)} />
+      <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={appConfig.text.footer} />
     </>
   );
 };
