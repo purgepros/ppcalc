@@ -2,6 +2,10 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 // 1. Import the router components
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
+// --- FIX 3: Import Firebase for Site component ---
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+
 // 2. Lazily load the AdminPanel so it doesn't slow down your main site
 const AdminPanel = lazy(() => import('./AdminPanel'));
 
@@ -1514,143 +1518,9 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, planDetails,
   );
 };
 
-// --- NEW: Admin Login Modal ---
-const AdminLoginModal = ({ onClose, onLoginSuccess }) => {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  
-  // TODO: Change this password!
-  const ADMIN_PASSWORD = 'admin123'; 
-  
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      onLoginSuccess();
-    } else {
-      setError('Invalid password.');
-      setPassword('');
-    }
-  };
-  
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-gray-900 text-center">Admin Access</h3>
-        <p className="text-sm text-center text-gray-600 mt-2">Enter password to access the internal quote tool.</p>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full p-3 border-2 rounded-lg ${error ? 'border-red-500' : 'border-gray-300'}`}
-          />
-          {error && (
-            <p className="text-red-600 text-sm font-medium text-center">{error}</p>
-          )}
-          <button
-            type="submit"
-            className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-3 rounded-lg hover:bg-opacity-90 transition-all"
-          >
-            Login
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-};
+// --- FIX 2: REMOVED AdminLoginModal ---
 
-// --- NEW: Admin Calculator ---
-const AdminCalculator = ({ onBack }) => {
-  const [estimatedMinutes, setEstimatedMinutes] = useState('');
-  const [desiredFrequency, setDesiredFrequency] = useState('weekly');
-  const [finalQuote, setFinalQuote] = useState(null);
-
-  const handleCalculate = () => {
-    // --- 1. Get Inputs from Tech ---
-    const minutes = parseFloat(estimatedMinutes);
-    if (!minutes || minutes <= 0) {
-      setFinalQuote(null);
-      return;
-    }
-
-    // --- 2. Define Business Constants ---
-    const internal_rate_per_minute = 2.50;
-    const visits_per_month_map = {
-        "weekly": 4.33,
-        "bi-weekly": 2.17,
-        "twice-weekly": 8.66
-    };
-    
-    // --- 3. Run the Calculation ---
-    const visits_multiplier = visits_per_month_map[desiredFrequency];
-    const price_per_visit = minutes * internal_rate_per_minute;
-    const base_monthly_price = price_per_visit * visits_multiplier;
-    
-    // --- 4. Round to a "Marketing" Price ---
-    const final_quote = Math.round(base_monthly_price / 5) * 5 + 4;
-    
-    // --- 5. Output to Tech ---
-    setFinalQuote(final_quote.toFixed(2));
-  };
-  
-  return (
-    <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">Internal "Estate Plan" Calculator</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="minutes" className="block text-sm font-medium text-gray-700">Estimated Minutes per Visit</label>
-          <input
-            type="number"
-            id="minutes"
-            value={estimatedMinutes}
-            onChange={(e) => setEstimatedMinutes(e.target.value)}
-            placeholder="e.g., 45"
-            className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1"
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="frequency" className="block text-sm font-medium text-gray-700">Desired Frequency</label>
-          <select
-            id="frequency"
-            value={desiredFrequency}
-            onChange={(e) => setDesiredFrequency(e.target.value)}
-            className="w-full p-3 border-2 border-gray-300 rounded-lg mt-1"
-          >
-            <option value="weekly">Weekly</option>
-            <option value="bi-weekly">Bi-Weekly</option>
-            <option value="twice-weekly">Twice-Weekly</option>
-          </select>
-        </div>
-        
-        <button
-          onClick={handleCalculate}
-          className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 transition-all"
-        >
-          Calculate Quote
-        </button>
-        
-        {finalQuote && (
-          <div className="text-center bg-blue-50 p-4 rounded-lg">
-            <p className="text-lg font-medium text-slate-700">Recommended Monthly Rate:</p>
-            <p className="text-4xl font-extrabold text-slate-900">${finalQuote}</p>
-          </div>
-        )}
-      </div>
-      
-      <button
-        onClick={onBack}
-        className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline transition-colors mt-8"
-      >
-        &larr; Exit Admin Area
-      </button>
-    </div>
-  );
-};
+// --- FIX 2: REMOVED AdminCalculator ---
 
 
 const Header = () => (
@@ -1663,34 +1533,16 @@ const Header = () => (
   </header>
 );
 
-const Footer = ({ onAdminTrigger, text }) => { // NEW: Accept prop
-  const [clickCount, setClickCount] = useState(0);
+const Footer = ({ text }) => { // FIX 2: Removed onAdminTrigger prop
 
   useEffect(() => {
     const yearElement = document.getElementById('copyright-year');
     if (yearElement) {
       yearElement.textContent = new Date().getFullYear();
       
-      // NEW: Admin click listener
-      const handleAdminClick = () => {
-        setClickCount(prev => {
-          const newCount = prev + 1;
-          if (newCount >= 5) {
-            onAdminTrigger(); // Fire the trigger passed from App
-            return 0; // Reset count
-          }
-          return newCount;
-        });
-      };
-      
-      yearElement.addEventListener('click', handleAdminClick);
-      
-      // Cleanup
-      return () => {
-        yearElement.removeEventListener('click', handleAdminClick);
-      };
+      // FIX 2: REMOVED Admin click listener
     }
-  }, [onAdminTrigger]); // Add dependency
+  }, []); // FIX 2: Removed dependency
 
   return (
     <footer className="bg-[#1C1C1C] text-white mt-16">
@@ -1727,7 +1579,7 @@ const Footer = ({ onAdminTrigger, text }) => { // NEW: Accept prop
           </div>
         </div>
         <div className="mt-8 border-t border-gray-700 pt-6 text-center text-gray-500 text-sm">
-          &copy; <span id="copyright-year" style={{ cursor: 'pointer' }}></span> Purge Pros. All Rights Reserved.
+          &copy; <span id="copyright-year" style={{ cursor: 'auto' }}></span> Purge Pros. All Rights Reserved.
         </div>
       </div>
     </footer>
@@ -1818,7 +1670,7 @@ const Site = () => {
   const [showPackageReviewModal, setShowPackageReviewModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  // const [showAdminLogin, setShowAdminLogin] = useState(false); // FIX 2: Removed
   
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0, key: null });
   const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', total: 0, savings: null, savingsValue: 0 });
@@ -1828,75 +1680,150 @@ const Site = () => {
   const [cardElement, setCardElement] = useState(null);
   const [stripeError, setStripeError] = useState(null);
   
+  // --- FIX 3: Initialize Firebase for Site component ---
+  const [db, setDb] = useState(null);
+
+  useEffect(() => {
+    try {
+      const firebaseConfig = {
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID
+      };
+      // Give this instance a unique name to avoid conflicts with AdminPanel's instance
+      const app = initializeApp(firebaseConfig, "site");
+      setDb(getFirestore(app));
+    } catch (e) {
+      if (!/already exists/.test(e.message)) {
+        console.error("Firebase init error", e);
+        setConfigError(new Error("Could not initialize app configuration."));
+      } else {
+        // App already initialized, just get the instance
+        const app = initializeApp(firebaseConfig); // Get default app
+        setDb(getFirestore(app));
+      }
+    }
+  }, []);
+
+
   // --- Effects ---
   
-  // 1. Fetch config.json on initial load
+  // 1. Fetch config from FIRESTORE on initial load
   useEffect(() => {
-    fetch('/config.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status} - Could not find config.json`);
-        }
-        return response.json();
-      })
-      .then(config => {
-        // --- NEW SAFETY CHECKS ---
-        if (!config || !config.data || !config.text || !config.text.footer) {
-          throw new Error('Configuration file is invalid or missing required properties (like "data", "text", or "text.footer").');
-        }
-        
-        setAppConfig(config);
-        
-        document.title = 'Purge Pros Pet Waste Removal - Pricing';
-        
-        // More safety checks
-        if (config.data.FAVICON_URL) {
-          setFavicon(config.data.FAVICON_URL);
-        }
-        if (config.data.FACEBOOK_PIXEL_ID) {
-          initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
-        }
-        
-        loadScript('https://js.stripe.com/v3/', 'stripe-js')
-          .then(() => {
-            if (window.Stripe) {
-              const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
-              setStripeInstance(stripe);
-              
-              const elements = stripe.elements();
-              const card = elements.create('card', {
-                style: {
-                  base: {
-                    color: "#32325d",
-                    fontFamily: 'Inter, sans-serif',
-                    fontSmoothing: "antialiased",
-                    fontSize: "16px",
-                    "::placeholder": {
-                      color: "#aab7c4",
+    // Wait until db is initialized
+    if (!db) return;
+
+    const fetchConfig = async () => {
+      try {
+        const docRef = doc(db, 'config', 'production');
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const config = docSnap.data();
+          
+          // --- NEW SAFETY CHECKS ---
+          if (!config || !config.data || !config.text || !config.text.footer) {
+            throw new Error('Configuration file is invalid or missing required properties (like "data", "text", or "text.footer").');
+          }
+          
+          setAppConfig(config);
+          
+          document.title = 'Purge Pros Pet Waste Removal - Pricing';
+          
+          // More safety checks
+          if (config.data.FAVICON_URL) {
+            setFavicon(config.data.FAVICON_URL);
+          }
+          if (config.data.FACEBOOK_PIXEL_ID) {
+            initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+          }
+          
+          // Now load Stripe
+          loadScript('https://js.stripe.com/v3/', 'stripe-js')
+            .then(() => {
+              if (window.Stripe) {
+                const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
+                setStripeInstance(stripe);
+                
+                const elements = stripe.elements();
+                const card = elements.create('card', {
+                  style: {
+                    base: {
+                      color: "#32325d",
+                      fontFamily: 'Inter, sans-serif',
+                      fontSmoothing: "antialiased",
+                      fontSize: "16px",
+                      "::placeholder": {
+                        color: "#aab7c4",
+                      },
                     },
-                  },
-                  invalid: {
-                    color: "#fa755a",
-                    iconColor: "#fa755a",
-                  },
-                }
-              });
-              setCardElement(card);
-            } else {
-              console.error("Stripe.js loaded but window.Stripe is not available.");
-              setStripeError("Failed to initialize payment system.");
-            }
-          })
-          .catch(error => {
-            console.error("Failed to load Stripe.js", error);
-            setStripeError("Failed to load payment system. Please refresh.");
-          });
-      })
-      .catch(error => {
-        console.error("Failed to load app configuration:", error);
+                    invalid: {
+                      color: "#fa755a",
+                      iconColor: "#fa755a",
+                    },
+                  }
+                });
+                setCardElement(card);
+              } else {
+                console.error("Stripe.js loaded but window.Stripe is not available.");
+                setStripeError("Failed to initialize payment system.");
+              }
+            })
+            .catch(error => {
+              console.error("Failed to load Stripe.js", error);
+              setStripeError("Failed to load payment system. Please refresh.");
+            });
+
+        } else {
+          // Fallback to config.json if Firestore doc doesn't exist
+          console.warn("Firestore config not found, falling back to public/config.json");
+          fetch('/config.json')
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status} - Could not find config.json`);
+              }
+              return response.json();
+            })
+            .then(config => {
+              setAppConfig(config);
+              // ... (rest of the setup logic from above) ...
+              document.title = 'Purge Pros Pet Waste Removal - Pricing';
+              if (config.data.FAVICON_URL) setFavicon(config.data.FAVICON_URL);
+              if (config.data.FACEBOOK_PIXEL_ID) initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+              loadScript('https://js.stripe.com/v3/', 'stripe-js')
+                .then(() => {
+                  if (window.Stripe) {
+                    const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
+                    setStripeInstance(stripe);
+                    const elements = stripe.elements();
+                    const card = elements.create('card', { /* ... style ... */ });
+                    setCardElement(card);
+                  } else {
+                    console.error("Stripe.js loaded but window.Stripe is not available.");
+                    setStripeError("Failed to initialize payment system.");
+                  }
+                })
+                .catch(error => {
+                  console.error("Failed to load Stripe.js", error);
+                  setStripeError("Failed to load payment system. Please refresh.");
+                });
+            })
+            .catch(fallbackError => {
+              console.error("Failed to load config from both Firestore and fallback:", fallbackError);
+              setConfigError(fallbackError);
+            });
+        }
+      } catch (error) {
+        console.error("Failed to load app configuration from Firestore:", error);
         setConfigError(error);
-      });
-  }, []); // Empty dependency array, runs once
+      }
+    };
+    
+    fetchConfig();
+  }, [db]); // Runs when 'db' state is set
 
   // 2. URL Parameter "Transposer" Logic
   useEffect(() => {
@@ -2087,7 +2014,7 @@ const Site = () => {
           <FullPageLoader error={configError} />
         </main>
         {/* Pass a default object to Footer in error state */}
-        <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading error...", phone1: "", phone2: "", email: "" }} />
+        <Footer text={{ address: "Loading error...", phone1: "", phone2: "", email: "" }} />
       </>
     );
   }
@@ -2101,7 +2028,7 @@ const Site = () => {
           <FullPageLoader />
         </main>
         {/* Pass a default object to Footer in loading state */}
-        <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }} />
+        <Footer text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }} />
       </>
     );
   }
@@ -2261,11 +2188,7 @@ const Site = () => {
             />
           )}
           
-          {view === 'admin_calculator' && (
-            <AdminCalculator 
-              onBack={() => setView('zip')}
-            />
-          )}
+          {/* FIX 2: Removed 'admin_calculator' view */}
 
         </div>
       </main>
@@ -2311,18 +2234,9 @@ const Site = () => {
         />
       )}
       
-      {showAdminLogin && (
-        <AdminLoginModal 
-          onClose={() => setShowAdminLogin(false)}
-          onLoginSuccess={() => {
-            setView('admin_calculator');
-            setShowAdminLogin(false);
-          }}
-        />
-      )}
+      {/* FIX 2: Removed 'showAdminLogin' modal */}
       
       <Footer 
-        onAdminTrigger={() => setShowAdminLogin(true)} 
         text={appConfig.text.footer}
       />
     </>
@@ -2348,7 +2262,6 @@ const App = () => {
               <FullPageLoader />
             </main>
             <Footer 
-              onAdminTrigger={() => {}} 
               text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }}
             />
           </>
