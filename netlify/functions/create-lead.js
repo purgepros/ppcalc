@@ -9,7 +9,7 @@
  */
 
 // We use `require` syntax in Netlify functions
-const emailjs = require('@emailjs/nodejs'); // <-- FIX 1: Using Node.js library
+const emailjs = require('@emailjs/nodejs');
 const fetch = require('node-fetch');
 
 exports.handler = async (event) => {
@@ -22,7 +22,6 @@ exports.handler = async (event) => {
     const { leadData, emailParams, leadType } = JSON.parse(event.body);
 
     // --- 1. Fire GHL Webhook ---
-    // We use the *main* GHL webhook for all leads.
     try {
       await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
         method: 'POST',
@@ -30,9 +29,14 @@ exports.handler = async (event) => {
         body: JSON.stringify(leadData),
       });
     } catch (e) {
-      console.error('GHL Webhook failed:', e.g);
-      // We will now use the environment variables for this.
-        
+      // FIX: Corrected e.g to e
+      console.error('GHL Webhook failed:', e);
+      // Don't stop the process, just log the error
+    }
+    
+    // --- 2. Send EmailJS Confirmation ---
+    // FIX: Moved this block OUTSIDE of the GHL catch block.
+    try {
       let templateIdToSend;
       if (leadType === 'exitIntent') {
          templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_EXIT_INTENT;
@@ -45,19 +49,18 @@ exports.handler = async (event) => {
           throw new Error('Email template configuration error.');
       }
 
-      // FIX 1: Using new library structure with Private Key
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         templateIdToSend, // Use the specific template
         emailParams,
         {
           publicKey: process.env.EMAILJS_PUBLIC_KEY,
-          privateKey: process.env.EMAILJS_PRIVATE_KEY, // <-- Added this
+          privateKey: process.env.EMAILJS_PRIVATE_KEY,
         }
       );
     } catch (e) {
       console.error('EmailJS send failed:', e);
-      // We don't stop the process
+      // Don't stop the process
     }
 
     // --- 3. SUCCESS RESPONSE ---

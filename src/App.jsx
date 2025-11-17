@@ -1268,9 +1268,24 @@ const GlobalStyles = () => (
   `}} />
 );
 
-const FullPageLoader = () => (
+// --- NEW: Full Page Loader / Error Component ---
+const FullPageLoader = ({ error = null }) => (
   <div className="full-page-loader">
-    <span className="loader"></span>
+    {error ? (
+      <div className="max-w-xl mx-auto p-8 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+        <h2 className="text-xl font-bold text-red-900">Application Error</h2>
+        <p className="mt-2 text-red-700">Could not load application configuration. Please check that <code>public/config.json</code> exists and is valid JSON.</p>
+        <pre className="mt-4 p-3 bg-red-100 text-red-800 text-xs overflow-auto rounded">
+          {/* * * THIS IS THE FIX 
+            * We must render error.message, not the whole error object.
+            *
+            */}
+          {error.message ? error.message : String(error)}
+        </pre>
+      </div>
+    ) : (
+      <span className="loader"></span>
+    )}
   </div>
 );
 
@@ -1297,9 +1312,16 @@ const App = () => {
   const [cardElement, setCardElement] = useState(null);
   const [stripeError, setStripeError] = useState(null);
   
+  const [configError, setConfigError] = useState(null);
+  
   useEffect(() => {
     fetch('/config.json')
-      .then(response => response.json())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch config.json: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(config => {
         setAppConfig(config);
         
@@ -1389,6 +1411,8 @@ const App = () => {
       })
       .catch(error => {
         console.error("Failed to load app configuration:", error);
+        // --- NEW: Set the full error object ---
+        setConfigError(error);
       });
       
   }, []); 
@@ -1455,17 +1479,39 @@ const App = () => {
   }, [appConfig, packageSelection.name]);
   
 
-  if (!appConfig) {
+  // --- App Loading Guard ---
+  
+  // FIX #1: The Error State
+  // This block will now correctly render the error message.
+  if (configError) {
     return (
       <>
         <GlobalStyles />
         <Header />
-        <main className="container mx-auto px-4 py-8"><FullPageLoader /></main>
+        <main className="container mx-auto px-4 py-8">
+          <FullPageLoader error={configError} />
+        </main>
         <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }} />
       </>
     );
   }
 
+  // FIX #2: The Loading State
+  // This block now includes the Header and Styles, so it won't be blank.
+  if (!appConfig) {
+    return (
+      <>
+        <GlobalStyles />
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <FullPageLoader />
+        </main>
+        <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }} />
+      </>
+    );
+  }
+
+  // App is ready, render the correct view
   return (
     <>
       <GlobalStyles />
