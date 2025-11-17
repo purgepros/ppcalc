@@ -19,6 +19,36 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 /**
+ * A reusable input field component
+ */
+const AdminInput = ({ label, value, onChange }) => (
+  <label className="block">
+    <span className="text-sm font-medium text-gray-700">{label}</span>
+    <input
+      type="text"
+      value={value}
+      onChange={onChange}
+      className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
+    />
+  </label>
+);
+
+/**
+ * A reusable text area component
+ */
+const AdminTextArea = ({ label, value, onChange, rows = 3 }) => (
+  <label className="block">
+    <span className="text-sm font-medium text-gray-700">{label}</span>
+    <textarea
+      rows={rows}
+      value={value}
+      onChange={onChange}
+      className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
+    />
+  </label>
+);
+
+/**
  * The Main Admin Panel Component
  */
 const AdminPanel = () => {
@@ -129,42 +159,50 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
   
-  // 2. Handle simple text input changes
-  // This is a "deep" change handler that respects the nested JSON
+  // 2. Handle "deep" state changes for nested objects
   const handleChange = (e, section, key, subKey = null, subSubKey = null) => {
-    const { value } = e.target;
+    const { value, type, checked } = e.target;
+    const val = type === 'checkbox' ? checked : value;
+
     setConfig(prevConfig => {
-      // Create deep copies to avoid state mutation issues
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
       
       if (subSubKey) {
-        newConfig[section][key][subKey][subSubKey] = value;
+        newConfig[section][key][subKey][subSubKey] = val;
       } else if (subKey) {
-        newConfig[section][key][subKey] = value;
+        newConfig[section][key][subKey] = val;
       } else {
-        newConfig[section][key] = value;
+        newConfig[section][key] = val;
       }
       return newConfig;
     });
   };
+
+  // 3. Handle changes to items in an array (like modal bullets)
+  const handleArrayChange = (e, section, key, subKey, index) => {
+    const { value } = e.target;
+    setConfig(prevConfig => {
+      const newConfig = JSON.parse(JSON.stringify(prevConfig));
+      newConfig[section][key][subKey][index] = value;
+      return newConfig;
+    });
+  };
   
-  // 3. Handle saving data to the backend
+  // 4. Handle saving data to the backend
   const handleSave = async () => {
     setStatus('saving');
     setError('');
     
     try {
-      // Get the currently logged-in user's auth token
       const idToken = await auth.currentUser.getIdToken(true);
       
-      // Send the data AND the token to our secure backend function
       const response = await fetch('/.netlify/functions/update-config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}` // Send the auth token
+          'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify(config) // Send the entire updated config
+        body: JSON.stringify(config)
       });
 
       if (!response.ok) {
@@ -173,7 +211,7 @@ const AdminDashboard = () => {
       }
 
       setStatus('success');
-      setTimeout(() => setStatus(''), 2000); // Reset status
+      setTimeout(() => setStatus(''), 2000);
       
     } catch (err) {
       setError(err.message);
@@ -199,12 +237,30 @@ const AdminDashboard = () => {
       </div>
 
       <div className="space-y-6">
+        
+        {/* --- Global Data --- */}
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">Global Config</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AdminInput 
+              label="Facebook Pixel ID"
+              value={config.data.FACEBOOK_PIXEL_ID}
+              onChange={(e) => handleChange(e, 'data', 'FACEBOOK_PIXEL_ID')}
+            />
+            <AdminInput 
+              label="Favicon URL"
+              value={config.data.FAVICON_URL}
+              onChange={(e) => handleChange(e, 'data', 'FAVICON_URL')}
+            />
+          </div>
+        </div>
+
         {/* --- Section for Prices --- */}
         <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Base Prices</h3>
+          <h3 className="text-lg font-semibold mb-4">Pricing</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <label className="block">
-              <span className="text-sm font-medium">Bi-Weekly ($)</span>
+              <span className="text-sm font-medium">Base Bi-Weekly ($)</span>
               <input
                 type="number"
                 value={config.data.basePrices.biWeekly}
@@ -213,7 +269,7 @@ const AdminDashboard = () => {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium">Weekly ($)</span>
+              <span className="text-sm font-medium">Base Weekly ($)</span>
               <input
                 type="number"
                 value={config.data.basePrices.weekly}
@@ -222,7 +278,7 @@ const AdminDashboard = () => {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium">Twice-Weekly ($)</span>
+              <span className="text-sm font-medium">Base Twice-Weekly ($)</span>
               <input
                 type="number"
                 value={config.data.basePrices.twiceWeekly}
@@ -231,52 +287,186 @@ const AdminDashboard = () => {
               />
             </label>
           </div>
+          <h4 className="text-md font-semibold mt-6 mb-2">Additional Dog Fees ($)</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <label className="block">
+              <span className="text-sm font-medium">3 Dogs (Fee)</span>
+              <input
+                type="number"
+                value={config.data.dogFeeMap['3']}
+                onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '3')}
+                className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">4 Dogs (Fee)</span>
+              <input
+                type="number"
+                value={config.data.dogFeeMap['4']}
+                onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '4')}
+                className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">5 Dogs (Fee)</span>
+              <input
+                type="number"
+                value={config.data.dogFeeMap['5']}
+                onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '5')}
+                className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
+              />
+            </label>
+          </div>
         </div>
 
-        {/* --- Section for Text (Example) --- */}
-        <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Site Text</h3>
-          <label className="block">
-            <span className="text-sm font-medium">Zip Code Page Title</span>
-            <input
-              type="text"
-              value={config.text.zipView.title}
-              onChange={(e) => handleChange(e, 'text', 'zipView', 'title')}
-              className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
-            />
-          </label>
-          <label className="block mt-4">
-            <span className="text-sm font-medium">Special Offer Body (HTML allowed)</span>
-            <textarea
-              rows="3"
-              value={config.text.globals.specialOfferBody}
-              onChange={(e) => handleChange(e, 'text', 'globals', 'specialOfferBody')}
-              className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
-            />
-          </label>
-        </div>
-        
-        {/* --- Section for ZIP Codes (Example) --- */}
+        {/* --- Section for ZIP Codes --- */}
         <div className="p-4 border rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Approved ZIP Codes</h3>
-           <label className="block">
-            <span className="text-sm font-medium">ZIP Codes (comma-separated)</span>
-            <textarea
-              rows="5"
-              value={config.data.APPROVED_ZIP_CODES.join(', ')}
-              onChange={(e) => {
-                const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z.length > 0);
-                setConfig(prevConfig => ({
-                  ...prevConfig,
-                  data: {
-                    ...prevConfig.data,
-                    APPROVED_ZIP_CODES: zips
-                  }
-                }));
-              }}
-              className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1 font-mono"
+           <AdminTextArea
+            label="ZIP Codes (comma-separated)"
+            rows={5}
+            value={config.data.APPROVED_ZIP_CODES.join(', ')}
+            onChange={(e) => {
+              const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z.length > 0);
+              setConfig(prevConfig => ({
+                ...prevConfig,
+                data: {
+                  ...prevConfig.data,
+                  APPROVED_ZIP_CODES: zips
+                }
+              }));
+            }}
+           />
+        </div>
+
+        {/* --- Section for Page Text --- */}
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">Page Content</h3>
+          <div className="space-y-4">
+            <AdminInput 
+              label="Zip Page Title"
+              value={config.text.zipView.title}
+              onChange={(e) => handleChange(e, 'text', 'zipView', 'title')}
             />
-          </label>
+            <AdminTextArea 
+              label="Special Offer Body (HTML allowed)"
+              value={config.text.globals.specialOfferBody}
+              onChange={(e) => handleChange(e, 'text', 'globals', 'specialOfferBody')}
+            />
+             <AdminTextArea 
+              label="Checkout: 'What Happens Next' Text (HTML)"
+              value={config.text.checkoutView.whatHappensNextBody}
+              rows={6}
+              onChange={(e) => handleChange(e, 'text', 'checkoutView', 'whatHappensNextBody')}
+            />
+          </div>
+        </div>
+        
+        {/* --- Section for Modals ("i" buttons) --- */}
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">Modal Text ("i" Buttons)</h3>
+          
+          <div className="space-y-4">
+            {/* Service Info Modal */}
+            <div className="p-3 border rounded-md">
+              <h4 className="text-md font-semibold mb-2">Service Info Modal (WYSIwash)</h4>
+              <AdminInput 
+                label="Title"
+                value={config.text.modals.serviceInfo.title}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'serviceInfo', 'title')}
+              />
+              {config.text.modals.serviceInfo.body.map((text, index) => (
+                <AdminTextArea
+                  key={index}
+                  label={`Paragraph ${index + 1} (HTML)`}
+                  value={text}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'serviceInfo', 'body', index)}
+                />
+              ))}
+            </div>
+
+            {/* Alerts Info Modal */}
+            <div className="p-3 border rounded-md">
+              <h4 className="text-md font-semibold mb-2">Alerts Info Modal</h4>
+              <AdminInput 
+                label="Title"
+                value={config.text.modals.alertsInfo.title}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'alertsInfo', 'title')}
+              />
+              <AdminTextArea 
+                label="Body Text"
+                value={config.text.modals.alertsInfo.body}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'alertsInfo', 'body')}
+              />
+              {config.text.modals.alertsInfo.bullets.map((text, index) => (
+                <AdminInput
+                  key={index}
+                  label={`Bullet ${index + 1} (HTML)`}
+                  value={text}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'alertsInfo', 'bullets', index)}
+                />
+              ))}
+            </div>
+
+            {/* Pricing Info Modal */}
+            <div className="p-3 border rounded-md">
+              <h4 className="text-md font-semibold mb-2">Pricing Info Modal</h4>
+              <AdminInput 
+                label="Title"
+                value={config.text.modals.pricingInfo.title}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'pricingInfo', 'title')}
+              />
+              {config.text.modals.pricingInfo.body.map((text, index) => (
+                 <AdminTextArea 
+                  key={index}
+                  label={`Paragraph ${index + 1} (HTML)`}
+                  value={text}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', 'body', index)}
+                />
+              ))}
+              {config.text.modals.pricingInfo.bullets.map((text, index) => (
+                <AdminInput
+                  key={index}
+                  label={`Bullet ${index + 1} (HTML)`}
+                  value={text}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', 'bullets', index)}
+                />
+              ))}
+               <AdminInput 
+                label="Footer Text"
+                value={config.text.modals.pricingInfo.footer}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'pricingInfo', 'footer')}
+              />
+            </div>
+            
+          </div>
+        </div>
+        
+        {/* --- Section for Footer --- */}
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">Footer Content</h3>
+          <div className="space-y-4">
+             <AdminInput 
+              label="Address"
+              value={config.text.footer.address}
+              onChange={(e) => handleChange(e, 'text', 'footer', 'address')}
+            />
+             <AdminInput 
+              label="Phone 1"
+              value={config.text.footer.phone1}
+              onChange={(e) => handleChange(e, 'text', 'footer', 'phone1')}
+            />
+             <AdminInput 
+              label="Phone 2"
+              value={config.text.footer.phone2}
+              onChange={(e) => handleChange(e, 'text', 'footer', 'phone2')}
+            />
+             <AdminInput 
+              label="Email"
+              value={config.text.footer.email}
+              onChange={(e) => handleChange(e, 'text', 'footer', 'email')}
+            />
+          </div>
         </div>
 
       </div>
