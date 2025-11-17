@@ -1323,11 +1323,23 @@ const App = () => {
         return response.json();
       })
       .then(config => {
+        // --- NEW SAFETY CHECKS ---
+        // We must verify the structure of the config file before using it.
+        if (!config || !config.data || !config.text || !config.text.footer) {
+          throw new Error('Configuration file is invalid or missing required properties (like "data", "text", or "text.footer").');
+        }
+        
         setAppConfig(config);
         
         document.title = 'Purge Pros Pet Waste Removal - Pricing';
-        setFavicon(config.data.FAVICON_URL);
-        initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+        
+        // More safety checks
+        if (config.data.FAVICON_URL) {
+          setFavicon(config.data.FAVICON_URL);
+        }
+        if (config.data.FACEBOOK_PIXEL_ID) {
+          initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+        }
         
         loadScript('https://js.stripe.com/v3/', 'stripe-js')
           .then(() => {
@@ -1491,6 +1503,23 @@ const App = () => {
         <main className="container mx-auto px-4 py-8">
           <FullPageLoader error={configError} />
         </main>
+        {/* FIX: Pass a default object to Footer in error state */}
+        <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading error...", phone1: "", phone2: "", email: "" }} />
+      </>
+    );
+  }
+
+  // FIX #2: The Loading State
+  // This block now includes the Header and Styles, so it won't be blank.
+  if (!appConfig) {
+    return (
+      <>
+        <GlobalStyles />
+        <Header />
+        <main className="container mx-auto px-4 py-8">
+          <FullPageLoader />
+        </main>
+        {/* FIX: Pass a default object to Footer in loading state */}
         <Footer onAdminTrigger={() => setShowAdminLogin(true)} text={{ address: "Loading...", phone1: "...", phone2: "...", email: "..." }} />
       </>
     );
