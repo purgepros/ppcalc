@@ -21,16 +21,25 @@ const { getAuth } = require('firebase-admin/auth');
 // (We will set this up in the next step)
 let serviceAccount;
 try {
+  // Check if FIREBASE_SERVICE_ACCOUNT is set
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT env var is not set.');
+  }
   serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 } catch (e) {
   console.error("ERROR: FIREBASE_SERVICE_ACCOUNT env var is not set or invalid JSON.", e);
+  // We can't continue if this fails
+  // We'll let the handler return the error
 }
 
 // Initialize Firebase Admin
 try {
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
+  // Check if the default app is already initialized
+  if (!require('firebase-admin/app').getApps().length) {
+    initializeApp({
+      credential: cert(serviceAccount)
+    });
+  }
 } catch (e) {
   // This try/catch avoids a Netlify hot-reload error
   if (!/already exists/.test(e.message)) {
@@ -39,6 +48,11 @@ try {
 }
 
 exports.handler = async (event, context) => {
+  // Check if service account is loaded
+  if (!serviceAccount) {
+    return { statusCode: 500, body: JSON.stringify({ message: 'Server configuration error: Firebase Admin SDK not initialized.' }) };
+  }
+  
   // 1. Check for auth token
   if (!event.headers.authorization) {
     return { statusCode: 401, body: JSON.stringify({ message: 'Not authorized' }) };

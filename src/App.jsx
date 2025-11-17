@@ -2216,7 +2216,7 @@ const Site = () => {
 
               <p className="text-slate-600 text-center mb-4">
                 {appConfig.text.oneTimeView.description}
-              </description>
+              </p>
               <p className="text-slate-600 text-center text-sm mb-6">
                 {appConfig.text.oneTimeView.estatePrompt}
                 <button 
