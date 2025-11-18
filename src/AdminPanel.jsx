@@ -3,14 +3,14 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 
-// Paste your config here
+// Config keys are now loaded from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyDoe0DltSSjI81KA39u5WmlvJ3Kt3e3Hc4",
-  authDomain: "purge-pros-admin.firebaseapp.com",
-  projectId: "purge-pros-admin",
-  storageBucket: "purge-pros-admin.firebasestorage.app",
-  messagingSenderId: "87983189740",
-  appId: "1:87983189740:web:119e1410d5728c50e47fc9"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
