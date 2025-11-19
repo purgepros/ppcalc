@@ -208,23 +208,57 @@ const AdminDashboard = () => {
 
   // 4. SPECIAL: Handle converting TextArea newlines to Array (for Plan Features)
   const handleFeaturesChange = (e, planKey) => {
-    // Split by newline, remove carriage returns, trim whitespace, and filter empty lines
-    // NOTE: We use e.target.value to get the raw text from the textarea
     const rawText = e.target.value;
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== '');
+    // BUG FIX: Do NOT trim or filter here. Just split.
+    // This preserves spaces and empty lines while typing.
+    const lines = rawText.split('\n');
     
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
-      // FIX: Use newConfig.data.planDetails instead of newConfig[data.planDetails]
       newConfig.data.planDetails[planKey].features = lines;
       return newConfig;
     });
   };
   
-  // 5. Handle saving data to the backend
+  // 5. SPECIAL: Handle ZIP Codes
+  const handleZipChange = (e) => {
+    const rawText = e.target.value;
+    // BUG FIX: Do not trim/filter here. Allow the raw split to exist in state.
+    const zips = rawText.split(',');
+    
+    setConfig(prevConfig => ({
+      ...prevConfig,
+      data: {
+        ...prevConfig.data,
+        APPROVED_ZIP_CODES: zips
+      }
+    }));
+  };
+  
+  // 6. Handle saving data to the backend
   const handleSave = async () => {
     setStatus('saving');
     setError('');
+    
+    // --- CLEANUP STEP ---
+    // Before saving, we sanitize the data to remove empty lines/spaces
+    const cleanConfig = JSON.parse(JSON.stringify(config));
+
+    // Clean Features
+    ['biWeekly', 'weekly', 'twiceWeekly'].forEach(plan => {
+       if (cleanConfig.data.planDetails[plan]?.features) {
+         cleanConfig.data.planDetails[plan].features = cleanConfig.data.planDetails[plan].features
+           .map(f => f.trim())
+           .filter(f => f !== '');
+       }
+    });
+
+    // Clean Zips
+    if (cleanConfig.data.APPROVED_ZIP_CODES) {
+      cleanConfig.data.APPROVED_ZIP_CODES = cleanConfig.data.APPROVED_ZIP_CODES
+        .map(z => z.trim())
+        .filter(z => z !== '');
+    }
     
     try {
       const idToken = await auth.currentUser.getIdToken(true);
@@ -235,13 +269,16 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify(config)
+        body: JSON.stringify(cleanConfig) // Send the CLEAN config
       });
 
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.message || 'Server error');
       }
+      
+      // Update local state with the clean version too, so UI reflects the save
+      setConfig(cleanConfig);
 
       setStatus('success');
       setTimeout(() => setStatus(''), 2000);
@@ -412,17 +449,8 @@ const AdminDashboard = () => {
            <AdminTextArea
             label="ZIP Codes (comma-separated)"
             rows={5}
-            value={config.data.APPROVED_ZIP_CODES.join(', ')}
-            onChange={(e) => {
-              const zips = e.target.value.split(',').map(z => z.trim()).filter(z => z.length > 0);
-              setConfig(prevConfig => ({
-                ...prevConfig,
-                data: {
-                  ...prevConfig.data,
-                  APPROVED_ZIP_CODES: zips
-                }
-              }));
-            }}
+            value={config.data.APPROVED_ZIP_CODES.join(',')}
+            onChange={handleZipChange}
            />
         </div>
 
