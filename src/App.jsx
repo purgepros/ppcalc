@@ -4,10 +4,13 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
 // --- Import Firebase for Site component ---
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
+import firebaseConfig from './firebaseConfig'; // Import directly
 
 // 2. Lazily load the AdminPanel so it doesn't slow down your main site
 const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
+
+// ... existing helper functions ...
 
 // --- Helper Functions ---
 
@@ -162,6 +165,7 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
+// ... (Keep ZipCodeValidator, Sorter, PackageSelector, PaymentPlanSelector, CheckoutForm, LeadForm, OneTimeCheckoutForm, ServiceInfoModal, AlertsInfoModal, PackageReviewModal, PricingInfoModal, ExitIntentModal, Header, Footer, GlobalStyles as they are) ...
 
 /**
  * VIEW 1: The Gate (Zip Code Validator)
@@ -1701,23 +1705,7 @@ const Site = () => {
 
   useEffect(() => {
     try {
-      // --- FIX: Read config from single JSON env var ---
-      let firebaseConfig;
-      try {
-        firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
-      } catch (e) {
-        console.error("Error parsing VITE_FIREBASE_CONFIG in Site:", e);
-        // Fallback to individual keys just in case, or empty obj
-        firebaseConfig = {
-          apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-          authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-          projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-          storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-          messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-          appId: import.meta.env.VITE_FIREBASE_APP_ID
-        };
-      }
-
+      // --- Use imported firebaseConfig ---
       let app;
       // Check if the "site" app is already initialized
       if (getApps().some(app => app.name === 'site')) {
@@ -1744,13 +1732,22 @@ const Site = () => {
     const fetchConfig = async () => {
       try {
         const docRef = doc(db, 'config', 'production');
-        const docSnap = await getDoc(docRef);
-
         let config;
-        if (docSnap.exists()) {
-          config = docSnap.data();
-        } else {
-           // Fallback
+        
+        try {
+          // Attempt to fetch from Firestore first
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            config = docSnap.data();
+          }
+        } catch (firestoreError) {
+          console.warn("Firestore fetch failed (offline or blocked), falling back to local config.", firestoreError);
+          // Fallback is handled below if config is still undefined
+        }
+
+        if (!config) {
+           // Fallback to local JSON if Firestore failed or doc didn't exist
+           console.log("Loading fallback config from /config.json");
            const response = await fetch('/config.json');
            if (!response.ok) throw new Error('Could not find config.json');
            config = await response.json();
