@@ -3,15 +3,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 
-// Config keys are now loaded from environment variables
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
+// --- FIX: Read config from single JSON env var ---
+// This matches the change in src/firebase.js to reduce env var size
+let firebaseConfig;
+try {
+  firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
+} catch (e) {
+  console.error("Error parsing VITE_FIREBASE_CONFIG in AdminPanel:", e);
+  firebaseConfig = {};
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
