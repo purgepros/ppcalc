@@ -209,11 +209,14 @@ const AdminDashboard = () => {
   // 4. SPECIAL: Handle converting TextArea newlines to Array (for Plan Features)
   const handleFeaturesChange = (e, planKey) => {
     // Split by newline, remove carriage returns, trim whitespace, and filter empty lines
-    const lines = e.target.value.split('\n').map(l => l.trim()).filter(l => l !== '');
+    // NOTE: We use e.target.value to get the raw text from the textarea
+    const rawText = e.target.value;
+    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l !== '');
     
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
-      newConfig[data.planDetails][planKey].features = lines;
+      // FIX: Use newConfig.data.planDetails instead of newConfig[data.planDetails]
+      newConfig.data.planDetails[planKey].features = lines;
       return newConfig;
     });
   };
