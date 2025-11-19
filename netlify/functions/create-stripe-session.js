@@ -87,25 +87,25 @@ const PRICE_MAP = {
   
   // --- LIVE MODE PRICES (YOU MUST FILL THESE IN) ---
   live: {
-    oneTime: 'price_REPLACE_WITH_LIVE_ID', 
+    oneTime: 'price_1SUuFIGelkvkkUqXtekC4fp6', 
     subs: {
       'Bi-Weekly Reset': {
-        '1-2': { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '3':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '4':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '5':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '1-2': { 'Monthly': 'price_1SUuGmGelkvkkUqXV63LDMdB', 'Quarterly': 'price_1SUuGlGelkvkkUqXOIRfhnns', 'Annual': 'price_1SUuGjGelkvkkUqXruQo42U8' },
+        '3':   { 'Monthly': 'price_1SUuGiGelkvkkUqXKMmid6hb', 'Quarterly': 'price_1SUuGgGelkvkkUqXJrHm0NSV', 'Annual': 'price_1SUuGfGelkvkkUqX6F3XHlCT' },
+        '4':   { 'Monthly': 'price_1SUuGdGelkvkkUqXber95dcN', 'Quarterly': 'price_1SUuGcGelkvkkUqXSwNpQEP7', 'Annual': 'price_1SUuGaGelkvkkUqX5KA7wZBm' },
+        '5':   { 'Monthly': 'price_1SUuGZGelkvkkUqXuQ3zaVxl', 'Quarterly': 'price_1SUuGXGelkvkkUqXXJpzfSf1', 'Annual': 'price_1SUuGTGelkvkkUqXCOlIN5G3' },
       },
       'Pristine-Clean': {
-        '1-2': { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '3':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '4':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '5':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '1-2': { 'Monthly': 'price_1SUuGQGelkvkkUqXNboXafRk', 'Quarterly': 'price_1SUuGPGelkvkkUqX7CrCZmjT', 'Annual': 'price_1SUuGNGelkvkkUqXyTyjqC69' },
+        '3':   { 'Monthly': 'price_1SUuGMGelkvkkUqXihGtpf7t', 'Quarterly': 'price_1SUuGKGelkvkkUqXypTiNu2l', 'Annual': 'price_1SUuGJGelkvkkUqXtZsAgbX8' },
+        '4':   { 'Monthly': 'price_1SUuGFGelkvkkUqXgnFoG3mW', 'Quarterly': 'price_1SUuGCGelkvkkUqXFitnH1qb', 'Annual': 'price_1SUuGAGelkvkkUqX1z2GA5uV' },
+        '5':   { 'Monthly': 'price_1SUuG7GelkvkkUqX9MXsAK1b', 'Quarterly': 'price_1SUuG6GelkvkkUqXnN3S0tU2', 'Annual': 'price_1SUuG4GelkvkkUqX53xaJjl8' },
       },
       'Pristine-Plus': {
-        '1-2': { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '3':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '4':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
-        '5':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '1-2': { 'Monthly': 'price_1SUuFyGelkvkkUqXq4zFDwhR', 'Quarterly': 'price_1SUuFwGelkvkkUqXO0vaWDNa', 'Annual': 'price_1SUuFuGelkvkkUqXZhpV8QP5' },
+        '3':   { 'Monthly': 'price_1SUuFsGelkvkkUqXFnzDqS6G', 'Quarterly': 'price_1SUuFrGelkvkkUqXwRti5w9E', 'Annual': 'price_1SUuFpGelkvkkUqXEmgff84A' },
+        '4':   { 'Monthly': 'price_1SUuFhGelkvkkUqXTZsaKgTd', 'Quarterly': 'price_1SUuFfGelkvkkUqXETCkc7oE', 'Annual': 'price_1SUuFdGelkvkkUqX9kZwzWcu' },
+        '5':   { 'Monthly': 'price_1SUuFcGelkvkkUqXKHvM5OIB', 'Quarterly': 'price_1SUuFXGelkvkkUqXj7jz6ptA', 'Annual': 'price_1SUuFUGelkvkkUqXokRICdsS' },
       },
     }
   }
