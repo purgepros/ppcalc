@@ -2,18 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import firebaseConfig from './firebaseConfig'; // Import from the file
 
-// --- FIX: Read config from single JSON env var ---
-// This matches the change in src/firebase.js to reduce env var size
-let firebaseConfig;
-try {
-  firebaseConfig = JSON.parse(import.meta.env.VITE_FIREBASE_CONFIG);
-} catch (e) {
-  console.error("Error parsing VITE_FIREBASE_CONFIG in AdminPanel:", e);
-  firebaseConfig = {};
-}
-
-// Initialize Firebase
+// Initialize Firebase using the imported config
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);

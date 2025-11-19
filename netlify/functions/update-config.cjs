@@ -17,25 +17,35 @@ const { getAuth } = require('firebase-admin/auth');
 // We must initialize the Admin SDK with a "Service Account"
 // This gives it "God Mode" permissions on your Firebase project.
 
-// Get your service account key from Netlify Environment Variables
-// (We will set this up in the next step)
 let serviceAccount;
 try {
-  // Check if FIREBASE_SERVICE_ACCOUNT is set
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT env var is not set.');
+  // OPTION A: Check for the Full JSON Variable (Legacy/Standard)
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } 
+  // OPTION B: Check for Individual Variables (Space Saving for Netlify)
+  // This is the "Lite" version that avoids the 4KB limit
+  else if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+    // Construct the object manually from smaller parts
+    serviceAccount = {
+      projectId: process.env.FIREBASE_PROJECT_ID || 'purrge-pros', // Fallback or env
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      // Handle newlines in private key which are sometimes escaped in env vars
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    };
   }
-  serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  else {
+    throw new Error('Missing FIREBASE_SERVICE_ACCOUNT or FIREBASE_PRIVATE_KEY/EMAIL env vars.');
+  }
+
 } catch (e) {
-  console.error("ERROR: FIREBASE_SERVICE_ACCOUNT env var is not set or invalid JSON.", e);
-  // We can't continue if this fails
-  // We'll let the handler return the error
+  console.error("ERROR: Could not load Firebase credentials.", e);
 }
 
 // Initialize Firebase Admin
 try {
   // Check if the default app is already initialized
-  if (!require('firebase-admin/app').getApps().length) {
+  if (!require('firebase-admin/app').getApps().length && serviceAccount) {
     initializeApp({
       credential: cert(serviceAccount)
     });
@@ -73,8 +83,6 @@ exports.handler = async (event, context) => {
     const user = await getAuth().getUser(decodedToken.uid);
     
     // --- 5. OPTIONAL: Check for Admin Role ---
-    // You could set a "custom claim" to make only *you* an admin.
-    // For now, we'll just check if they are an authenticated user.
     if (!user) {
       return { statusCode: 403, body: JSON.stringify({ message: 'Forbidden' }) };
     }
