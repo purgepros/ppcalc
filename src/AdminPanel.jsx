@@ -213,7 +213,7 @@ const AdminDashboard = () => {
     
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
-      newConfig.data.planDetails[planKey].features = lines;
+      newConfig[data.planDetails][planKey].features = lines;
       return newConfig;
     });
   };
