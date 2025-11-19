@@ -10,8 +10,6 @@ import firebaseConfig from './firebaseConfig'; // Import directly
 // 2. Lazily load the AdminPanel so it doesn't slow down your main site
 const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
 
-// ... existing helper functions ...
-
 // --- Helper Functions ---
 
 /**
@@ -165,7 +163,7 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
-// ... (Keep ZipCodeValidator, Sorter, PackageSelector, PaymentPlanSelector, CheckoutForm, LeadForm, OneTimeCheckoutForm, ServiceInfoModal, AlertsInfoModal, PackageReviewModal, PricingInfoModal, ExitIntentModal, Header, Footer, GlobalStyles as they are) ...
+// ... (Child components kept exactly as they were) ...
 
 /**
  * VIEW 1: The Gate (Zip Code Validator)
@@ -317,7 +315,7 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
 );
 
 /**
- * VIEW 3B: The "Package Selection" (The Grand Slam)
+ * VIEW 3B: The "Package Selection"
  */
 const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick, text, specialOffer }) => {
   const plans = [
@@ -462,8 +460,7 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, onPlanSele
 };
 
 /**
- * --- NEW: VIEW 4: The "Cash Multiplier" ---
- * This is the new View 4, as requested in the blueprint.
+ * VIEW 4: The "Cash Multiplier"
  */
 const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, text }) => {
   
@@ -535,8 +532,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, text }
 
 
 /**
- * --- NEW: VIEW 5: The "Checkout" (The "Slimy Fuck" Fix) ---
- * This is the final checkout page with the itemized order summary.
+ * VIEW 5: The "Checkout"
  */
 const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, planKey, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode }) => {
   const [formData, setFormData] = useState({
@@ -853,7 +849,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
 
 /**
  * VIEW 3A / One-Time: The Lead Form (Custom Quote & One-Time)
- * This is now *only* for non-payment leads (Custom Quote, One-Time)
  */
 const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, text }) => {
   const [formData, setFormData] = useState({
@@ -1680,6 +1675,8 @@ const Site = () => {
   // --- State ---
   const [appConfig, setAppConfig] = useState(null);
   const [configError, setConfigError] = useState(null);
+  // 1. NEW: Add state to track the source
+  const [configSource, setConfigSource] = useState('Checking...');
   
   const [view, setView] = useState('zip'); // 'zip' -> 'sorter' -> 'custom_quote' OR 'packages' -> 'payment_plan' -> 'checkout'
   const [zipCode, setZipCode] = useState('');
@@ -1739,6 +1736,9 @@ const Site = () => {
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             config = docSnap.data();
+            // SUCCESS: Set source to Live
+            setConfigSource('🔥 Live Database (Firestore)');
+            console.log("Connected to Firestore successfully.");
           }
         } catch (firestoreError) {
           console.warn("Firestore fetch failed (offline or blocked), falling back to local config.", firestoreError);
@@ -1751,6 +1751,8 @@ const Site = () => {
            const response = await fetch('/config.json');
            if (!response.ok) throw new Error('Could not find config.json');
            config = await response.json();
+           // FAIL: Set source to Local
+           setConfigSource('⚠️ Offline Mode (Local File)');
         }
 
         // Safety check
@@ -1767,12 +1769,12 @@ const Site = () => {
         if (config.data.FACEBOOK_PIXEL_ID) {
           initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
         }
-        // --- NEW: Initialize Google Tag ---
+        // --- Initialize Google Tag ---
         if (config.data.GOOGLE_TAG_ID) {
           initGoogleTag(config.data.GOOGLE_TAG_ID);
         }
         
-        // --- NEW: Dynamic Stripe Key Selection ---
+        // --- Dynamic Stripe Key Selection ---
         const stripeMode = config.data.STRIPE_MODE || 'test';
         
         // NOTE: You must set VITE_STRIPE_PK_LIVE and VITE_STRIPE_PK_TEST in your environment variables
@@ -2045,6 +2047,13 @@ const Site = () => {
   // App is ready, render the correct view
   return (
     <>
+      {/* 3. NEW: Visual Debug Badge (Bottom Left) */}
+      <div className={`fixed bottom-4 left-4 z-50 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg ${
+        configSource.includes('Live') ? 'bg-green-600' : 'bg-red-600'
+      }`}>
+        Status: {configSource}
+      </div>
+
       {/* GlobalStyles is in App now */}
       <Header />
       
