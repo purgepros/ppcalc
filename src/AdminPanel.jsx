@@ -21,13 +21,14 @@ const db = getFirestore(app);
 /**
  * A reusable input field component
  */
-const AdminInput = ({ label, value, onChange }) => (
+const AdminInput = ({ label, value, onChange, placeholder }) => (
   <label className="block">
     <span className="text-sm font-medium text-gray-700">{label}</span>
     <input
       type="text"
-      value={value}
+      value={value || ''}
       onChange={onChange}
+      placeholder={placeholder}
       className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
     />
   </label>
@@ -36,15 +37,36 @@ const AdminInput = ({ label, value, onChange }) => (
 /**
  * A reusable text area component
  */
-const AdminTextArea = ({ label, value, onChange, rows = 3 }) => (
+const AdminTextArea = ({ label, value, onChange, rows = 3, placeholder }) => (
   <label className="block">
     <span className="text-sm font-medium text-gray-700">{label}</span>
     <textarea
       rows={rows}
-      value={value}
+      value={value || ''}
       onChange={onChange}
+      placeholder={placeholder}
       className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
     />
+  </label>
+);
+
+/**
+ * A reusable select component
+ */
+const AdminSelect = ({ label, value, onChange, options }) => (
+  <label className="block">
+    <span className="text-sm font-medium text-gray-700">{label}</span>
+    <select
+      value={value || ''}
+      onChange={onChange}
+      className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1 bg-white"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   </label>
 );
 
@@ -147,12 +169,17 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       setStatus('loading');
-      const docRef = doc(db, 'config', 'production');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setConfig(docSnap.data());
-      } else {
-        setError('Could not find config document in Firestore.');
+      try {
+        const docRef = doc(db, 'config', 'production');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setConfig(docSnap.data());
+        } else {
+          setError('Could not find config document in Firestore.');
+        }
+      } catch (err) {
+        console.error(err);
+        setError('Error fetching configuration.');
       }
       setStatus('');
     };
@@ -187,8 +214,20 @@ const AdminDashboard = () => {
       return newConfig;
     });
   };
+
+  // 4. SPECIAL: Handle converting TextArea newlines to Array (for Plan Features)
+  const handleFeaturesChange = (e, planKey) => {
+    // Split by newline, remove carriage returns, trim whitespace, and filter empty lines
+    const lines = e.target.value.split('\n').map(l => l.trim()).filter(l => l !== '');
+    
+    setConfig(prevConfig => {
+      const newConfig = JSON.parse(JSON.stringify(prevConfig));
+      newConfig.data.planDetails[planKey].features = lines;
+      return newConfig;
+    });
+  };
   
-  // 4. Handle saving data to the backend
+  // 5. Handle saving data to the backend
   const handleSave = async () => {
     setStatus('saving');
     setError('');
@@ -223,6 +262,10 @@ const AdminDashboard = () => {
     return <div className="p-8 text-center"><span className="loader"></span> Loading configuration...</div>;
   }
 
+  // Safely access keys in case they don't exist yet in Firestore
+  const stripeMode = config.data.STRIPE_MODE || 'test';
+  const googleTagId = config.data.GOOGLE_TAG_ID || '';
+
   // --- Render the UI ---
   return (
     <div>
@@ -239,13 +282,28 @@ const AdminDashboard = () => {
       <div className="space-y-6">
         
         {/* --- Global Data --- */}
-        <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Global Config</h3>
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <h3 className="text-lg font-semibold mb-4">Global Config & Tracking</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <AdminSelect 
+              label="Stripe Environment Mode"
+              value={stripeMode}
+              onChange={(e) => handleChange(e, 'data', 'STRIPE_MODE')}
+              options={[
+                { value: 'test', label: 'Test Mode (Safe)' },
+                { value: 'live', label: 'LIVE PRODUCTION (Charging Real Money)' }
+              ]}
+            />
             <AdminInput 
               label="Facebook Pixel ID"
               value={config.data.FACEBOOK_PIXEL_ID}
               onChange={(e) => handleChange(e, 'data', 'FACEBOOK_PIXEL_ID')}
+            />
+            <AdminInput 
+              label="Google Tag ID (G-XXXXXXXXXX)"
+              value={googleTagId}
+              placeholder="G-XXXXXXXXXX"
+              onChange={(e) => handleChange(e, 'data', 'GOOGLE_TAG_ID')}
             />
             <AdminInput 
               label="Favicon URL"
@@ -253,11 +311,14 @@ const AdminDashboard = () => {
               onChange={(e) => handleChange(e, 'data', 'FAVICON_URL')}
             />
           </div>
+          <p className="text-xs text-gray-500 mt-2">
+            * Changing Stripe Mode requires you to Save, then refresh the main site. Ensure you have both Test and Live keys set up in your Netlify Environment Variables.
+          </p>
         </div>
 
         {/* --- Section for Prices --- */}
         <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Pricing</h3>
+          <h3 className="text-lg font-semibold mb-4">Base Pricing</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <label className="block">
               <span className="text-sm font-medium">Base Bi-Weekly ($)</span>
@@ -316,6 +377,38 @@ const AdminDashboard = () => {
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
             </label>
+          </div>
+        </div>
+
+        {/* --- NEW: Section for Plan Features --- */}
+        <div className="p-4 border rounded-lg">
+          <h3 className="text-lg font-semibold mb-4">Package Features</h3>
+          <p className="text-sm text-gray-500 mb-4">
+             Enter one feature per line. Use "!" at the start of a line to strikethrough (exclude) that feature.
+          </p>
+          
+          <div className="space-y-6">
+            {['biWeekly', 'weekly', 'twiceWeekly'].map((planKey) => (
+               <div key={planKey} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                 <div className="flex items-center justify-between mb-2">
+                   <h4 className="font-bold text-gray-800 capitalize">{planKey.replace(/([A-Z])/g, ' $1').trim()} Plan</h4>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 gap-4">
+                    <AdminInput 
+                      label="Plan Name Display"
+                      value={config.data.planDetails[planKey].name}
+                      onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'name')}
+                    />
+                    <AdminTextArea
+                      label="Features List (One per line)"
+                      rows={7}
+                      value={config.data.planDetails[planKey].features.join('\n')}
+                      onChange={(e) => handleFeaturesChange(e, planKey)}
+                    />
+                 </div>
+               </div>
+            ))}
           </div>
         </div>
 

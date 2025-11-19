@@ -2,13 +2,12 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 // 1. Import the router components
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 
-// --- FIX 3: Import Firebase for Site component ---
-// Import 'getApp' and 'getApps' for robust initialization
+// --- Import Firebase for Site component ---
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 // 2. Lazily load the AdminPanel so it doesn't slow down your main site
-const AdminPanel = lazy(() => import('./AdminPanel.jsx')); // <-- FIX: Added .jsx extension
+const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
 
 // --- Helper Functions ---
 
@@ -50,6 +49,27 @@ const initFacebookPixel = (pixelId) => {
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', pixelId);
   fbq('track', 'PageView');
+};
+
+/**
+ * Initializes Google Analytics / Google Ads (GTag).
+ * @param {string} tagId - The Google Tag ID (e.g., G-XXXXXX or AW-XXXXXX).
+ */
+const initGoogleTag = (tagId) => {
+  if (!tagId || document.getElementById('google-tag-script')) return;
+
+  // 1. Load the script
+  const script = document.createElement('script');
+  script.id = 'google-tag-script';
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${tagId}`;
+  document.head.appendChild(script);
+
+  // 2. Initialize dataLayer
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', tagId);
 };
 
 /**
@@ -131,7 +151,6 @@ const FullPageLoader = ({ error = null }) => (
     {error ? (
       <div className="max-w-lg w-full bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded-lg shadow-md">
         <h3 className="font-bold text-lg mb-2">Application Error</h3>
-        {/* FIX 1: Removed the static/misleading error message */}
         <p className="mb-4">Could not load application configuration.</p>
         <pre className="text-sm bg-red-50 p-2 rounded">
           {error.message ? error.message : String(error)}
@@ -515,7 +534,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, text }
  * --- NEW: VIEW 5: The "Checkout" (The "Slimy Fuck" Fix) ---
  * This is the final checkout page with the itemized order summary.
  */
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, planKey, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, text }) => {
+const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, planKey, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -650,6 +669,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          stripeMode: stripeMode, // PASS THE MODE (live/test)
           paymentMethodId: paymentMethod.id,
           customer: {
             name: formData.name,
@@ -1016,7 +1036,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
 };
 
 // --- NEW: VIEW 5B: One-Time Cleanup Checkout Form ---
-const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, stripeInstance, cardElement, text }) => {
+const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -1107,6 +1127,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          stripeMode: stripeMode, // PASS THE MODE
           paymentMethodId: paymentMethod.id,
           customer: {
             name: formData.name,
@@ -1520,10 +1541,6 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, planDetails,
   );
 };
 
-// --- FIX 2: REMOVED AdminLoginModal ---
-
-// --- FIX 2: REMOVED AdminCalculator ---
-
 
 const Header = () => (
   <header className="py-6">
@@ -1535,16 +1552,14 @@ const Header = () => (
   </header>
 );
 
-const Footer = ({ text }) => { // FIX 2: Removed onAdminTrigger prop
+const Footer = ({ text }) => {
 
   useEffect(() => {
     const yearElement = document.getElementById('copyright-year');
     if (yearElement) {
       yearElement.textContent = new Date().getFullYear();
-      
-      // FIX 2: REMOVED Admin click listener
     }
-  }, []); // FIX 2: Removed dependency
+  }, []); 
 
   return (
     <footer className="bg-[#1C1C1C] text-white mt-16">
@@ -1672,7 +1687,6 @@ const Site = () => {
   const [showPackageReviewModal, setShowPackageReviewModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
-  // const [showAdminLogin, setShowAdminLogin] = useState(false); // FIX 2: Removed
   
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0, key: null });
   const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', total: 0, savings: null, savingsValue: 0 });
@@ -1682,11 +1696,10 @@ const Site = () => {
   const [cardElement, setCardElement] = useState(null);
   const [stripeError, setStripeError] = useState(null);
   
-  // --- FIX 3: Initialize Firebase for Site component ---
+  // --- Initialize Firebase for Site component ---
   const [db, setDb] = useState(null);
 
   useEffect(() => {
-    // FIX 2: More robust Firebase initialization
     try {
       const firebaseConfig = {
         apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -1725,179 +1738,96 @@ const Site = () => {
         const docRef = doc(db, 'config', 'production');
         const docSnap = await getDoc(docRef);
 
+        let config;
         if (docSnap.exists()) {
-          const config = docSnap.data();
-          
-          // --- NEW SAFETY CHECKS ---
-          if (!config || !config.data || !config.text || !config.text.footer) {
-            throw new Error('Configuration file is invalid or missing required properties (like "data", "text", or "text.footer").');
-          }
-          
-          setAppConfig(config);
-          
-          document.title = 'Purge Pros Pet Waste Removal - Pricing';
-          
-          // More safety checks
-          if (config.data.FAVICON_URL) {
-            setFavicon(config.data.FAVICON_URL);
-          }
-          if (config.data.FACEBOOK_PIXEL_ID) {
-            initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
-          }
-          
-          // Now load Stripe
-          loadScript('https://js.stripe.com/v3/', 'stripe-js')
-            .then(() => {
-              if (window.Stripe) {
-                const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
-                setStripeInstance(stripe);
-                
-                const elements = stripe.elements();
-                const card = elements.create('card', {
-                  style: {
-                    base: {
-                      color: "#32325d",
-                      fontFamily: 'Inter, sans-serif',
-                      fontSmoothing: "antialiased",
-                      fontSize: "16px",
-                      "::placeholder": {
-                        color: "#aab7c4",
-                      },
-                    },
-                    invalid: {
-                      color: "#fa755a",
-                      iconColor: "#fa755a",
-                    },
-                  }
-                });
-                setCardElement(card);
-              } else {
-                console.error("Stripe.js loaded but window.Stripe is not available.");
-                setStripeError("Failed to initialize payment system.");
-              }
-            })
-            .catch(error => {
-              console.error("Failed to load Stripe.js", error);
-              setStripeError("Failed to load payment system. Please refresh.");
-            });
-
+          config = docSnap.data();
         } else {
-          // Fallback to config.json if Firestore doc doesn't exist
-          console.warn("Firestore config not found, falling back to public/config.json");
-          fetch('/config.json')
-            .then(response => {
-              if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status} - Could not find config.json`);
-              }
-              return response.json();
-            })
-            .then(config => {
-              setAppConfig(config);
-              // ... (rest of the setup logic from above) ...
-              document.title = 'Purge Pros Pet Waste Removal - Pricing';
-              if (config.data.FAVICON_URL) setFavicon(config.data.FAVICON_URL);
-              if (config.data.FACEBOOK_PIXEL_ID) initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
-              loadScript('https://js.stripe.com/v3/', 'stripe-js')
-                .then(() => {
-                  if (window.Stripe) {
-                    const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
-                    setStripeInstance(stripe);
-                    const elements = stripe.elements();
-                    const card = elements.create('card', { 
-                      style: {
-                        base: {
-                          color: "#32325d",
-                          fontFamily: 'Inter, sans-serif',
-                          fontSmoothing: "antialiased",
-                          fontSize: "16px",
-                          "::placeholder": {
-                            color: "#aab7c4",
-                          },
-                        },
-                        invalid: {
-                          color: "#fa755a",
-                          iconColor: "#fa755a",
-                        },
-                      }
-                    });
-                    setCardElement(card);
-                  } else {
-                    console.error("Stripe.js loaded but window.Stripe is not available.");
-                    setStripeError("Failed to initialize payment system.");
-                  }
-                })
-                .catch(error => {
-                  console.error("Failed to load Stripe.js", error);
-                  setStripeError("Failed to load payment system. Please refresh.");
-                });
-            })
-            .catch(fallbackError => {
-              console.error("Failed to load config from both Firestore and fallback:", fallbackError);
-              setConfigError(fallbackError);
-            });
+           // Fallback
+           const response = await fetch('/config.json');
+           if (!response.ok) throw new Error('Could not find config.json');
+           config = await response.json();
         }
-      } catch (error) {
-        // This is the "client is offline" error block
-        console.error("Failed to load app configuration from Firestore:", error);
-        // We will try the fallback to config.json if Firestore fails
-        console.warn("Firestore failed, falling back to public/config.json");
-        fetch('/config.json')
-          .then(response => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status} - Could not find config.json`);
-            }
-            return response.json();
-          })
-          .then(config => {
-            setAppConfig(config);
-            // ... (rest of the setup logic from above) ...
-            document.title = 'Purge Pros Pet Waste Removal - Pricing';
-            if (config.data.FAVICON_URL) setFavicon(config.data.FAVICON_URL);
-            if (config.data.FACEBOOK_PIXEL_ID) initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
-            loadScript('https://js.stripe.com/v3/', 'stripe-js')
-              .then(() => {
-                if (window.Stripe) {
-                  const stripe = window.Stripe('pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
-                  setStripeInstance(stripe);
-                  const elements = stripe.elements();
-                  const card = elements.create('card', { 
-                    style: {
-                      base: {
-                        color: "#32325d",
-                        fontFamily: 'Inter, sans-serif',
-                        fontSmoothing: "antialiased",
-                        fontSize: "16px",
-                        "::placeholder": {
-                          color: "#aab7c4",
-                        },
-                      },
-                      invalid: {
-                        color: "#fa755a",
-                        iconColor: "#fa755a",
-                      },
-                    }
-                  });
-                  setCardElement(card);
-                } else {
-                  console.error("Stripe.js loaded but window.Stripe is not available.");
-                  setStripeError("Failed to initialize payment system.");
+
+        // Safety check
+        if (!config || !config.data || !config.text || !config.text.footer) {
+           throw new Error('Configuration file is invalid or missing required properties.');
+        }
+
+        setAppConfig(config);
+        document.title = 'Purge Pros Pet Waste Removal - Pricing';
+        
+        if (config.data.FAVICON_URL) {
+          setFavicon(config.data.FAVICON_URL);
+        }
+        if (config.data.FACEBOOK_PIXEL_ID) {
+          initFacebookPixel(config.data.FACEBOOK_PIXEL_ID);
+        }
+        // --- NEW: Initialize Google Tag ---
+        if (config.data.GOOGLE_TAG_ID) {
+          initGoogleTag(config.data.GOOGLE_TAG_ID);
+        }
+        
+        // --- NEW: Dynamic Stripe Key Selection ---
+        const stripeMode = config.data.STRIPE_MODE || 'test';
+        
+        // NOTE: You must set VITE_STRIPE_PK_LIVE and VITE_STRIPE_PK_TEST in your environment variables
+        // Fallback to the hardcoded test key if the env var is missing (for safety during dev)
+        const hardcodedTestKey = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
+        
+        const stripeKey = stripeMode === 'live' 
+          ? import.meta.env.VITE_STRIPE_PK_LIVE 
+          : (import.meta.env.VITE_STRIPE_PK_TEST || hardcodedTestKey);
+
+        if (!stripeKey) {
+           console.error(`Stripe Public Key missing for mode: ${stripeMode}`);
+           setStripeError(`Payment system configuration error (${stripeMode} mode).`);
+           return;
+        }
+
+        // Load Stripe
+        loadScript('https://js.stripe.com/v3/', 'stripe-js')
+          .then(() => {
+            if (window.Stripe) {
+              const stripe = window.Stripe(stripeKey);
+              setStripeInstance(stripe);
+              
+              const elements = stripe.elements();
+              const card = elements.create('card', {
+                style: {
+                  base: {
+                    color: "#32325d",
+                    fontFamily: 'Inter, sans-serif',
+                    fontSmoothing: "antialiased",
+                    fontSize: "16px",
+                    "::placeholder": {
+                      color: "#aab7c4",
+                    },
+                  },
+                  invalid: {
+                    color: "#fa755a",
+                    iconColor: "#fa755a",
+                  },
                 }
-              })
-              .catch(error => {
-                console.error("Failed to load Stripe.js", error);
-                setStripeError("Failed to load payment system. Please refresh.");
               });
+              setCardElement(card);
+            } else {
+              console.error("Stripe.js loaded but window.Stripe is not available.");
+              setStripeError("Failed to initialize payment system.");
+            }
           })
-          .catch(fallbackError => {
-            // If BOTH Firestore and config.json fail, show the final error
-            console.error("Failed to load config from both Firestore and fallback:", fallbackError);
-            setConfigError(fallbackError);
+          .catch(error => {
+            console.error("Failed to load Stripe.js", error);
+            setStripeError("Failed to load payment system. Please refresh.");
           });
+
+      } catch (error) {
+        console.error("Failed to load app configuration:", error);
+        setConfigError(error);
       }
     };
     
     fetchConfig();
-  }, [db]); // Runs when 'db' state is set
+  }, [db]); 
 
   // 2. URL Parameter "Transposer" Logic
   useEffect(() => {
@@ -2187,6 +2117,7 @@ const Site = () => {
               stripeInstance={stripeInstance}
               cardElement={cardElement}
               text={appConfig.text.checkoutView}
+              stripeMode={appConfig.data.STRIPE_MODE} // --- Pass Mode to Form ---
             />
           )}
           
@@ -2259,11 +2190,10 @@ const Site = () => {
               stripeInstance={stripeInstance}
               cardElement={cardElement}
               text={appConfig.text.oneTimeCheckoutView}
+              stripeMode={appConfig.data.STRIPE_MODE} // --- Pass Mode to Form ---
             />
           )}
           
-          {/* FIX 2: Removed 'admin_calculator' view */}
-
         </div>
       </main>
       
@@ -2307,8 +2237,6 @@ const Site = () => {
           onClose={() => setIsExitModalOpen(false)}
         />
       )}
-      
-      {/* FIX 2: Removed 'showAdminLogin' modal */}
       
       <Footer 
         text={appConfig.text.footer}

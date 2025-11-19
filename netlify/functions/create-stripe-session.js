@@ -1,109 +1,152 @@
 /*
  * --- NETLIFY FUNCTION FOR STRIPE CHECKOUT ---
  *
- * This is your new backend. It will:
- * 1. Be triggered when your React app's checkout form is submitted.
- * 2. Securely create Stripe customers, subscriptions, and one-time charges.
- * 3. Trigger your GHL webhook *after* payment success.
- * 4. Send your EmailJS confirmation *after* payment success.
- *
- * --- HOW TO DEPLOY ---
- * 1. Create this file in your project: `netlify/functions/create-stripe-session.js`
- * 2. Run: `npm install stripe @emailjs/nodejs node-fetch@2`
- * 3. Go to your Netlify site settings -> "Build & deploy" -> "Environment"
- * 4. Add your Environment Variables.
- *
+ * This backend handles the "Stripe Mode" toggle (Test vs Live).
+ * It selects the correct Secret Key and Price IDs based on the 'stripeMode' param.
  */
 
-// We use `require` syntax in Netlify functions
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const emailjs = require('@emailjs/nodejs'); // <-- FIX 1: Using Node.js library
-const fetch = require('node-fetch'); // Netlify functions don't have browser 'fetch'
+const emailjs = require('@emailjs/nodejs');
+const fetch = require('node-fetch');
 
-// --- 1. THE PRICE MAP ---
-// This maps your app's state directly to the Stripe Price IDs you provided.
-// ========================================================================
-// FIX 2: Your new One-Time Price ID is now included.
-const ONE_TIME_DEPOSIT_PRICE_ID = 'price_1SS2h6GelkvkkUqXn5QoA37X';
-// ========================================================================
+// --- 1. THE PRICE MAPS (TEST VS LIVE) ---
+// Stripe Price IDs are different in Test Mode vs Live Mode.
+// You must map them separately here.
 
-const SUBSCRIPTION_PRICE_MAP = {
-  'Bi-Weekly Reset': {
-    '1-2': {
-      'Monthly': 'price_1SRnhvGelkvkkUqXoy7Qefhk',
-      'Quarterly': 'price_1SRnjCGelkvkkUqXxvkqUY5Y',
-      'Annual': 'price_1SRnjQGelkvkkUqXD3WLIFQK',
-    },
-    '3': {
-      'Monthly': 'price_1SRnjbGelkvkkUqXWMUbTJcj',
-      'Quarterly': 'price_1SRnjnGelkvkkUqXqYGY72C4',
-      'Annual': 'price_1SRnk0GelkvkkUqXWiTqnfJz',
-    },
-    '4': {
-      'Monthly': 'price_1SRnkAGelkvkkUqXMej9i20q',
-      'Quarterly': 'price_1SRnkNGelkvkkUqXD1xuiKmV',
-      'Annual': 'price_1SRnkdGelkvkkUqX3bER93Od',
-    },
-    '5': {
-      'Monthly': 'price_1SRnktGelkvkkUqX2yQ6hdj5',
-      'Quarterly': 'price_1SRnl4GelkvkkUqXbzvhlUbH',
-      'Annual': 'price_1SRnlVGelkvkkUqXaHXns6PX',
-    },
+const PRICE_MAP = {
+  test: {
+    oneTime: 'price_1SS2h6GelkvkkUqXn5QoA37X', // Your TEST One-Time ID
+    subs: {
+      'Bi-Weekly Reset': {
+        '1-2': {
+          'Monthly': 'price_1SRnhvGelkvkkUqXoy7Qefhk',
+          'Quarterly': 'price_1SRnjCGelkvkkUqXxvkqUY5Y',
+          'Annual': 'price_1SRnjQGelkvkkUqXD3WLIFQK',
+        },
+        '3': {
+          'Monthly': 'price_1SRnjbGelkvkkUqXWMUbTJcj',
+          'Quarterly': 'price_1SRnjnGelkvkkUqXqYGY72C4',
+          'Annual': 'price_1SRnk0GelkvkkUqXWiTqnfJz',
+        },
+        '4': {
+          'Monthly': 'price_1SRnkAGelkvkkUqXMej9i20q',
+          'Quarterly': 'price_1SRnkNGelkvkkUqXD1xuiKmV',
+          'Annual': 'price_1SRnkdGelkvkkUqX3bER93Od',
+        },
+        '5': {
+          'Monthly': 'price_1SRnktGelkvkkUqX2yQ6hdj5',
+          'Quarterly': 'price_1SRnl4GelkvkkUqXbzvhlUbH',
+          'Annual': 'price_1SRnlVGelkvkkUqXaHXns6PX',
+        },
+      },
+      'Pristine-Clean': {
+        '1-2': {
+          'Monthly': 'price_1SRnljGelkvkkUqXrWJbNsc0',
+          'Quarterly': 'price_1SRnm1GelkvkkUqX2yuUtOpV',
+          'Annual': 'price_1SRnmIGelkvkkUqXQZ1l5tXa',
+        },
+        '3': {
+          'Monthly': 'price_1SRnmSGelkvkkUqXd6WFSU18',
+          'Quarterly': 'price_1SRnmdGelkvkkUqXeJEkMZ9E',
+          'Annual': 'price_1SRnmoGelkvkkUqXgRpwSIPE',
+        },
+        '4': {
+          'Monthly': 'price_1SRnmyGelkvkkUqXfn9hznqW',
+          'Quarterly': 'price_1SRnnHGelkvkkUqXMA6ENLgm',
+          'Annual': 'price_1SRnnWGelkvkkUqXUNDAuOdI',
+        },
+        '5': {
+          'Monthly': 'price_1SRnnnGelkvkkUqXFObuN8k5',
+          'Quarterly': 'price_1SRno1GelkvkkUqX27eThN0U',
+          'Annual': 'price_1SRnoGGelkvkkUqX4sERizjc',
+        },
+      },
+      'Pristine-Plus': {
+        '1-2': {
+          'Monthly': 'price_1SRnoTGelkvkkUqXe3ifwiKk',
+          'Quarterly': 'price_1SRnohGelkvkkUqXguRBbFcN',
+          'Annual': 'price_1SRnouGelkvkkUqXlZnphHIM',
+        },
+        '3': {
+          'Monthly': 'price_1SRnp6GelkvkkUqXd7xGDfqu',
+          'Quarterly': 'price_1SRnpFGelkvkkUqX6YRg75c9',
+          'Annual': 'price_1SRnpRGelkvkkUqXF5ym2ULq',
+        },
+        '4': {
+          'Monthly': 'price_1SRnpeGelkvkkUqXdK8vbl04',
+          'Quarterly': 'price_1SRnq5GelkvkkUqXHdhVJSn9',
+          'Annual': 'price_1SRnqHGelkvkkUqXGS3icKUs',
+        },
+        '5': {
+          'Monthly': 'price_1SRnqWGelkvkkUqXIruZuO2c',
+          'Quarterly': 'price_1SRnqlGelkvkkUqX86DHtYxF',
+          'Annual': 'price_1SRnr1GelkvkkUqXxKnK3zVT',
+        },
+      },
+    }
   },
-  'Pristine-Clean': {
-    '1-2': {
-      'Monthly': 'price_1SRnljGelkvkkUqXrWJbNsc0',
-      'Quarterly': 'price_1SRnm1GelkvkkUqX2yuUtOpV',
-      'Annual': 'price_1SRnmIGelkvkkUqXQZ1l5tXa',
-    },
-    '3': {
-      'Monthly': 'price_1SRnmSGelkvkkUqXd6WFSU18',
-      'Quarterly': 'price_1SRnmdGelkvkkUqXeJEkMZ9E',
-      'Annual': 'price_1SRnmoGelkvkkUqXgRpwSIPE',
-    },
-    '4': {
-      'Monthly': 'price_1SRnmyGelkvkkUqXfn9hznqW',
-      'Quarterly': 'price_1SRnnHGelkvkkUqXMA6ENLgm',
-      'Annual': 'price_1SRnnWGelkvkkUqXUNDAuOdI',
-    },
-    '5': {
-      'Monthly': 'price_1SRnnnGelkvkkUqXFObuN8k5',
-      'Quarterly': 'price_1SRno1GelkvkkUqX27eThN0U',
-      'Annual': 'price_1SRnoGGelkvkkUqX4sERizjc',
-    },
-  },
-  'Pristine-Plus': {
-    '1-2': {
-      'Monthly': 'price_1SRnoTGelkvkkUqXe3ifwiKk',
-      'Quarterly': 'price_1SRnohGelkvkkUqXguRBbFcN',
-      'Annual': 'price_1SRnouGelkvkkUqXlZnphHIM',
-    },
-    '3': {
-      'Monthly': 'price_1SRnp6GelkvkkUqXd7xGDfqu',
-      'Quarterly': 'price_1SRnpFGelkvkkUqX6YRg75c9',
-      'Annual': 'price_1SRnpRGelkvkkUqXF5ym2ULq',
-    },
-    '4': {
-      'Monthly': 'price_1SRnpeGelkvkkUqXdK8vbl04',
-      'Quarterly': 'price_1SRnq5GelkvkkUqXHdhVJSn9',
-      'Annual': 'price_1SRnqHGelkvkkUqXGS3icKUs',
-    },
-    '5': {
-      'Monthly': 'price_1SRnqWGelkvkkUqXIruZuO2c',
-      'Quarterly': 'price_1SRnqlGelkvkkUqX86DHtYxF',
-      'Annual': 'price_1SRnr1GelkvkkUqXxKnK3zVT',
-    },
-  },
+  
+  // --- LIVE MODE PRICES (YOU MUST FILL THESE IN) ---
+  live: {
+    oneTime: 'price_REPLACE_WITH_LIVE_ID', 
+    subs: {
+      'Bi-Weekly Reset': {
+        '1-2': { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '3':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '4':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '5':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+      },
+      'Pristine-Clean': {
+        '1-2': { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '3':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '4':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '5':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+      },
+      'Pristine-Plus': {
+        '1-2': { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '3':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '4':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+        '5':   { 'Monthly': 'price_REPLACE', 'Quarterly': 'price_REPLACE', 'Annual': 'price_REPLACE' },
+      },
+    }
+  }
 };
 
 // --- 2. THE MAIN FUNCTION HANDLER ---
 exports.handler = async (event) => {
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const { paymentMethodId, customer, quote, leadData, emailParams, emailTemplate } = JSON.parse(event.body);
+  const { 
+    stripeMode = 'test', // Default to test if not provided
+    paymentMethodId, 
+    customer, 
+    quote, 
+    leadData, 
+    emailParams 
+  } = JSON.parse(event.body);
+
+  // --- SELECT STRIPE SECRET KEY ---
+  let secretKey;
+  if (stripeMode === 'live') {
+    secretKey = process.env.STRIPE_SECRET_KEY_LIVE;
+  } else {
+    // Fallback to the generic key if specific TEST key isn't set
+    secretKey = process.env.STRIPE_SECRET_KEY_TEST || process.env.STRIPE_SECRET_KEY;
+  }
+
+  if (!secretKey) {
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ status: 'error', message: `Server Error: Missing Stripe Secret Key for ${stripeMode} mode.` }) 
+    };
+  }
+
+  // Initialize Stripe with the selected key
+  const stripe = require('stripe')(secretKey);
+  
+  // Select the correct Price Map
+  const selectedPrices = PRICE_MAP[stripeMode === 'live' ? 'live' : 'test'];
 
   try {
     let stripeAction;
@@ -124,50 +167,47 @@ exports.handler = async (event) => {
       },
     });
 
-    // --- Determine: Is this a Subscription or a One-Time Charge? ---
+    // --- Determine: Subscription or One-Time? ---
     if (quote.paymentTerm === 'One-Time Deposit') {
       // --- IT'S A ONE-TIME CHARGE ---
       isOneTime = true;
-      if (ONE_TIME_DEPOSIT_PRICE_ID === 'price_YOUR_ONETIME_DEPOSIT_ID_HERE') {
-         throw new Error('Server is not configured: One-Time Price ID is missing.');
+      
+      // Validate Price ID
+      if (!selectedPrices.oneTime || selectedPrices.oneTime.includes('REPLACE')) {
+         throw new Error(`One-Time Price ID is not configured for ${stripeMode} mode.`);
       }
       
-      // Create a PaymentIntent (a charge)
+      // Create PaymentIntent
       stripeAction = await stripe.paymentIntents.create({
         amount: 9999, // $99.99 in cents
         currency: 'usd',
         customer: stripeCustomer.id,
         payment_method: paymentMethodId,
-        off_session: true, // Charge immediately
-        confirm: true, // Confirm the charge
+        off_session: true,
+        confirm: true,
         description: 'One-Time Yard Reset (Deposit)',
       });
       
     } else {
       // --- IT'S A SUBSCRIPTION ---
       
-      // Find the Price ID from our map
-      const priceId = SUBSCRIPTION_PRICE_MAP[quote.planName]?.[quote.dogCount]?.[quote.paymentTerm];
+      // Find Price ID
+      const priceId = selectedPrices.subs[quote.planName]?.[quote.dogCount]?.[quote.paymentTerm];
       
-      if (!priceId) {
-        throw new Error(`Could not find a valid Stripe Price ID for: ${quote.planName}, ${quote.dogCount}, ${quote.paymentTerm}`);
+      if (!priceId || priceId.includes('REPLACE')) {
+        throw new Error(`Price ID not found or not configured for: ${quote.planName}, ${quote.dogCount}, ${quote.paymentTerm} in ${stripeMode} mode.`);
       }
       
-      // Create the Subscription
+      // Create Subscription
       stripeAction = await stripe.subscriptions.create({
         customer: stripeCustomer.id,
         items: [{ price: priceId }],
-        // Stripe automatically charges the default_payment_method
-        // The "Free First Cleanup" is a manual business process,
-        // so we don't need complex trial logic here. The sub just starts.
       });
     }
 
-    // --- 3. POST-PAYMENT ACTIONS ---
-    // If Stripe was successful, we now fire the webhooks.
+    // --- 3. POST-PAYMENT ACTIONS (Webhooks) ---
 
     // A. Fire GHL Webhook
-    // We send the `leadData` that the *frontend* prepared.
     try {
       await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
         method: 'POST',
@@ -176,42 +216,35 @@ exports.handler = async (event) => {
       });
     } catch (e) {
       console.error('GHL Webhook failed:', e);
-        // We don't stop the process
     }
     
     // B. Send EmailJS Confirmation
-    // We send the `emailParams` that the *frontend* prepared.
     try {
       const template = isOneTime
         ? process.env.EMAILJS_TEMPLATE_ID_ONETIME
         : process.env.EMAILJS_TEMPLATE_ID_SUBSCRIPTION;
         
-      // FIX 1: Using new library structure with Private Key
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         template,
         emailParams,
         {
           publicKey: process.env.EMAILJS_PUBLIC_KEY,
-          privateKey: process.env.EMAILJS_PRIVATE_KEY, // <-- Added this
+          privateKey: process.env.EMAILJS_PRIVATE_KEY,
         }
       );
     } catch (e) {
       console.error('EmailJS send failed:', e);
-      // We don't stop the process
     }
 
     // --- 4. SUCCESS RESPONSE ---
-    // Send a 200 OK back to the React app
     return {
       statusCode: 200,
       body: JSON.stringify({ status: 'success', data: stripeAction }),
     };
 
   } catch (error) {
-    // --- ERROR RESPONSE ---
     console.error('Stripe or Server Error:', error);
-    // Send the error message back to the React app to display to the user
     return {
       statusCode: 500,
       body: JSON.stringify({ status: 'error', message: error.message }),
