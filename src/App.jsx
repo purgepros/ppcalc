@@ -110,6 +110,38 @@ const SatisfactionModal = ({ onClose, text }) => (
   </ModalOverlay>
 );
 
+const YardHelperModal = ({ onClose }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8">
+      <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+        <span className="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+        </span>
+        Which size is right?
+      </h3>
+      <div className="space-y-4 text-sm text-slate-600">
+        <div className="border-b pb-2">
+          <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
+          <p>Most common. Typical subdivision home with a standard backyard.</p>
+        </div>
+        <div className="border-b pb-2">
+          <strong className="block text-slate-800 text-base mb-1">Medium Lot (0.25 - 0.5 Acre)</strong>
+          <p>A bit more elbow room. Often found in older neighborhoods or corner lots.</p>
+        </div>
+        <div className="border-b pb-2">
+          <strong className="block text-slate-800 text-base mb-1">Large Lot (0.5 - 1 Acre)</strong>
+          <p>Very spacious. Often feels like a double lot.</p>
+        </div>
+        <div>
+          <strong className="block text-slate-800 text-base mb-1">Estate / Farm (1+ Acre)</strong>
+          <p>Massive property, rural land, or large estates. We'll need to give you a custom quote.</p>
+        </div>
+      </div>
+      <button onClick={onClose} className="mt-6 w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-200 transition-all">Close</button>
+    </div>
+  </ModalOverlay>
+);
+
 const ServiceInfoModal = ({ onClose, text }) => (
   <ModalOverlay onClose={onClose}>
     <div className="p-8">
@@ -215,7 +247,7 @@ const Header = ({ onSatisfactionClick }) => (
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
         <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
         <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -315,6 +347,7 @@ const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
 const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
+  const [showYardHelp, setShowYardHelp] = useState(false); // New state for help modal
 
   const getDogNumber = (val) => {
     if (val === '1-2') return 2;
@@ -333,19 +366,36 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text?.yardTitle || "1. Property Size?"}</h2>
-        <div className="space-y-3">
-          <YardButton title="Standard Lot" description="Up to 1/4 Acre" selected={yardSize === 'standard'} onClick={() => setYardSize('standard')} />
-          <YardButton title={`Medium Lot (+$${tier1Price}/mo)`} description="1/4 - 1/2 Acre" selected={yardSize === 'tier1'} onClick={() => setYardSize('tier1')} />
-          <YardButton title={`Large Lot (+$${tier2Price}/mo)`} description="1/2 - 1 Acre" selected={yardSize === 'tier2'} onClick={() => setYardSize('tier2')} />
-          <YardButton title="Estate / Farm" description="Over 1 Acre" selected={yardSize === 'estate'} onClick={() => setYardSize('estate')} />
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-bold text-slate-800">{text?.yardTitle || "1. Property Size?"}</h2>
+            <button onClick={() => setShowYardHelp(true)} className="text-xs text-blue-600 underline hover:text-blue-800 flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                Not sure?
+            </button>
         </div>
+        
+        <select 
+            value={yardSize} 
+            onChange={(e) => setYardSize(e.target.value)} 
+            className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg bg-white cursor-pointer hover:border-blue-400 transition-colors focus:border-blue-500 outline-none appearance-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: '2.5rem' }}
+        >
+          <option value="standard">Standard Lot (Up to 1/4 Acre)</option>
+          <option value="tier1">Medium Lot (1/4 - 1/2 Acre)</option>
+          <option value="tier2">Large Lot (1/2 - 1 Acre)</option>
+          <option value="estate">Estate / Farm (Over 1 Acre)</option>
+        </select>
       </div>
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text?.dogTitle || "2. How many dogs?"}</h2>
-        <select value={dogCount} onChange={(e) => setDogCount(e.target.value)} className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg bg-white">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-slate-800 mb-2">{text?.dogTitle || "2. How many dogs?"}</h2>
+        <select 
+            value={dogCount} 
+            onChange={(e) => setDogCount(e.target.value)} 
+            className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg bg-white cursor-pointer hover:border-blue-400 transition-colors focus:border-blue-500 outline-none appearance-none"
+            style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: '2.5rem' }}
+        >
           <option value="1-2">1 - 2 Dogs</option>
           <option value="3">3 Dogs</option>
           <option value="4">4 Dogs</option>
@@ -377,21 +427,11 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
       <button onClick={onBack} className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline mt-4">
         &larr; Change Zip Code
       </button>
+
+      {showYardHelp && <YardHelperModal onClose={() => setShowYardHelp(false)} />}
     </div>
   );
 };
-
-const YardButton = ({ title, description, selected, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center justify-between p-4 border-2 rounded-lg transition-all ${
-      selected ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300'
-    }`}
-  >
-    <span className="font-bold text-gray-800">{title}</span>
-    <span className="text-sm text-gray-500">{description}</span>
-  </button>
-);
 
 const PackageSelector = ({ 
   basePrices, planDetails, 
