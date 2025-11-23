@@ -102,7 +102,12 @@ const FullPageLoader = ({ error = null }) => (
       <div className="max-w-lg w-full bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded-lg shadow-md">
         <h3 className="font-bold text-lg mb-2">Application Error</h3>
         <p className="mb-4">Could not load application configuration.</p>
-        <pre className="text-sm bg-red-50 p-2 rounded">{error.message || String(error)}</pre>
+        <pre className="text-sm bg-red-50 p-2 rounded overflow-auto">{error.message || String(error)}</pre>
+        {error.code === 'auth/admin-restricted-operation' && (
+            <div className="mt-4 p-4 bg-yellow-100 text-yellow-800 rounded text-sm">
+                <strong>Action Required:</strong> You must enable "Anonymous Authentication" in your Firebase Console (Authentication &gt; Sign-in method).
+            </div>
+        )}
       </div>
     ) : (
       <span className="loader"></span>
@@ -735,8 +740,6 @@ const Site = () => {
       try {
         // Safely initialize or retrieve the app
         let app;
-        // [Fix] Removed getApp logic inside try block to ensure fresh instance if needed or correct usage. 
-        // But more importantly, handle default app initialization properly.
         if (getApps().length > 0) {
            app = getApp(); // Get default app if exists
         } else {
@@ -754,8 +757,8 @@ const Site = () => {
            setConfigSource('🔥 Live Database');
         }
       } catch (e) { 
-          console.log('Offline mode error:', e); 
-          // If permission denied, it might be because auth failed or rules.
+          console.error('Offline mode error:', e); // Log the full error
+          setConfigError(e); // Set error state to show in UI
       }
       
       if (!loadedConfig) {
@@ -796,7 +799,7 @@ const Site = () => {
     else setView('packages');
   };
 
-  if (!config) return <FullPageLoader />;
+  if (!config) return <FullPageLoader error={configError} />;
 
   return (
     <>
