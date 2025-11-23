@@ -62,16 +62,6 @@ const setFavicon = (href) => {
   document.getElementsByTagName('head')[0].appendChild(link);
 };
 
-const generateQuoteLink = (quoteState) => {
-  const baseUrl = window.location.origin + window.location.pathname;
-  const params = new URLSearchParams();
-  if (quoteState.zip) params.set('zip', quoteState.zip);
-  if (quoteState.yardSize) params.set('yardSize', quoteState.yardSize);
-  if (quoteState.dogCount) params.set('dogCount', quoteState.dogCount);
-  // Add other params if needed to restore state perfectly
-  return `${baseUrl}?${params.toString()}`;
-};
-
 // --- Exit Intent Hook ---
 const useExitIntent = (isFormSubmitted, onIntent) => {
   useEffect(() => {
@@ -296,6 +286,30 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
   );
 };
 
+// --- Reusable Terms Checkbox ---
+const TermsCheckbox = ({ checked, onChange, includePaymentAuth }) => (
+  <div className="space-y-3">
+    <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
+      <input type="checkbox" className="mt-1" checked={checked.terms} onChange={(e) => onChange('terms', e.target.checked)} />
+      <span>
+        I agree to the{' '}
+        <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
+        {' '}&{' '}
+        <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>.
+      </span>
+    </label>
+    
+    {includePaymentAuth && (
+      <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
+        <input type="checkbox" className="mt-1" checked={checked.auth} onChange={(e) => onChange('auth', e.target.checked)} />
+        <span>
+          I authorize Purge Pros to securely save my payment method on file for future scheduled charges according to my selected plan frequency.
+        </span>
+      </label>
+    )}
+  </div>
+);
+
 // --- Components ---
 
 const FullPageLoader = ({ error = null }) => (
@@ -328,7 +342,7 @@ const Header = ({ onSatisfactionClick }) => (
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
         <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
         <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -697,7 +711,7 @@ const PackageSelector = ({
 
             {plan.canToggleYardPlus && (
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4 cursor-pointer border border-slate-200 hover:bg-slate-100">
-                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (+${yPlusPrice})</span>
+                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (Front & Side Yards) (+${yPlusPrice})</span>
                 <input 
                   type="checkbox" 
                   className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
@@ -757,16 +771,52 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
   );
 };
 
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
+const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false, auth: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const totalDue = paymentSelection.total;
   const totalSavings = 99.99 + paymentSelection.savingsValue;
 
+  // --- Calculation Helpers for Display ---
+  // We need to grab the base rates again to show the breakdown
+  const getBreakdown = () => {
+    if (!configData) return { base: 0, lot: 0, dog: 0, yardPlus: 0 };
+    
+    const prices = configData.basePrices;
+    const fees = configData.lotFees || { tier1: 30, tier2: 60 };
+    const eDogPrice = configData.extraDogPrice || 15;
+    const yPlusPrice = configData.yardPlusPrice || 20;
+    const details = configData.planDetails[packageSelection.key];
+    
+    const baseRate = prices[details.priceKey] || 0;
+    
+    let lotFee = 0;
+    if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
+    if (yardSize === 'tier2') lotFee = fees.tier2 || 0;
+
+    const numDogs = dogCount === '1-2' ? 2 : (dogCount === '10+' ? 10 : parseInt(dogCount));
+    let dogFee = 0;
+    if (numDogs > 2) {
+        dogFee = (numDogs - 2) * eDogPrice;
+    }
+
+    const yardPlusCost = (yardPlusSelected && packageSelection.key !== 'twiceWeekly') ? yPlusPrice : 0;
+    const yardPlusStatus = (packageSelection.key === 'twiceWeekly') ? 'Included' : (yardPlusSelected ? `$${yPlusPrice}` : 'Not Selected');
+
+    // If Annual or Quarterly, we need to multiply these monthly rates for the summary view
+    // BUT the PaymentPlanSelector already did the math for the total. 
+    // We should show the Monthly Breakdown and then the multiplier.
+    
+    return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs };
+  };
+
+  const bd = getBreakdown();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.terms) { setError('Please agree to the terms.'); return; }
+    if (!formData.auth) { setError('Please authorize the payment method storage.'); return; }
     if (!stripeInstance || !cardElement) { setError('Payment system not ready. Please wait or refresh.'); return; }
     
     setIsSubmitting(true);
@@ -790,10 +840,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
 
       // HTML Row for Term Discount (if any)
       let termDiscountRow = '';
+      let termNoun = 'Month'; 
+
       if (paymentSelection.term === 'Quarterly') {
         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #166534;">Quarterly Discount</span><span style="font-weight: bold; color: #166534;">-$30.00</span></div>`;
+        termNoun = 'Quarter';
       } else if (paymentSelection.term === 'Annual') {
         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #166534;">Annual Discount (1 Month Free)</span><span style="font-weight: bold; color: #166534;">-$${monthly.toFixed(2)}</span></div>`;
+        termNoun = 'Year';
       }
 
       const payload = {
@@ -807,6 +861,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           ...formData, 
           plan: packageSelection.name, 
           payment_term: paymentSelection.term,
+          term_noun: termNoun, // New Variable for "First {term_noun} of service"
           total_monthly: `$${monthly.toFixed(2)}/mo`, 
           per_visit: `$${perVisit.toFixed(2)}`,
           final_charge: `$${totalDue.toFixed(2)}`,
@@ -814,7 +869,8 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           total_savings: totalSavings.toFixed(2),
           term_discount_row: termDiscountRow,
           // Default footer or empty row
-          term_savings_row: '' 
+          term_savings_row: '',
+          yard_plus_status: yardPlusSelected ? "Included" : "Not Selected"
         }
       };
 
@@ -833,36 +889,99 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
     }
   };
 
+  // Grammar replacement for display
+  let termNounDisplay = 'month';
+  if (paymentSelection.term === 'Quarterly') termNounDisplay = 'quarter';
+  if (paymentSelection.term === 'Annual') termNounDisplay = 'year';
+
+  const whatHappensText = text?.whatHappensNextBody
+    ? text.whatHappensNextBody.replace('{term}', termNounDisplay)
+    : `Your payment today covers your first ${termNounDisplay} of service.`;
+
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back</button>
       <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Checkout"}</h2>
+      
+      {/* Detailed Order Summary */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
-        <div className="flex justify-between mb-2">
-          <span>{packageSelection.name} ({paymentSelection.term})</span>
-          <span className="font-bold">${totalDue.toFixed(2)}</span>
+        <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Plan Breakdown (Monthly Rate)</h4>
+        
+        <div className="flex justify-between mb-1">
+          <span className="text-slate-600">Base Plan ({packageSelection.name})</span>
+          <span className="font-medium">${bd.baseRate}</span>
         </div>
-        <div className="flex justify-between text-green-600 font-semibold">
-          <span>Total Savings Today:</span>
+        
+        {bd.lotFee > 0 && (
+          <div className="flex justify-between mb-1">
+            <span className="text-slate-600">Lot Size Fee</span>
+            <span className="font-medium">+${bd.lotFee}</span>
+          </div>
+        )}
+        
+        {bd.dogFee > 0 && (
+          <div className="flex justify-between mb-1">
+            <span className="text-slate-600">Extra Dog Fee ({bd.numDogs} Dogs)</span>
+            <span className="font-medium">+${bd.dogFee}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between mb-1">
+           <span className="text-slate-600">Yard+ Coverage (Front/Sides)</span>
+           <span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : ''}`}>
+             {bd.yardPlusStatus === 'Included' ? 'Included' : (bd.yardPlusCost > 0 ? `+$${bd.yardPlusCost}` : 'Not Selected')}
+           </span>
+        </div>
+
+        <div className="border-t border-slate-200 my-2 pt-2">
+           <div className="flex justify-between font-bold text-slate-800 mb-2">
+             <span>Total Monthly Rate:</span>
+             <span>${packageSelection.finalMonthlyPrice}</span>
+           </div>
+           
+           {paymentSelection.term !== 'Monthly' && (
+             <div className="flex justify-between text-slate-600 italic">
+                <span>x {paymentSelection.term === 'Quarterly' ? '3 Months' : '12 Months'}</span>
+             </div>
+           )}
+           
+           {paymentSelection.savingsValue > 0 && (
+             <div className="flex justify-between text-green-600 font-bold mt-1">
+                <span>{paymentSelection.term} Discount:</span>
+                <span>-${paymentSelection.savingsValue.toFixed(2)}</span>
+             </div>
+           )}
+        </div>
+
+        <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl text-slate-900 font-extrabold">
+          <span>Due Today:</span>
+          <span>${totalDue.toFixed(2)}</span>
+        </div>
+        
+        <div className="flex justify-between text-green-600 font-semibold mt-2 text-xs bg-green-50 p-2 rounded border border-green-100">
+          <span>Total Savings Today (Setup + Discount):</span>
           <span>-${totalSavings.toFixed(2)}</span>
         </div>
       </div>
-      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{__html: text?.whatHappensNextBody}} />
+
+      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{__html: whatHappensText}} />
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
         <input className="w-full p-3 border rounded" type="email" placeholder="Email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
         <input className="w-full p-3 border rounded" type="tel" placeholder="Phone" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
         <input className="w-full p-3 border rounded" placeholder="Address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
         
-        {/* Stripe Element Container - Ensuring it's visible and mounted */}
         <div className="p-3 border rounded bg-white min-h-[50px]">
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
         </div>
 
-        <label className="flex items-start text-xs text-gray-500 gap-2">
-          <input type="checkbox" className="mt-1" checked={formData.terms} onChange={e => setFormData({...formData, terms: e.target.checked})} />
-          <span>I agree to the Terms of Service & Privacy Policy.</span>
-        </label>
+        <TermsCheckbox 
+          checked={{terms: formData.terms, auth: formData.auth}} 
+          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
+          includePaymentAuth={true} 
+        />
+        
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
         <button disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold py-4 rounded-lg hover:bg-opacity-90">
           {isSubmitting ? 'Processing...' : `Pay $${totalDue.toFixed(2)} & Start`}
@@ -987,10 +1106,13 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         <div className="p-3 border rounded bg-white min-h-[50px]">
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
         </div>
-        <label className="flex items-start text-xs text-gray-500 gap-2">
-          <input type="checkbox" className="mt-1" checked={formData.terms} onChange={e => setFormData({...formData, terms: e.target.checked})} />
-          <span>I agree to the Terms of Service & Privacy Policy.</span>
-        </label>
+        
+        <TermsCheckbox 
+          checked={{terms: formData.terms, auth: formData.auth}} 
+          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
+          includePaymentAuth={false} // One-time doesn't need auth
+        />
+
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
         <button disabled={isSubmitting} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90">
           {isSubmitting ? 'Processing...' : `Pay $${depositAmount.toFixed(2)} Deposit`}
@@ -1119,7 +1241,7 @@ const Site = () => {
         {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
         {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
-        {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} />}
+        {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} />}
         {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
               <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
@@ -1149,7 +1271,7 @@ const Site = () => {
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       
-      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} dogCount={dogCountLabel} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
+      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
   );
 };
