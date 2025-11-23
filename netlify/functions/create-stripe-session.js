@@ -20,9 +20,9 @@ const PRICE_MAP = {
     // --- NEW: Yard+ Coverage Add-on Prices (TEST) ---
     // YOU MUST CREATE THESE IN STRIPE AND PASTE THE IDs HERE
     yardPlus: {
-      'Monthly': 'price_REPLACE_THIS_TEST_MONTHLY',
-      'Quarterly': 'price_REPLACE_THIS_TEST_QUARTERLY',
-      'Annual': 'price_REPLACE_THIS_TEST_ANNUAL'
+      'Monthly': 'price_1SWTGkGelkvkkUqXeZuI487L',
+      'Quarterly': 'price_1SWTLaGelkvkkUqX1Gdzaqgx',
+      'Annual': 'price_1SWTLrGelkvkkUqXpBbodfD2'
     },
     subs: {
       'Bi-Weekly Reset': {
@@ -99,9 +99,9 @@ const PRICE_MAP = {
     oneTime: 'price_1SUuFIGelkvkkUqXtekC4fp6', 
     // --- NEW: Yard+ Coverage Add-on Prices (LIVE) ---
     yardPlus: {
-      'Monthly': 'price_REPLACE_THIS_LIVE_MONTHLY',
-      'Quarterly': 'price_REPLACE_THIS_LIVE_QUARTERLY',
-      'Annual': 'price_REPLACE_THIS_LIVE_ANNUAL'
+      'Monthly': 'price_1SWTNTGelkvkkUqXZw11aSZn',
+      'Quarterly': 'price_1SWTNVGelkvkkUqX7tuyZd67',
+      'Annual': 'price_1SWTNXGelkvkkUqXHK9MphMz'
     },
     subs: {
       'Bi-Weekly Reset': {

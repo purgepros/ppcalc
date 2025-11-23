@@ -319,20 +319,28 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
 /**
  * VIEW 3B: The "Package Selection"
  */
-const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPrice, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick, text, specialOffer, yardPlusSelected, setYardPlusSelected }) => {
+const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPrice, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick, text, specialOffer, yardPlusSelections, setYardPlusSelections }) => {
+  
+  const handleToggle = (planKey) => {
+    setYardPlusSelections(prev => ({
+      ...prev,
+      [planKey]: !prev[planKey]
+    }));
+  };
+
   // Calculate prices based on selection
   const plans = [
     { 
       key: 'biWeekly', 
       ...planDetails.biWeekly, 
-      // Add Yard+ price ONLY if selected
-      finalPrice: basePrices[planDetails.biWeekly.priceKey] + dogFee + (yardPlusSelected ? yardPlusPrice : 0) 
+      // Add Yard+ price ONLY if selected for THIS plan
+      finalPrice: basePrices[planDetails.biWeekly.priceKey] + dogFee + (yardPlusSelections['biWeekly'] ? yardPlusPrice : 0) 
     },
     { 
       key: 'weekly', 
       ...planDetails.weekly, 
-      // Add Yard+ price ONLY if selected
-      finalPrice: basePrices[planDetails.weekly.priceKey] + dogFee + (yardPlusSelected ? yardPlusPrice : 0), 
+      // Add Yard+ price ONLY if selected for THIS plan
+      finalPrice: basePrices[planDetails.weekly.priceKey] + dogFee + (yardPlusSelections['weekly'] ? yardPlusPrice : 0), 
       popular: true 
     },
     { 
@@ -350,38 +358,6 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Selections</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       
-      {/* --- YARD+ COVERAGE TOGGLE --- */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-1 bg-blue-100 p-2 rounded-full text-blue-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4a1 1 0 001-1v-1a1 1 0 10-2 0v1a1 1 0 001 1z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-bold text-gray-800 text-lg">Yard+ Coverage</h3>
-              <p className="text-sm text-gray-600">
-                Includes full front yard & side yards. Perfect for corner lots!
-              </p>
-            </div>
-          </div>
-          
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="sr-only peer"
-              checked={yardPlusSelected}
-              onChange={(e) => setYardPlusSelected(e.target.checked)}
-            />
-            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900">
-              {yardPlusSelected ? 'Added (+$20)' : 'Add to Plan'}
-            </span>
-          </label>
-        </div>
-      </div>
-
       <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3 special-offer-glow">
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
@@ -412,6 +388,8 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
 
           // Determine if we show the "Yard+ Included" badge
           const isPristinePlus = plan.key === 'twiceWeekly';
+          const canToggleYardPlus = plan.key === 'biWeekly' || plan.key === 'weekly';
+          const isYardPlusChecked = !!yardPlusSelections[plan.key];
 
           return (
             <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg best-value-glow' : 'border-gray-300'}`}>
@@ -427,15 +405,11 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
               </div>
               
               {/* --- Yard+ Dynamic Badge --- */}
-              {isPristinePlus ? (
+              {isPristinePlus && (
                  <div className="mb-4 bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded text-center border border-green-200">
                    Yard+ Coverage Included FREE!
                  </div>
-              ) : yardPlusSelected ? (
-                 <div className="mb-4 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded text-center border border-blue-200">
-                   Includes Yard+ Coverage (+$20)
-                 </div>
-              ) : null}
+              )}
               
               <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
                 {/* 1. Dog Household */}
@@ -502,6 +476,27 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
                   );
                 })}
               </ul>
+              
+              {/* --- Yard+ Toggle Inside Card --- */}
+              {canToggleYardPlus && (
+                <div className="mb-6 pt-4 border-t border-gray-100">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div className="mr-3">
+                      <span className="block text-sm font-bold text-gray-800">Add "Yard+ Coverage"</span>
+                      <span className="block text-xs text-gray-500">Full Front/Side Yards (+$20)</span>
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={isYardPlusChecked}
+                        onChange={() => handleToggle(plan.key)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-blue)]"></div>
+                    </div>
+                  </label>
+                </div>
+              )}
               
               <button
                 onClick={() => onPlanSelect(plan.name, plan.finalPrice, plan.key)}
@@ -1693,8 +1688,11 @@ const GlobalStyles = () => (
     .fade-in { animation: fadeIn 0.5s ease-out forwards; }
     
     .loader {
-      width: 24px; height: 24px; border: 3px solid rgba(0,0,0,0.2);
-      border-top-color: var(--brand-blue); border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255, 255, 255, 0.5);
+      border-top-color: #FFF;
+      border-radius: 50%;
       animation: rotation 0.8s linear infinite;
     }
     @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -1764,8 +1762,8 @@ const Site = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   
-  // --- NEW: Addon State ---
-  const [yardPlusSelected, setYardPlusSelected] = useState(false);
+  // --- NEW: Addon State (Object) ---
+  const [yardPlusSelections, setYardPlusSelections] = useState({});
   
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0, key: null });
   const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', total: 0, savings: null, savingsValue: 0 });
@@ -2172,8 +2170,8 @@ const Site = () => {
               dogFee={multiDogFee}
               dogCount={dogCount}
               yardPlusPrice={appConfig.data.yardPlusPrice}
-              yardPlusSelected={yardPlusSelected}
-              setYardPlusSelected={setYardPlusSelected}
+              yardPlusSelections={yardPlusSelections} // Pass Object
+              setYardPlusSelections={setYardPlusSelections} // Pass Setter
               onPlanSelect={handlePlanSelect}
               onBack={() => setView('sorter')}
               onOneTimeClick={() => setView('onetime')}
@@ -2213,7 +2211,7 @@ const Site = () => {
               cardElement={cardElement}
               text={appConfig.text.checkoutView}
               stripeMode={appConfig.data.STRIPE_MODE} // --- Pass Mode to Form ---
-              yardPlusSelected={yardPlusSelected} // --- Pass Toggle State ---
+              yardPlusSelected={!!yardPlusSelections[packageSelection.key]} // --- Pass specific boolean based on key ---
             />
           )}
           
