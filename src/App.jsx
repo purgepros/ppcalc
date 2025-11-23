@@ -62,17 +62,6 @@ const setFavicon = (href) => {
   document.getElementsByTagName('head')[0].appendChild(link);
 };
 
-const generateQuoteLink = (quoteState) => {
-  const baseUrl = window.location.origin + window.location.pathname;
-  const params = new URLSearchParams();
-  if (quoteState.zip) params.set('zip', quoteState.zip);
-  if (quoteState.yardSize) params.set('yardSize', quoteState.yardSize);
-  if (quoteState.dogCount) params.set('dogCount', quoteState.dogCount);
-  if (quoteState.plan) params.set('plan', quoteState.plan);
-  if (quoteState.paymentTerm) params.set('paymentTerm', quoteState.paymentTerm);
-  return `${baseUrl}?${params.toString()}`;
-};
-
 // --- Exit Intent Hook ---
 const useExitIntent = (isFormSubmitted, onIntent) => {
   useEffect(() => {
@@ -93,6 +82,106 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
     return () => clearTimeout(timerId);
   }, [isFormSubmitted, onIntent]);
 };
+
+// --- Modal Components (Restored) ---
+
+const ModalOverlay = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in" onClick={onClose}>
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden relative animate-scaleIn" onClick={e => e.stopPropagation()}>
+      <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10 p-2">
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+      {children}
+    </div>
+  </div>
+);
+
+const SatisfactionModal = ({ onClose, text }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8 text-center">
+      <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+      </div>
+      <h3 className="text-2xl font-bold text-slate-800 mb-3">{text?.title || "Satisfaction Guaranteed"}</h3>
+      <div className="text-slate-600 mb-6 leading-relaxed" dangerouslySetInnerHTML={{__html: text?.body || "We stand behind our work."}} />
+      {text?.footer && <p className="text-sm text-slate-400 font-semibold border-t pt-4">{text.footer}</p>}
+      <button onClick={onClose} className="mt-6 w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Got it</button>
+    </div>
+  </ModalOverlay>
+);
+
+const ServiceInfoModal = ({ onClose, text }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8">
+      <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+        <span className="bg-blue-100 text-blue-600 p-2 rounded-lg mr-3">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </span>
+        {text?.title || "Service Info"}
+      </h3>
+      <div className="space-y-3 text-slate-600 text-sm leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
+        {Array.isArray(text?.body) ? text.body.map((p, i) => (
+          <p key={i} dangerouslySetInnerHTML={{__html: p}} />
+        )) : <p dangerouslySetInnerHTML={{__html: text?.body}} />}
+      </div>
+      <button onClick={onClose} className="mt-6 w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-200 transition-all">Close</button>
+    </div>
+  </ModalOverlay>
+);
+
+const AlertsInfoModal = ({ onClose, text }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8">
+      <h3 className="text-xl font-bold text-slate-800 mb-4">{text?.title || "Automated Alerts"}</h3>
+      <p className="text-slate-600 mb-4 text-sm">{text?.body}</p>
+      <ul className="space-y-3">
+        {text?.bullets?.map((bullet, i) => (
+          <li key={i} className="flex items-start text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
+            <svg className="w-5 h-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            <span dangerouslySetInnerHTML={{__html: bullet}} />
+          </li>
+        ))}
+      </ul>
+      <button onClick={onClose} className="mt-6 w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition-all">Understood</button>
+    </div>
+  </ModalOverlay>
+);
+
+const PricingInfoModal = ({ onClose, text }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8">
+      <h3 className="text-xl font-bold text-slate-800 mb-4">{text?.title || "Pricing Info"}</h3>
+      <div className="space-y-3 text-slate-600 text-sm mb-4">
+        {Array.isArray(text?.body) ? text.body.map((p, i) => <p key={i} dangerouslySetInnerHTML={{__html: p}} />) : <p dangerouslySetInnerHTML={{__html: text?.body}} />}
+      </div>
+      <div className="bg-slate-100 p-4 rounded-lg mb-4">
+        <ul className="space-y-2">
+          {text?.bullets?.map((b, i) => (
+            <li key={i} className="text-sm text-slate-700 flex items-center">
+              <span className="w-2 h-2 bg-slate-400 rounded-full mr-2"></span>
+              <span dangerouslySetInnerHTML={{__html: b}} />
+            </li>
+          ))}
+        </ul>
+      </div>
+      {text?.footer && <p className="text-xs text-slate-400 italic text-center">{text.footer}</p>}
+      <button onClick={onClose} className="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Close</button>
+    </div>
+  </ModalOverlay>
+);
+
+const ExitIntentModal = ({ onClose, text, currentPlan, zipCode, yardSize }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8 text-center">
+      <h3 className="text-2xl font-bold text-slate-800 mb-2">{text?.title || "Wait!"}</h3>
+      <p className="text-slate-600 mb-6" dangerouslySetInnerHTML={{__html: text?.body}} />
+      <div className="flex space-x-3">
+        <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300">No thanks</button>
+        <button onClick={() => { window.location.href = "mailto:?subject=Saved Quote&body=Save this quote..."; onClose(); }} className="flex-1 bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90">Email Me Quote</button>
+      </div>
+    </div>
+  </ModalOverlay>
+);
 
 // --- Components ---
 
@@ -126,7 +215,7 @@ const Header = ({ onSatisfactionClick }) => (
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
         <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
         <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -199,7 +288,7 @@ const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Enter Zip Code"}</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="tel"
@@ -245,7 +334,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text.yardTitle}</h2>
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text?.yardTitle || "1. Property Size?"}</h2>
         <div className="space-y-3">
           <YardButton title="Standard Lot" description="Up to 1/4 Acre" selected={yardSize === 'standard'} onClick={() => setYardSize('standard')} />
           <YardButton title={`Medium Lot (+$${tier1Price}/mo)`} description="1/4 - 1/2 Acre" selected={yardSize === 'tier1'} onClick={() => setYardSize('tier1')} />
@@ -255,7 +344,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
       </div>
 
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text.dogTitle}</h2>
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text?.dogTitle || "2. How many dogs?"}</h2>
         <select value={dogCount} onChange={(e) => setDogCount(e.target.value)} className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg bg-white">
           <option value="1-2">1 - 2 Dogs</option>
           <option value="3">3 Dogs</option>
@@ -269,15 +358,17 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
         </select>
       </div>
 
-      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-sm flex items-center space-x-3">
-        <div className="flex-shrink-0">
-           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+      {specialOffer && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-sm flex items-center space-x-3">
+          <div className="flex-shrink-0">
+             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+          </div>
+          <div>
+            <p className="font-bold">{specialOffer.specialOfferTitle}</p>
+            <p className="text-sm" dangerouslySetInnerHTML={{ __html: specialOffer.specialOfferBody }} />
+          </div>
         </div>
-        <div>
-          <p className="font-bold">{specialOffer.specialOfferTitle}</p>
-          <p className="text-sm" dangerouslySetInnerHTML={{ __html: specialOffer.specialOfferBody }} />
-        </div>
-      </div>
+      )}
 
       <button onClick={handleSubmit} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
         See My Price
@@ -312,18 +403,25 @@ const PackageSelector = ({
   yardPlusSelections, setYardPlusSelections 
 }) => {
 
-  // FIX: Add safety checks for incoming props to prevent crash on 'Next'
-  if (!lotFees || !basePrices || !planDetails) {
-      return <div className="p-8 text-center"><span className="loader"></span> Calculating...</div>;
-  }
+  // --- REPAIRED LOGIC: Use fallbacks instead of crashing/infinite loading ---
+  const fees = lotFees || { tier1: 30, tier2: 60 };
+  const prices = basePrices || { weekly: 109, biWeekly: 89, twiceWeekly: 169 };
+  // Defaults for plan details to prevent crashes if one is missing
+  const detailsMap = planDetails || {
+    biWeekly: { name: "Bi-Weekly Reset", priceKey: "biWeekly", frequency: "Every 2 Weeks", features: ["Backyard Coverage", "Waste Hauled Away"] },
+    weekly: { name: "Pristine-Clean", priceKey: "weekly", frequency: "Every Week", features: ["Backyard Coverage", "Waste Hauled Away"] },
+    twiceWeekly: { name: "Pristine-Plus", priceKey: "twiceWeekly", frequency: "2x Per Week", features: ["Yard+ Coverage", "Waste Hauled Away"] }
+  };
+  const eDogPrice = extraDogPrice || 15;
+  const yPlusPrice = yardPlusPrice || 20;
 
   let lotFee = 0;
-  if (yardSize === 'tier1') lotFee = lotFees.tier1 || 0;
-  if (yardSize === 'tier2') lotFee = lotFees.tier2 || 0;
+  if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
+  if (yardSize === 'tier2') lotFee = fees.tier2 || 0;
 
   let dogFee = 0;
   if (numDogs > 2) {
-    dogFee = (numDogs - 2) * extraDogPrice;
+    dogFee = (numDogs - 2) * eDogPrice;
   }
 
   const showAllPlans = numDogs < 6;
@@ -334,16 +432,17 @@ const PackageSelector = ({
 
   const plans = [];
   const buildPlan = (key, isPopular) => {
-    const details = planDetails[key];
-    const base = basePrices[details.priceKey];
+    const details = detailsMap[key];
+    if (!details) return null; // Safety skip
+
+    const base = prices[details.priceKey] || 99;
     const isIncluded = key === 'twiceWeekly';
     const isSelected = !!yardPlusSelections[key];
-    const addonCost = (isSelected && !isIncluded) ? yardPlusPrice : 0;
+    const addonCost = (isSelected && !isIncluded) ? yPlusPrice : 0;
 
     const featuredFreeFeatures = [];
     const standardFeatures = [];
     
-    // Safety check for features array
     if (details.features && Array.isArray(details.features)) {
         details.features.forEach(feature => {
             const isExcluded = feature.startsWith('!');
@@ -379,23 +478,28 @@ const PackageSelector = ({
   };
 
   if (showAllPlans) {
-    plans.push(buildPlan('biWeekly', false));
-    plans.push(buildPlan('weekly', true));
+    const p1 = buildPlan('biWeekly', false);
+    if (p1) plans.push(p1);
+    const p2 = buildPlan('weekly', true);
+    if (p2) plans.push(p2);
   }
-  plans.push(buildPlan('twiceWeekly', !showAllPlans));
+  const p3 = buildPlan('twiceWeekly', !showAllPlans);
+  if (p3) plans.push(p3);
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Choose Your Plan"}</h2>
 
-      <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 flex items-center space-x-3">
-         <div className="flex-shrink-0"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg></div>
-         <div>
-           <p className="font-bold">{specialOffer.specialOfferTitle}</p>
-           <p className="text-sm" dangerouslySetInnerHTML={{__html: specialOffer.specialOfferBody}}/>
-         </div>
-      </div>
+      {specialOffer && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 flex items-center space-x-3">
+           <div className="flex-shrink-0"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg></div>
+           <div>
+             <p className="font-bold">{specialOffer.specialOfferTitle}</p>
+             <p className="text-sm" dangerouslySetInnerHTML={{__html: specialOffer.specialOfferBody}}/>
+           </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {plans.map((plan) => (
@@ -417,7 +521,7 @@ const PackageSelector = ({
             )}
             {yardPlusSelections[plan.key] && !plan.isYardPlusIncluded && (
               <div className="mb-4 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-2 rounded text-center border border-blue-200">
-                Includes Yard+ Coverage (+${yardPlusPrice})
+                Includes Yard+ Coverage (+${yPlusPrice})
               </div>
             )}
 
@@ -472,7 +576,7 @@ const PackageSelector = ({
 
             {plan.canToggleYardPlus && (
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4 cursor-pointer border border-slate-200 hover:bg-slate-100">
-                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (+${yardPlusPrice})</span>
+                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (+${yPlusPrice})</span>
                 <input 
                   type="checkbox" 
                   className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
@@ -490,7 +594,7 @@ const PackageSelector = ({
       </div>
 
       <button type="button" onClick={onOneTimeClick} className="block w-full text-center text-sm text-gray-500 hover:text-blue-600 hover:underline mt-8 cursor-pointer">
-        {text.oneTimeLink}
+        {text?.oneTimeLink || "One Time Cleanup?"}
       </button>
     </div>
   );
@@ -498,16 +602,17 @@ const PackageSelector = ({
 
 const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarterlyDiscount, text }) => {
   const monthly = packageSelection.finalPrice;
+  const qDisc = quarterlyDiscount || 30;
   const plans = [
     { term: 'Monthly', label: 'Pay Monthly', totalDue: monthly, savingsText: null, savingsValue: 0 },
-    { term: 'Quarterly', label: 'Pay Quarterly', totalDue: (monthly * 3) - quarterlyDiscount, savingsText: `Save $${quarterlyDiscount} per Quarter!`, savingsValue: quarterlyDiscount, isPopular: false },
+    { term: 'Quarterly', label: 'Pay Quarterly', totalDue: (monthly * 3) - qDisc, savingsText: `Save $${qDisc} per Quarter!`, savingsValue: qDisc, isPopular: false },
     { term: 'Annual', label: 'Pay Yearly', totalDue: monthly * 11, savingsText: `Get 1 Month FREE (Save $${monthly})!`, savingsValue: monthly, isPopular: true }
   ];
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">{text.title}</h2>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">{text?.title || "Choose Payment Plan"}</h2>
       <p className="text-center text-slate-600 mb-6">for <strong>{packageSelection.name}</strong> plan</p>
       <div className="space-y-4">
         {plans.map((p) => (
@@ -581,7 +686,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back</button>
-      <h2 className="text-2xl font-bold text-center mb-6">{text.title}</h2>
+      <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Checkout"}</h2>
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <div className="flex justify-between mb-2">
           <span>{packageSelection.name} ({paymentSelection.term})</span>
@@ -592,7 +697,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           <span>-${totalSavings.toFixed(2)}</span>
         </div>
       </div>
-      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{__html: text.whatHappensNextBody}} />
+      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{__html: text?.whatHappensNextBody}} />
       <form onSubmit={handleSubmit} className="space-y-4">
         <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
         <input className="w-full p-3 border rounded" type="email" placeholder="Email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
@@ -701,12 +806,12 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Book One-Time"}</h2>
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <div className="flex justify-between"><span>One-Time Yard Reset</span><span className="font-medium text-slate-900">$99.99</span></div>
         <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl"><span className="font-bold text-slate-900">Total Deposit:</span><span className="font-extrabold text-slate-900">${depositAmount.toFixed(2)}</span></div>
       </div>
-      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: text.whatHappensNextBody }} />
+      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: text?.whatHappensNextBody }} />
       <form onSubmit={handleSubmit} className="space-y-4">
         <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
         <input className="w-full p-3 border rounded" type="email" placeholder="Email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
@@ -796,11 +901,21 @@ const Site = () => {
     init();
   }, []);
 
+  // Updated Stripe mounting logic to prevent collisions
   useEffect(() => {
     if ((view === 'checkout' || view === 'onetime_checkout') && cardElement) {
       const mountPoint = document.getElementById('card-element');
       if (mountPoint) {
-        setTimeout(() => { try { cardElement.mount('#card-element'); } catch (e) { if(!e.message.includes('already')) console.error(e); } }, 100);
+        // Try unmounting first to be safe
+        try { cardElement.unmount(); } catch (e) { /* ignore if not mounted */ }
+        // Then mount
+        setTimeout(() => { 
+          try { 
+            cardElement.mount('#card-element'); 
+          } catch (e) { 
+            if(!e.message.includes('already')) console.error(e); 
+          } 
+        }, 100);
       }
     }
   }, [view, cardElement]);
@@ -861,7 +976,7 @@ const Site = () => {
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} text={config.text.modals.serviceInfo} />}
       {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={config.text.modals.alertsInfo} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
-      {showSatisfactionModal && config.text.modals.satisfactionInfo && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
+      {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       
       {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
@@ -874,6 +989,8 @@ const GlobalStyles = () => (
     :root { --brand-blue: #00A9E0; --brand-green: #22c55e; }
     @keyframes fadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    @keyframes scaleIn { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+    .animate-scaleIn { animation: scaleIn 0.3s ease-out forwards; }
     .loader { width: 24px; height: 24px; border: 3px solid rgba(0,0,0,0.2); border-top-color: var(--brand-blue); border-radius: 50%; animation: rotation 0.8s linear infinite; }
     @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     #card-element { padding: 10px 0; }
