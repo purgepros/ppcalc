@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import firebaseConfig from './firebaseConfig.js'; // Explicit extension
+import firebaseConfig from './firebaseConfig'; // Explicit extension removed
 
 // Initialize Firebase using the imported config
 const app = initializeApp(firebaseConfig);
@@ -186,6 +186,11 @@ const AdminDashboard = () => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
       
       if (subSubKey) {
+        // --- NEW: Safe Object Creation ---
+        // If the intermediate object (e.g. satisfactionInfo) is missing, create it.
+        if (!newConfig[section][key][subKey]) {
+            newConfig[section][key][subKey] = {};
+        }
         newConfig[section][key][subKey][subSubKey] = val;
       } else if (subKey) {
         newConfig[section][key][subKey] = val;

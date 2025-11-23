@@ -5,12 +5,12 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 // --- Import Firebase for Site component ---
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
-// FIX: Using relative path with explicit extension for reliability
-import firebaseConfig from './firebaseConfig.js'; 
+// FIX: Use extension-less import for better bundler resolution
+import firebaseConfig from './firebaseConfig'; 
 
 // 2. Lazily load the AdminPanel
-// FIX: Using relative path with explicit extension
-const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
+// FIX: Use extension-less import for better bundler resolution
+const AdminPanel = lazy(() => import('./AdminPanel'));
 
 // --- Helper Functions ---
 
@@ -1416,9 +1416,10 @@ const SatisfactionModal = ({ onClose, text }) => (
            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
       </div>
-      <h3 className="text-xl font-bold text-gray-900">{text.title}</h3>
-      <p className="text-gray-600 mt-4">{text.body}</p>
-      <p className="text-sm font-bold text-green-700 mt-4">{text.footer}</p>
+      {/* Fallback to defaults if text is missing */}
+      <h3 className="text-xl font-bold text-gray-900">{text?.title || "100% Satisfaction Guaranteed"}</h3>
+      <p className="text-gray-600 mt-4">{text?.body || "We stand behind our work! If anything is missed, we will dispatch a team to return and make sure any issues are rectified immediately."}</p>
+      <p className="text-sm font-bold text-green-700 mt-4">{text?.footer || "Your satisfaction is our priority."}</p>
       <button
         onClick={onClose}
         className="w-full mt-6 bg-[var(--brand-green)] text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90"
@@ -2384,7 +2385,7 @@ const Site = () => {
       {showSatisfactionModal && (
         <SatisfactionModal
           onClose={() => setShowSatisfactionModal(false)}
-          text={appConfig.text.modals.satisfactionInfo}
+          text={appConfig.text.modals.satisfactionInfo} // Now handles 'undefined' gracefully inside the component
         />
       )}
       
