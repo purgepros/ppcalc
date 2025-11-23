@@ -735,10 +735,12 @@ const Site = () => {
       try {
         // Safely initialize or retrieve the app
         let app;
-        if (getApps().some(a => a.name === 'site')) {
-          app = getApp('site');
+        // [Fix] Removed getApp logic inside try block to ensure fresh instance if needed or correct usage. 
+        // But more importantly, handle default app initialization properly.
+        if (getApps().length > 0) {
+           app = getApp(); // Get default app if exists
         } else {
-          app = initializeApp(firebaseConfig, 'site');
+           app = initializeApp(firebaseConfig); // Initialize default app
         }
         
         // AUTHENTICATE ANONYMOUSLY FIRST
@@ -751,7 +753,10 @@ const Site = () => {
            loadedConfig = docSnap.data();
            setConfigSource('🔥 Live Database');
         }
-      } catch (e) { console.log('Offline mode', e); }
+      } catch (e) { 
+          console.log('Offline mode error:', e); 
+          // If permission denied, it might be because auth failed or rules.
+      }
       
       if (!loadedConfig) {
         const res = await fetch('/config.json');
