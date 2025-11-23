@@ -328,19 +328,22 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
     }));
   };
 
+  // FIX: Cast yardPlusPrice to Number to prevent NaN bugs if config data is missing or string
+  const safeYardPlusPrice = Number(yardPlusPrice) || 0;
+
   // Calculate prices based on selection
   const plans = [
     { 
       key: 'biWeekly', 
       ...planDetails.biWeekly, 
       // Add Yard+ price ONLY if selected for THIS plan
-      finalPrice: basePrices[planDetails.biWeekly.priceKey] + dogFee + (yardPlusSelections['biWeekly'] ? yardPlusPrice : 0) 
+      finalPrice: basePrices[planDetails.biWeekly.priceKey] + dogFee + (yardPlusSelections['biWeekly'] ? safeYardPlusPrice : 0) 
     },
     { 
       key: 'weekly', 
       ...planDetails.weekly, 
       // Add Yard+ price ONLY if selected for THIS plan
-      finalPrice: basePrices[planDetails.weekly.priceKey] + dogFee + (yardPlusSelections['weekly'] ? yardPlusPrice : 0), 
+      finalPrice: basePrices[planDetails.weekly.priceKey] + dogFee + (yardPlusSelections['weekly'] ? safeYardPlusPrice : 0), 
       popular: true 
     },
     { 
@@ -368,22 +371,30 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
 
       <div className="space-y-4">
         {plans.map((plan) => {
-          // Sort features: FREE items first, then standard, then excluded
-          const sortedFeatures = [...plan.features].sort((a, b) => {
+          // --- FEATURE SORTING LOGIC (Modified) ---
+          // We separate "Included Free Features" to highlight them as Badges
+          const featuredFreeFeatures = [];
+          const standardFeatures = [];
+
+          plan.features.forEach(feature => {
+            const isExcluded = feature.startsWith('!');
+            // Case insensitive check for "FREE"
+            const isFree = feature.toUpperCase().includes('FREE');
+            
+            if (!isExcluded && isFree) {
+              featuredFreeFeatures.push(feature);
+            } else {
+              standardFeatures.push(feature);
+            }
+          });
+          
+          // Standard features are still sorted to keep excluded items at bottom
+          standardFeatures.sort((a, b) => {
             const aExcluded = a.startsWith('!');
             const bExcluded = b.startsWith('!');
-            const aFree = a.toUpperCase().startsWith('FREE');
-            const bFree = b.toUpperCase().startsWith('FREE');
-
-            if (aExcluded && !bExcluded) return 1;  // a (excluded) goes to bottom
-            if (!aExcluded && bExcluded) return -1; // b (excluded) goes to bottom
-            if (aExcluded && bExcluded) return 0;   // both excluded, keep order
-
-            // Neither is excluded
-            if (aFree && !bFree) return -1; // a (free) goes first
-            if (!aFree && bFree) return 1;  // b (free) goes first
-
-            return 0; // both free or both not free, keep order
+            if (aExcluded && !bExcluded) return 1;
+            if (!aExcluded && bExcluded) return -1;
+            return 0;
           });
 
           // Determine if we show the "Yard+ Included" badge
@@ -404,14 +415,49 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
                 <span className="text-xl font-medium text-slate-600">/mo</span>
               </div>
               
-              {/* --- Yard+ Dynamic Badge --- */}
+              {/* --- FEATURED FREE ITEMS (BADGES) --- */}
+              {/* 1. Static Yard+ Badge (Only for Pristine-Plus) */}
               {isPristinePlus && (
-                 <div className="mb-4 bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded text-center border border-green-200">
-                   Yard+ Coverage Included FREE!
+                 <div className="mb-2 bg-green-100 text-green-800 text-xs font-bold px-2 py-2 rounded text-center border border-green-200 shadow-sm">
+                   <span className="block">Yard+ Coverage Included FREE!</span>
                  </div>
               )}
               
-              <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
+              {/* 2. Dynamic Yard+ Badge (When Toggled ON) */}
+              {isYardPlusChecked && (
+                 <div className="mb-2 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-2 rounded text-center border border-blue-200 shadow-sm">
+                   <span className="block">Includes Yard+ Coverage (+$20)</span>
+                 </div>
+              )}
+
+              {/* 3. Configured Free Items (Treats, Deodorizer, etc.) */}
+              {featuredFreeFeatures.map((feature, idx) => {
+                // Extract subtext if it exists: "FREE Deodorizer (1x/Week - a $40 Value!)"
+                let featureText = feature;
+                let featureSubtext = '';
+                if (feature.includes('(') && feature.endsWith(')')) {
+                  const parts = feature.split('(');
+                  featureText = parts[0].trim();
+                  featureSubtext = `(${parts[1]}`;
+                }
+
+                return (
+                  <div key={idx} className="mb-2 bg-green-100 text-green-800 text-xs font-bold px-2 py-2 rounded text-center border border-green-200 shadow-sm">
+                     <div className="flex items-center justify-center">
+                        <span>{featureText} Included FREE!</span>
+                        {/* Info button for Deodorizer/WYSIwash */}
+                        {(feature.includes('Deodorizer') || feature.includes('WYSIwash')) && (
+                        <button onClick={onInfoClick} className="ml-2 text-green-600 hover:text-green-800">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                        </button>
+                        )}
+                     </div>
+                     {featureSubtext && <span className="block font-normal text-green-700 mt-0.5">{featureSubtext}</span>}
+                  </div>
+                )
+              })}
+              
+              <ul className="space-y-3 my-6 text-left max-w-xs mx-auto">
                 {/* 1. Dog Household */}
                 <li className="flex items-start text-slate-600">
                   <svg className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -428,17 +474,16 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
                   </div>
                 </li>
 
-                {/* 3. The rest of the features (FREE, standard, excluded) */}
-                {sortedFeatures.map((feature, index) => {
+                {/* 3. The rest of the features (Standard & Excluded) */}
+                {standardFeatures.map((feature, index) => {
                   const isIncluded = !feature.startsWith('!');
                   let featureText = isIncluded ? feature : feature.substring(1);
                   let featureSubtext = '';
 
-                  // Check for the subtext
                   if (featureText.includes('(') && featureText.endsWith(')')) {
                     const parts = featureText.split('(');
-                    featureText = parts[0].trim(); // "FREE Deodorizer"
-                    featureSubtext = `(${parts[1]}`; // "(1x/Week - a $40 Value!)"
+                    featureText = parts[0].trim(); 
+                    featureSubtext = `(${parts[1]}`;
                   }
                   
                   return (
@@ -460,12 +505,6 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
                         )}
                       </div>
                       
-                      {/* Info button for Deodorizer/WYSIwash (check original feature string) */}
-                      {(feature.includes('Deodorizer') || feature.includes('WYSIwash')) && isIncluded && (
-                        <button onClick={onInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125 flex-shrink-0">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                        </button>
-                      )}
                       {/* Info button for Alerts (check original feature string) */}
                       {(feature.includes('Automated Reminders')) && isIncluded && (
                         <button onClick={onAlertsInfoClick} className="ml-2 text-gray-400 hover:text-gray-600 transition-transform hover:scale-125 flex-shrink-0">
@@ -480,7 +519,7 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPr
               {/* --- Yard+ Toggle Inside Card --- */}
               {canToggleYardPlus && (
                 <div className="mb-6 pt-4 border-t border-gray-100">
-                  <label className="flex items-center justify-between cursor-pointer">
+                  <label className="flex items-center justify-between cursor-pointer select-none">
                     <div className="mr-3">
                       <span className="block text-sm font-bold text-gray-800">Add "Yard+ Coverage"</span>
                       <span className="block text-xs text-gray-500">Full Front/Side Yards (+$20)</span>
@@ -1688,9 +1727,7 @@ const GlobalStyles = () => (
     .fade-in { animation: fadeIn 0.5s ease-out forwards; }
     
     .loader {
-      width: 24px;
-      height: 24px;
-      border: 3px solid rgba(255, 255, 255, 0.5);
+      width: 24px; height: 24px; border: 3px solid rgba(255, 255, 255, 0.5);
       border-top-color: #FFF;
       border-radius: 50%;
       animation: rotation 0.8s linear infinite;
