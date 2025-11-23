@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; // Added Auth imports
 import firebaseConfig from './firebaseConfig.js';
 
 // Lazily load AdminPanel
@@ -113,10 +114,8 @@ const Header = ({ onSatisfactionClick }) => (
   <header className="py-6 text-center">
     <div className="container mx-auto px-4 flex flex-col items-center justify-center">
       <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105 mb-4">
-        {/* Restored Large Logo Class */}
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
-      {/* Restored Satisfaction Badge */}
       <button 
         onClick={onSatisfactionClick}
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
@@ -175,9 +174,6 @@ const Footer = ({ text }) => {
   );
 };
 
-/**
- * VIEW 1: The Gate (Zip Code Validator)
- */
 const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
@@ -219,9 +215,6 @@ const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
   );
 };
 
-/**
- * VIEW 2: The Sorter (Yard Size & Dog Count)
- */
 const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
@@ -297,9 +290,6 @@ const YardButton = ({ title, description, selected, onClick }) => (
   </button>
 );
 
-/**
- * VIEW 3: Package Selector
- */
 const PackageSelector = ({ 
   basePrices, planDetails, 
   yardSize, numDogs, 
@@ -310,7 +300,6 @@ const PackageSelector = ({
   yardPlusSelections, setYardPlusSelections 
 }) => {
 
-  // Math Logic
   let lotFee = 0;
   if (yardSize === 'tier1') lotFee = lotFees.tier1;
   if (yardSize === 'tier2') lotFee = lotFees.tier2;
@@ -334,7 +323,6 @@ const PackageSelector = ({
     const isSelected = !!yardPlusSelections[key];
     const addonCost = (isSelected && !isIncluded) ? yardPlusPrice : 0;
 
-    // --- Restored Logic: Separate Free Features ---
     const featuredFreeFeatures = [];
     const standardFeatures = [];
     
@@ -348,7 +336,6 @@ const PackageSelector = ({
         }
     });
 
-    // Sort standard features
     standardFeatures.sort((a, b) => {
         const aExcluded = a.startsWith('!');
         const bExcluded = b.startsWith('!');
@@ -361,7 +348,7 @@ const PackageSelector = ({
       key,
       name: details.name,
       frequency: details.frequency,
-      featuredFreeFeatures, // Pass the green badges
+      featuredFreeFeatures,
       standardFeatures,
       finalPrice: base + lotFee + dogFee + addonCost, 
       basePrice: base,
@@ -403,7 +390,6 @@ const PackageSelector = ({
               </div>
             </div>
 
-            {/* Yard+ Badge Logic */}
             {plan.isYardPlusIncluded && (
               <div className="mb-4 bg-green-100 text-green-800 text-xs font-bold px-2 py-2 rounded text-center border border-green-200">
                 Yard+ Coverage Included FREE!
@@ -415,7 +401,6 @@ const PackageSelector = ({
               </div>
             )}
 
-            {/* --- FEATURE BADGES RESTORED --- */}
             {plan.featuredFreeFeatures.map((feature, idx) => {
                 let featureText = feature;
                 let featureSubtext = '';
@@ -444,7 +429,6 @@ const PackageSelector = ({
                 <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 <span>Service for <strong>{numDogs} Dogs</strong></span>
               </li>
-              {/* Standard Features List */}
               {plan.standardFeatures.map((feat, i) => {
                 const isExcluded = feat.startsWith('!');
                 const text = isExcluded ? feat.substring(1) : feat;
@@ -749,13 +733,25 @@ const Site = () => {
     const init = async () => {
       let loadedConfig; 
       try {
-        const db = getFirestore(getApp('site') || initializeApp(firebaseConfig, 'site'));
+        // Safely initialize or retrieve the app
+        let app;
+        if (getApps().some(a => a.name === 'site')) {
+          app = getApp('site');
+        } else {
+          app = initializeApp(firebaseConfig, 'site');
+        }
+        
+        // AUTHENTICATE ANONYMOUSLY FIRST
+        const auth = getAuth(app);
+        await signInAnonymously(auth);
+
+        const db = getFirestore(app);
         const docSnap = await getDoc(doc(db, 'config', 'production'));
         if (docSnap.exists()) {
            loadedConfig = docSnap.data();
            setConfigSource('🔥 Live Database');
         }
-      } catch (e) { console.log('Offline mode'); }
+      } catch (e) { console.log('Offline mode', e); }
       
       if (!loadedConfig) {
         const res = await fetch('/config.json');
