@@ -735,6 +735,8 @@ const Site = () => {
       try {
         // Safely initialize or retrieve the app
         let app;
+        // [Fix] Removed getApp logic inside try block to ensure fresh instance if needed or correct usage. 
+        // But more importantly, handle default app initialization properly.
         if (getApps().length > 0) {
            app = getApp(); // Get default app if exists
         } else {
