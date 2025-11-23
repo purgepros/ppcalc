@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; // Added Auth imports
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; 
 import firebaseConfig from './firebaseConfig.js';
 
 // Lazily load AdminPanel
@@ -735,8 +735,6 @@ const Site = () => {
       try {
         // Safely initialize or retrieve the app
         let app;
-        // [Fix] Removed getApp logic inside try block to ensure fresh instance if needed or correct usage. 
-        // But more importantly, handle default app initialization properly.
         if (getApps().length > 0) {
            app = getApp(); // Get default app if exists
         } else {
