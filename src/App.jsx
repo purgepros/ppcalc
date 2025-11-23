@@ -5,12 +5,12 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 // --- Import Firebase for Site component ---
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
-// FIX: Use extension-less import for better bundler resolution
-import firebaseConfig from './firebaseConfig'; 
+// FIX: Added .js extension for explicit resolution
+import firebaseConfig from './firebaseConfig.js'; 
 
 // 2. Lazily load the AdminPanel
-// FIX: Use extension-less import for better bundler resolution
-const AdminPanel = lazy(() => import('./AdminPanel'));
+// FIX: Added .jsx extension for explicit resolution
+const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
 
 // --- Helper Functions ---
 
