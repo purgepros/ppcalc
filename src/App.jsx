@@ -247,10 +247,10 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text.yardTitle}</h2>
         <div className="space-y-3">
-          <YardButton title="Standard Lot (Up to 1/4 Acre)" description="" selected={yardSize === 'standard'} onClick={() => setYardSize('standard')} />
+          <YardButton title="Standard Lot" description="Up to 1/4 Acre" selected={yardSize === 'standard'} onClick={() => setYardSize('standard')} />
           <YardButton title={`Medium Lot (+$${tier1Price}/mo)`} description="1/4 - 1/2 Acre" selected={yardSize === 'tier1'} onClick={() => setYardSize('tier1')} />
           <YardButton title={`Large Lot (+$${tier2Price}/mo)`} description="1/2 - 1 Acre" selected={yardSize === 'tier2'} onClick={() => setYardSize('tier2')} />
-          <YardButton title="Estate / Farm (Over 1 Acre)" description="Custom Quote" selected={yardSize === 'estate'} onClick={() => setYardSize('estate')} />
+          <YardButton title="Estate / Farm" description="Over 1 Acre" selected={yardSize === 'estate'} onClick={() => setYardSize('estate')} />
         </div>
       </div>
 
@@ -482,7 +482,7 @@ const PackageSelector = ({
               </label>
             )}
 
-            <button onClick={() => onPlanSelect(plan)} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:bg-opacity-90 shadow transition-transform hover:-translate-y-0.5">
+            <button onClick={() => onPlanSelect(plan.name, plan.finalPrice, plan.key)} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:bg-opacity-90 shadow transition-transform hover:-translate-y-0.5">
               Select Plan
             </button>
           </div>
@@ -511,7 +511,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
       <p className="text-center text-slate-600 mb-6">for <strong>{packageSelection.name}</strong> plan</p>
       <div className="space-y-4">
         {plans.map((p) => (
-          <button key={p.term} onClick={() => onPaymentSelect(p)} className={`relative w-full text-left p-5 border-2 rounded-xl transition-all hover:-translate-y-1 ${p.isPopular ? 'border-[var(--brand-green)] bg-green-50 shadow-md' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
+          <button key={p.term} onClick={() => onPaymentSelect(p.term, p.totalDue, p.savingsText, p.savingsValue)} className={`relative w-full text-left p-5 border-2 rounded-xl transition-all hover:-translate-y-1 ${p.isPopular ? 'border-[var(--brand-green)] bg-green-50 shadow-md' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
             {p.isPopular && <span className="absolute -top-3 right-4 bg-[var(--brand-green)] text-white text-xs font-bold px-2 py-1 rounded">BEST VALUE</span>}
             <div className="flex justify-between items-center">
               <div>
@@ -534,7 +534,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const totalDue = paymentSelection.totalDue;
+  const totalDue = paymentSelection.total;
   const totalSavings = 99.99 + paymentSelection.savingsValue;
 
   const handleSubmit = async (e) => {
@@ -560,7 +560,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         customer: formData,
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
         leadData: { ...formData, zip: zipCode, plan: packageSelection.name, total: totalDue, term: paymentSelection.term },
-        emailParams: { ...formData, plan: packageSelection.name, total_monthly: `$${packageSelection.finalPrice}/mo`, final_charge: `$${totalDue}`, savings: `$${totalSavings.toFixed(2)}` }
+        emailParams: { ...formData, plan: packageSelection.name, total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`, final_charge: `$${totalDue}`, savings: `$${totalSavings.toFixed(2)}` }
       };
 
       const res = await fetch('/.netlify/functions/create-stripe-session', {
@@ -812,6 +812,11 @@ const Site = () => {
     else setView('packages');
   };
 
+  const handlePaymentPlanSelect = (term, total, savings, savingsValue) => {
+    setPaymentSelection({ term, total, savings, savingsValue });
+    setView('checkout');
+  };
+
   if (!config) return <FullPageLoader error={configError} />;
 
   return (
@@ -827,8 +832,8 @@ const Site = () => {
         {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} />}
         {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
-        {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(plan) => { setPackageSelection(plan); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
-        {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={(p) => { setPaymentSelection(p); setView('checkout'); }} onBack={() => setView('packages')} />}
+        {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
+        {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
         {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} />}
         {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
@@ -856,7 +861,7 @@ const Site = () => {
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} text={config.text.modals.serviceInfo} />}
       {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={config.text.modals.alertsInfo} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
-      {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
+      {showSatisfactionModal && config.text.modals.satisfactionInfo && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       
       {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
