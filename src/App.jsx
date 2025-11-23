@@ -220,7 +220,10 @@ const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
   );
 };
 
-const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer }) => {
+/**
+ * VIEW 2: The Sorter (Yard Size & Dog Count)
+ */
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
 
@@ -235,15 +238,19 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
     onSortComplete(yardSize, numDogs, dogCount);
   };
 
+  // Fallback values in case lotFees isn't ready
+  const tier1Price = lotFees?.tier1 || 30;
+  const tier2Price = lotFees?.tier2 || 60;
+
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{text.yardTitle}</h2>
         <div className="space-y-3">
-          <YardButton title="Standard Lot" description="Up to 1/4 Acre" selected={yardSize === 'standard'} onClick={() => setYardSize('standard')} />
-          <YardButton title="Medium Lot (+Fee)" description="1/4 - 1/2 Acre" selected={yardSize === 'tier1'} onClick={() => setYardSize('tier1')} />
-          <YardButton title="Large Lot (+Fee)" description="1/2 - 1 Acre" selected={yardSize === 'tier2'} onClick={() => setYardSize('tier2')} />
-          <YardButton title="Estate / Farm" description="Over 1 Acre" selected={yardSize === 'estate'} onClick={() => setYardSize('estate')} />
+          <YardButton title="Standard Lot (Up to 1/4 Acre)" description="" selected={yardSize === 'standard'} onClick={() => setYardSize('standard')} />
+          <YardButton title={`Medium Lot (+$${tier1Price}/mo)`} description="1/4 - 1/2 Acre" selected={yardSize === 'tier1'} onClick={() => setYardSize('tier1')} />
+          <YardButton title={`Large Lot (+$${tier2Price}/mo)`} description="1/2 - 1 Acre" selected={yardSize === 'tier2'} onClick={() => setYardSize('tier2')} />
+          <YardButton title="Estate / Farm (Over 1 Acre)" description="Custom Quote" selected={yardSize === 'estate'} onClick={() => setYardSize('estate')} />
         </div>
       </div>
 
@@ -305,9 +312,14 @@ const PackageSelector = ({
   yardPlusSelections, setYardPlusSelections 
 }) => {
 
+  // FIX: Add safety checks for incoming props to prevent crash on 'Next'
+  if (!lotFees || !basePrices || !planDetails) {
+      return <div className="p-8 text-center"><span className="loader"></span> Calculating...</div>;
+  }
+
   let lotFee = 0;
-  if (yardSize === 'tier1') lotFee = lotFees.tier1;
-  if (yardSize === 'tier2') lotFee = lotFees.tier2;
+  if (yardSize === 'tier1') lotFee = lotFees.tier1 || 0;
+  if (yardSize === 'tier2') lotFee = lotFees.tier2 || 0;
 
   let dogFee = 0;
   if (numDogs > 2) {
@@ -331,15 +343,18 @@ const PackageSelector = ({
     const featuredFreeFeatures = [];
     const standardFeatures = [];
     
-    details.features.forEach(feature => {
-        const isExcluded = feature.startsWith('!');
-        const isFree = feature.toUpperCase().includes('FREE');
-        if (!isExcluded && isFree) {
-            featuredFreeFeatures.push(feature);
-        } else {
-            standardFeatures.push(feature);
-        }
-    });
+    // Safety check for features array
+    if (details.features && Array.isArray(details.features)) {
+        details.features.forEach(feature => {
+            const isExcluded = feature.startsWith('!');
+            const isFree = feature.toUpperCase().includes('FREE');
+            if (!isExcluded && isFree) {
+                featuredFreeFeatures.push(feature);
+            } else {
+                standardFeatures.push(feature);
+            }
+        });
+    }
 
     standardFeatures.sort((a, b) => {
         const aExcluded = a.startsWith('!');
@@ -738,15 +753,13 @@ const Site = () => {
     const init = async () => {
       let loadedConfig; 
       try {
-        // Safely initialize or retrieve the app
         let app;
         if (getApps().length > 0) {
-           app = getApp(); // Get default app if exists
+           app = getApp(); 
         } else {
-           app = initializeApp(firebaseConfig); // Initialize default app
+           app = initializeApp(firebaseConfig); 
         }
         
-        // AUTHENTICATE ANONYMOUSLY FIRST
         const auth = getAuth(app);
         await signInAnonymously(auth);
 
@@ -757,8 +770,8 @@ const Site = () => {
            setConfigSource('🔥 Live Database');
         }
       } catch (e) { 
-          console.error('Offline mode error:', e); // Log the full error
-          setConfigError(e); // Set error state to show in UI
+          console.error('Offline mode error:', e); 
+          setConfigError(e); 
       }
       
       if (!loadedConfig) {
@@ -811,7 +824,7 @@ const Site = () => {
       
       <main className="container mx-auto px-4 max-w-xl pb-12">
         {view === 'zip' && <ZipCodeValidator onZipValidated={(z) => { setZipCode(z); setView('sorter'); }} approvedZipCodes={config.data.APPROVED_ZIP_CODES} text={config.text.zipView} />}
-        {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} />}
+        {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} />}
         {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(plan) => { setPackageSelection(plan); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
