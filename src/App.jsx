@@ -336,7 +336,7 @@ const Header = ({ onSatisfactionClick }) => (
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
         <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
         <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -766,7 +766,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
 };
 
 const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false, auth: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const totalDue = paymentSelection.total;
@@ -805,6 +805,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.terms) { setError('Please agree to the terms.'); return; }
+    if (!formData.auth) { setError('Please authorize the payment method storage.'); return; }
     if (!stripeInstance || !cardElement) { setError('Payment system not ready. Please wait or refresh.'); return; }
     
     setIsSubmitting(true);
@@ -916,6 +917,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           </div>
         )}
 
+        {/* UPDATED: Always show Yard+ Coverage Status */}
         <div className="flex justify-between mb-1">
             <span className="text-slate-600">Yard+ Coverage (Front/Sides)</span>
             <span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>
@@ -950,7 +952,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         
         <div className="flex justify-between text-green-600 font-semibold mt-2 text-xs bg-green-50 p-2 rounded border border-green-100">
           <span>Total Savings Today (Setup + Discount):</span>
-          <span>-${totalSavings.toFixed(2)}</span>
+          <span>${totalSavings.toFixed(2)} (Already Deducted)</span>
         </div>
       </div>
 
@@ -962,7 +964,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         <p className="mb-2">After checkout, a team member will call you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
         <ol className="list-decimal pl-5 space-y-1">
             <li>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</li>
-            <li>Your First <em>Paid</em> Weekly Visit (which starts your subscription).</li>
+            <li>Your First <em>Paid</em> Visit (which starts your subscription).</li>
         </ol>
       </div>
       
@@ -977,9 +979,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         </div>
 
         <TermsCheckbox 
-          checked={formData.terms} 
-          onChange={(val) => setFormData(prev => ({...prev, terms: val}))}
-          isSubscription={true}
+          checked={{terms: formData.terms, auth: formData.auth}} 
+          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
+          includePaymentAuth={true} 
         />
         
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
@@ -1108,9 +1110,9 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         </div>
         
         <TermsCheckbox 
-          checked={formData.terms} 
-          onChange={(val) => setFormData(prev => ({...prev, terms: val}))}
-          isSubscription={false} // One-time doesn't need recurring auth
+          checked={{terms: formData.terms, auth: formData.auth}} 
+          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
+          includePaymentAuth={false} // One-time doesn't need auth
         />
 
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
