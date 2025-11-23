@@ -213,11 +213,18 @@ exports.handler = async (event) => {
       const template = isOneTime
         ? process.env.EMAILJS_TEMPLATE_ID_ONETIME
         : process.env.EMAILJS_TEMPLATE_ID_SUBSCRIPTION;
-        
+      
+      // SANITY CHECK: Ensure params are safe
+      const safeParams = {
+        ...emailParams,
+        zip: emailParams.zip || 'N/A',
+        dog_count: emailParams.dog_count || 'N/A'
+      };
+
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         template,
-        emailParams,
+        safeParams, // This now contains zip and dog_count from the frontend payload
         { publicKey: process.env.EMAILJS_PUBLIC_KEY, privateKey: process.env.EMAILJS_PRIVATE_KEY }
       );
     } catch (e) { console.error('EmailJS send failed:', e); }

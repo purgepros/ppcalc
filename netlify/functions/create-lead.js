@@ -23,30 +23,32 @@ exports.handler = async (event) => {
 
     // --- 1. Fire GHL Webhook ---
     try {
-      await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData),
-      });
+      if (process.env.GOHIGHLEVEL_WEBHOOK_URL) {
+        await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadData),
+        });
+      }
     } catch (e) {
-      // FIX: Corrected e.g to e
       console.error('GHL Webhook failed:', e);
       // Don't stop the process, just log the error
     }
     
     // --- 2. Send EmailJS Confirmation ---
-    // FIX: Moved this block OUTSIDE of the GHL catch block.
     try {
       let templateIdToSend;
       if (leadType === 'exitIntent') {
          templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_EXIT_INTENT;
       } else {
+         // Use the LEAD template for custom quotes
          templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_LEAD;
       }
       
+      // DEBUGGING TIP: If you see the error "corrupted variables" again, check your Netlify logs.
       if (!templateIdToSend) {
-          console.error('EmailJS template ID not found for leadType:', leadType, 'Check environment variables.');
-          throw new Error('Email template configuration error.');
+          console.error('EmailJS Error: Template ID is missing for leadType:', leadType);
+          throw new Error('Email template configuration error: Missing Template ID.');
       }
 
       await emailjs.send(
