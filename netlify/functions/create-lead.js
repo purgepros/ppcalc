@@ -41,20 +41,36 @@ exports.handler = async (event) => {
       if (leadType === 'exitIntent') {
          templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_EXIT_INTENT;
       } else {
-         // Use the LEAD template for custom quotes
+         // Use the LEAD template for custom quotes (Check your Env Vars!)
          templateIdToSend = process.env.EMAILJS_TEMPLATE_ID_LEAD;
       }
       
-      // DEBUGGING TIP: If you see the error "corrupted variables" again, check your Netlify logs.
       if (!templateIdToSend) {
           console.error('EmailJS Error: Template ID is missing for leadType:', leadType);
           throw new Error('Email template configuration error: Missing Template ID.');
       }
 
+      // SANITIZATION: Strict check to prevent "corrupted variable" errors
+      // Ensure 'notes' is never undefined, even if empty
+      const safeParams = {
+        ...emailParams,
+        name: emailParams.name || 'Customer',
+        email: emailParams.email || '',
+        phone: emailParams.phone || '',
+        address: emailParams.address || '',
+        plan: emailParams.plan || 'Custom Quote',
+        description: emailParams.description || 'Quote Request',
+        // CRITICAL FIX: Fallback for zip and dog_count if they come in empty
+        zip: emailParams.zip && emailParams.zip !== '' ? emailParams.zip : 'Not Provided', 
+        dog_count: emailParams.dog_count && emailParams.dog_count !== '' ? emailParams.dog_count : 'Not Provided',
+        // If notes is missing/null, set to "None" so {{#if}} blocks or variables don't crash
+        notes: emailParams.notes ? emailParams.notes : "None" 
+      };
+
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         templateIdToSend, // Use the specific template
-        emailParams,
+        safeParams,
         {
           publicKey: process.env.EMAILJS_PUBLIC_KEY,
           privateKey: process.env.EMAILJS_PRIVATE_KEY,

@@ -2,9 +2,8 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth'; 
-import { db, auth } from './firebase.js'; // Added .js extension for explicit resolution
+import { db, auth } from './firebase.js'; 
 
-// UPDATED: Explicit extension to help build resolution
 import AdminPanel from './AdminPanel.jsx';
 
 // --- Helper Functions ---
@@ -234,10 +233,11 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
           emailParams: {
             email,
             plan: currentPlan?.name || 'Custom Quote',
-            dog_count: dogCount || 'N/A',
+            dog_count: dogCount,
             total_monthly: `$${monthly.toFixed(2)}`,
             per_visit: `$${perVisit.toFixed(2)}`,
-            quote_link: quoteLink
+            quote_link: quoteLink,
+            zip: zipCode // Ensure zip is sent for exit intent too
           }
         })
       });
@@ -285,7 +285,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
   );
 };
 
-// --- UPDATED: Single Checkbox for Terms + Auth ---
+// --- UPDATED: Single Checkbox Logic ---
 const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
   <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer mt-2">
     <input 
@@ -860,7 +860,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           total_savings: totalSavings.toFixed(2),
           term_discount_row: termDiscountRow || '',
           term_savings_row: '',
-          yard_plus_status: yardPlusSelected ? "Included" : "Not Selected"
+          yard_plus_status: yardPlusSelected ? "Included" : "Not Selected",
+          zip: zipCode || '', // Added Missing Field
+          dog_count: dogCount || '' // Added Missing Field
         }
       };
 
