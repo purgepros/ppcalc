@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; 
-import firebaseConfig from './firebaseConfig.js'; // Fixed: Added extension
+import { doc, getDoc } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth'; 
+// UPDATED: Import pre-initialized services from firebase.js to avoid config resolution issues
+import { db, auth } from './firebase'; 
 
-// Lazily load AdminPanel
-const AdminPanel = lazy(() => import('./AdminPanel.jsx')); // Fixed: Added extension
+// UPDATED: Removed explicit extension to help build resolution
+const AdminPanel = lazy(() => import('./AdminPanel')); 
 
 // --- Helper Functions ---
 
@@ -60,6 +60,16 @@ const setFavicon = (href) => {
   link.rel = 'shortcut icon';
   link.href = href;
   document.getElementsByTagName('head')[0].appendChild(link);
+};
+
+const generateQuoteLink = (quoteState) => {
+  const baseUrl = window.location.origin + window.location.pathname;
+  const params = new URLSearchParams();
+  if (quoteState.zip) params.set('zip', quoteState.zip);
+  if (quoteState.yardSize) params.set('yardSize', quoteState.yardSize);
+  if (quoteState.dogCount) params.set('dogCount', quoteState.dogCount);
+  // Add other params if needed to restore state perfectly
+  return `${baseUrl}?${params.toString()}`;
 };
 
 // --- Exit Intent Hook ---
@@ -202,18 +212,89 @@ const PricingInfoModal = ({ onClose, text }) => (
   </ModalOverlay>
 );
 
-const ExitIntentModal = ({ onClose, text, currentPlan, zipCode, yardSize }) => (
-  <ModalOverlay onClose={onClose}>
-    <div className="p-8 text-center">
-      <h3 className="text-2xl font-bold text-slate-800 mb-2">{text?.title || "Wait!"}</h3>
-      <p className="text-slate-600 mb-6" dangerouslySetInnerHTML={{__html: text?.body}} />
-      <div className="flex space-x-3">
-        <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300">No thanks</button>
-        <button onClick={() => { window.location.href = "mailto:?subject=Saved Quote&body=Save this quote..."; onClose(); }} className="flex-1 bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90">Email Me Quote</button>
+const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
+  const [email, setEmail] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleEmailQuote = async () => {
+    if (!email || !email.includes('@')) return;
+    setIsSending(true);
+    
+    // Generate Link
+    const baseUrl = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    if (zipCode) params.set('zip', zipCode);
+    if (dogCount) params.set('dogCount', dogCount);
+    const quoteLink = `${baseUrl}?${params.toString()}`;
+
+    // Calculate approx values
+    const monthly = currentPlan?.finalMonthlyPrice || 0;
+    let perVisit = 0;
+    if (currentPlan?.key === 'weekly') perVisit = monthly / 4.33;
+    else if (currentPlan?.key === 'biWeekly') perVisit = monthly / 2.17;
+    else if (currentPlan?.key === 'twiceWeekly') perVisit = monthly / 8.66;
+
+    try {
+      await fetch('/.netlify/functions/create-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadType: 'exitIntent',
+          leadData: { email, zip: zipCode, dog_count: dogCount, lead_status: 'Exit Intent - Saved Quote' },
+          emailParams: {
+            email,
+            plan: currentPlan?.name || 'Custom Quote',
+            dog_count: dogCount,
+            total_monthly: `$${monthly.toFixed(2)}`,
+            per_visit: `$${perVisit.toFixed(2)}`,
+            quote_link: quoteLink
+          }
+        })
+      });
+      setSent(true);
+      setTimeout(onClose, 2000);
+    } catch (e) {
+      console.error(e);
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <div className="p-8 text-center">
+        <h3 className="text-2xl font-bold text-slate-800 mb-2">{text?.title || "Wait!"}</h3>
+        <p className="text-slate-600 mb-6" dangerouslySetInnerHTML={{__html: text?.body}} />
+        
+        {!sent ? (
+          <div className="space-y-3">
+             <input 
+               type="email" 
+               placeholder="Enter your email address" 
+               className="w-full p-3 border rounded-lg"
+               value={email}
+               onChange={e => setEmail(e.target.value)}
+             />
+             <div className="flex space-x-3">
+               <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300">No thanks</button>
+               <button 
+                 onClick={handleEmailQuote} 
+                 disabled={isSending || !email}
+                 className="flex-1 bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90 disabled:opacity-50"
+               >
+                 {isSending ? 'Sending...' : 'Email Me Quote'}
+               </button>
+             </div>
+          </div>
+        ) : (
+          <div className="text-green-600 font-bold p-4 bg-green-50 rounded-lg">
+            Quote Sent! Check your inbox.
+          </div>
+        )}
       </div>
-    </div>
-  </ModalOverlay>
-);
+    </ModalOverlay>
+  );
+};
 
 // --- Components ---
 
@@ -616,7 +697,7 @@ const PackageSelector = ({
 
             {plan.canToggleYardPlus && (
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4 cursor-pointer border border-slate-200 hover:bg-slate-100">
-                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (Front/Back/Sides | +${yPlusPrice})</span>
+                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (+${yPlusPrice})</span>
                 <input 
                   type="checkbox" 
                   className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
@@ -700,13 +781,41 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
 
       if (stripeError) throw new Error(stripeError.message);
 
+      // --- Build Complete Email Params for Templates ---
+      const monthly = packageSelection.finalMonthlyPrice;
+      let perVisit = 0;
+      if (packageSelection.key === 'weekly') perVisit = monthly / 4.33;
+      else if (packageSelection.key === 'biWeekly') perVisit = monthly / 2.17;
+      else if (packageSelection.key === 'twiceWeekly') perVisit = monthly / 8.66;
+
+      // HTML Row for Term Discount (if any)
+      let termDiscountRow = '';
+      if (paymentSelection.term === 'Quarterly') {
+        termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #166534;">Quarterly Discount</span><span style="font-weight: bold; color: #166534;">-$30.00</span></div>`;
+      } else if (paymentSelection.term === 'Annual') {
+        termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #166534;">Annual Discount (1 Month Free)</span><span style="font-weight: bold; color: #166534;">-$${monthly.toFixed(2)}</span></div>`;
+      }
+
       const payload = {
         stripeMode,
         paymentMethodId: paymentMethod.id,
         customer: formData,
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
-        leadData: { ...formData, zip: zipCode, plan: packageSelection.name, total: totalDue, term: paymentSelection.term },
-        emailParams: { ...formData, plan: packageSelection.name, total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`, final_charge: `$${totalDue}`, savings: `$${totalSavings.toFixed(2)}` }
+        // Ensure GHL gets 'zip' and 'dog_count'
+        leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term },
+        emailParams: { 
+          ...formData, 
+          plan: packageSelection.name, 
+          payment_term: paymentSelection.term,
+          total_monthly: `$${monthly.toFixed(2)}/mo`, 
+          per_visit: `$${perVisit.toFixed(2)}`,
+          final_charge: `$${totalDue.toFixed(2)}`,
+          initial_savings: "99.99",
+          total_savings: totalSavings.toFixed(2),
+          term_discount_row: termDiscountRow,
+          // Default footer or empty row
+          term_savings_row: '' 
+        }
       };
 
       const res = await fetch('/.netlify/functions/create-stripe-session', {
@@ -776,8 +885,17 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
          headers: {'Content-Type': 'application/json'},
          body: JSON.stringify({
            leadType: 'customQuote',
+           // Add dog_count explicitly for GHL
            leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Custom Quote Req' },
-           emailParams: { ...formData, description: title }
+           // Add needed template vars
+           emailParams: { 
+             ...formData, 
+             description: title,
+             // Map plan to 'Custom Quote' so template {{plan}} works
+             plan: 'Custom Quote',
+             zip: zipCode,
+             dog_count: dogCount
+           }
          })
        });
        if (res.ok) onSubmitSuccess();
@@ -830,8 +948,16 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
           stripeMode, paymentMethodId: paymentMethod.id,
           customer: formData,
           quote: { zipCode, dogCount, planName: 'One-Time Yard Reset', planKey: 'oneTime', paymentTerm: 'One-Time Deposit', totalDueToday: depositAmount },
-          leadData: { ...formData, zip: zipCode, lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset' },
-          emailParams: { ...formData, description: 'One-Time Yard Reset', final_charge: `$${depositAmount} (Deposit)` }
+          // Ensure dog_count and zip are in leadData
+          leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset' },
+          // Populate template vars
+          emailParams: { 
+            ...formData, 
+            description: 'One-Time Yard Reset', 
+            final_charge: `$${depositAmount.toFixed(2)}`,
+            zip: zipCode,
+            dog_count: dogCount
+          }
         })
       });
       const data = await res.json();
@@ -899,17 +1025,8 @@ const Site = () => {
     const init = async () => {
       let loadedConfig; 
       try {
-        let app;
-        if (getApps().length > 0) {
-           app = getApp(); 
-        } else {
-           app = initializeApp(firebaseConfig); 
-        }
-        
-        const auth = getAuth(app);
+        // Use pre-initialized auth and db from ./firebase to avoid double-init issues
         await signInAnonymously(auth);
-
-        const db = getFirestore(app);
         const docSnap = await getDoc(doc(db, 'config', 'production'));
         if (docSnap.exists()) {
            loadedConfig = docSnap.data();
@@ -927,12 +1044,12 @@ const Site = () => {
       }
       setConfig(loadedConfig);
 
-      // Fix: Use safe environment variable access to avoid import.meta issues in older environments
       let stripeKey = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
       
+      // Safe environment variable access
       try {
-        // Attempt to use import.meta.env if available
-        if (typeof import.meta !== 'undefined' && import.meta.env) {
+        // Check if import.meta.env exists before accessing properties
+        if (import.meta && import.meta.env) {
            if (loadedConfig.data.STRIPE_MODE === 'live') {
              stripeKey = import.meta.env.VITE_STRIPE_PK_LIVE || stripeKey;
            } else {
@@ -940,7 +1057,7 @@ const Site = () => {
            }
         }
       } catch(e) {
-        console.warn('Environment variables could not be loaded via import.meta', e);
+        console.warn('Environment variables access failed, using default test key', e);
       }
       
       await loadScript('https://js.stripe.com/v3/', 'stripe-js');
@@ -1032,7 +1149,7 @@ const Site = () => {
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       
-      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
+      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} dogCount={dogCountLabel} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
   );
 };
