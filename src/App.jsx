@@ -1407,6 +1407,28 @@ const AlertsInfoModal = ({ onClose, text }) => (
   </div>
 );
 
+// --- NEW: Satisfaction Modal ---
+const SatisfactionModal = ({ onClose, text }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+    <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center" onClick={(e) => e.stopPropagation()}>
+      <div className="w-16 h-16 bg-green-100 text-green-600 flex items-center justify-center rounded-full mx-auto mb-4">
+        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        </svg>
+      </div>
+      <h3 className="text-xl font-bold text-gray-900">{text.title}</h3>
+      <p className="text-gray-600 mt-4">{text.body}</p>
+      <p className="text-sm font-bold text-green-700 mt-4">{text.footer}</p>
+      <button
+        onClick={onClose}
+        className="w-full mt-6 bg-[var(--brand-green)] text-white font-bold py-3 px-4 rounded-lg hover:bg-opacity-90"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+);
+
 // --- NEW: Package Review Modal ---
 const PackageReviewModal = ({ onClose, planName, frequency, features, dogCount }) => {
   const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
@@ -1650,12 +1672,23 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, yardSize, planDetails,
 };
 
 
-const Header = () => (
-  <header className="py-6">
-    <div className="container mx-auto px-4 flex justify-center">
-      <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105">
+const Header = ({ onSatisfactionClick }) => (
+  <header className="py-6 text-center">
+    <div className="container mx-auto px-4 flex flex-col items-center justify-center">
+      <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105 mb-4">
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
+      {/* Satisfaction Badge */}
+      <button 
+        onClick={onSatisfactionClick}
+        className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+      >
+        <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        </svg>
+        <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
+        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      </button>
     </div>
   </header>
 );
@@ -1796,6 +1829,7 @@ const Site = () => {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [showPackageReviewModal, setShowPackageReviewModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
+  const [showSatisfactionModal, setShowSatisfactionModal] = useState(false); // NEW
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   
   // --- NEW: Addon State (Object) ---
@@ -2167,7 +2201,7 @@ const Site = () => {
       </div>
 
       {/* GlobalStyles is in App now */}
-      <Header />
+      <Header onSatisfactionClick={() => setShowSatisfactionModal(true)} />
       
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-xl mx-auto">
@@ -2344,6 +2378,13 @@ const Site = () => {
         <PricingInfoModal
           onClose={() => setShowPricingModal(false)}
           text={appConfig.text.modals.pricingInfo}
+        />
+      )}
+      
+      {showSatisfactionModal && (
+        <SatisfactionModal
+          onClose={() => setShowSatisfactionModal(false)}
+          text={appConfig.text.modals.satisfactionInfo}
         />
       )}
       

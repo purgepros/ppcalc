@@ -153,6 +153,11 @@
         ],
         "footer": "This is why some months you'll see us 4 times and others 5 (for a weekly plan), but your bill remains the same flat rate."
       },
+      "satisfactionInfo": {
+        "title": "100% Satisfaction Guaranteed",
+        "body": "We stand behind our work! If anything is missed, we will dispatch a team to return and make sure any issues are rectified immediately.",
+        "footer": "Your satisfaction is our priority."
+      },
       "exitIntent": {
         "title": "Leaving So Soon?",
         "body": "Before you go, let us email you this quote! We'll also include our <strong>Free 5-Point Pet Safety Checklist for Yards</strong>."
