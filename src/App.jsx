@@ -616,7 +616,7 @@ const PackageSelector = ({
 
             {plan.canToggleYardPlus && (
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4 cursor-pointer border border-slate-200 hover:bg-slate-100">
-                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (+${yPlusPrice})</span>
+                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (Front/Back/Sides | +${yPlusPrice})</span>
                 <input 
                   type="checkbox" 
                   className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
