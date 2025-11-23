@@ -285,23 +285,38 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
   );
 };
 
-// --- Reusable Terms Checkbox ---
-const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
-  <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
-    <input 
-      type="checkbox" 
-      className="mt-1" 
-      checked={checked} 
-      onChange={(e) => onChange(e.target.checked)} 
-    />
-    <span>
-      I agree to the{' '}
-      <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
-      {' '}&{' '}
-      <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>
-      {isSubscription ? ', and I authorize Purge Pros to charge my payment method for future scheduled visits.' : '.'}
-    </span>
-  </label>
+// --- UPDATED Reusable Terms Checkbox ---
+const TermsCheckbox = ({ checked, onChange, includePaymentAuth }) => (
+  <div className="space-y-3">
+    <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
+      <input 
+        type="checkbox" 
+        className="mt-1 rounded border-gray-300 text-[var(--brand-green)] focus:ring-[var(--brand-green)]" 
+        checked={checked.terms} 
+        onChange={(e) => onChange('terms', e.target.checked)} 
+      />
+      <span>
+        I agree to the{' '}
+        <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
+        {' '}&{' '}
+        <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>.
+      </span>
+    </label>
+
+    {includePaymentAuth && (
+      <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
+        <input 
+          type="checkbox" 
+          className="mt-1 rounded border-gray-300 text-[var(--brand-green)] focus:ring-[var(--brand-green)]" 
+          checked={checked.auth} 
+          onChange={(e) => onChange('auth', e.target.checked)} 
+        />
+        <span>
+          I authorize Purge Pros to charge my payment method for future scheduled visits according to the selected plan frequency.
+        </span>
+      </label>
+    )}
+  </div>
 );
 
 // --- Components ---
@@ -1008,14 +1023,14 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
            leadType: 'customQuote',
            // Add dog_count explicitly for GHL
            leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Custom Quote Req' },
-           // Add needed template vars
+           // Add needed template vars, SANITIZED to prevent empty values from causing issues
            emailParams: { 
              ...formData, 
-             description: title,
-             // Map plan to 'Custom Quote' so template {{plan}} works
+             description: title || 'Custom Quote Request',
              plan: 'Custom Quote',
-             zip: zipCode,
-             dog_count: dogCount
+             zip: zipCode || 'N/A',
+             dog_count: dogCount || 'N/A',
+             notes: formData.notes || 'No additional notes.'
            }
          })
        });
