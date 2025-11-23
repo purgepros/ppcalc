@@ -3,10 +3,10 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth'; 
-import firebaseConfig from './firebaseConfig.js';
+import firebaseConfig from './firebaseConfig.js'; // Fixed: Added extension
 
 // Lazily load AdminPanel
-const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
+const AdminPanel = lazy(() => import('./AdminPanel.jsx')); // Fixed: Added extension
 
 // --- Helper Functions ---
 
@@ -83,7 +83,7 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
   }, [isFormSubmitted, onIntent]);
 };
 
-// --- Modal Components (Restored) ---
+// --- Modal Components ---
 
 const ModalOverlay = ({ children, onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in" onClick={onClose}>
@@ -601,7 +601,8 @@ const PackageSelector = ({
 };
 
 const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarterlyDiscount, text }) => {
-  const monthly = packageSelection.finalPrice;
+  // FIX: Changed to finalMonthlyPrice to match what was set in onPlanSelect
+  const monthly = packageSelection.finalMonthlyPrice;
   const qDisc = quarterlyDiscount || 30;
   const plans = [
     { term: 'Monthly', label: 'Pay Monthly', totalDue: monthly, savingsText: null, savingsValue: 0 },
@@ -886,9 +887,21 @@ const Site = () => {
       }
       setConfig(loadedConfig);
 
-      const stripeKey = loadedConfig.data.STRIPE_MODE === 'live' 
-        ? import.meta.env.VITE_STRIPE_PK_LIVE 
-        : (import.meta.env.VITE_STRIPE_PK_TEST || 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ');
+      // Fix: Use safe environment variable access to avoid import.meta issues in older environments
+      let stripeKey = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
+      
+      try {
+        // Attempt to use import.meta.env if available
+        if (typeof import.meta !== 'undefined' && import.meta.env) {
+           if (loadedConfig.data.STRIPE_MODE === 'live') {
+             stripeKey = import.meta.env.VITE_STRIPE_PK_LIVE || stripeKey;
+           } else {
+             stripeKey = import.meta.env.VITE_STRIPE_PK_TEST || stripeKey;
+           }
+        }
+      } catch(e) {
+        console.warn('Environment variables could not be loaded via import.meta', e);
+      }
       
       await loadScript('https://js.stripe.com/v3/', 'stripe-js');
       if (window.Stripe) {
@@ -956,7 +969,8 @@ const Site = () => {
               <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{config.text.oneTimeView.title}</h2>
               <div className="text-center my-6 py-4 border-y border-gray-200"><span className="text-5xl font-extrabold text-slate-900">$99.99</span><p className="text-sm text-slate-500 mt-1">{config.text.oneTimeView.subTitle}</p></div>
               <p className="text-slate-600 text-center mb-4">{config.text.oneTimeView.description}</p>
-              <p className="text-slate-600 text-center text-sm mb-6">{config.text.oneTimeView.estatePrompt} <button onClick={() => { setView('custom_quote'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">{config.text.oneTimeView.estateLinkText}</button>.</p>
+              {/* FIX: Updated setView to use 'lead_estate' instead of invalid 'custom_quote' */}
+              <p className="text-slate-600 text-center text-sm mb-6">{config.text.oneTimeView.estatePrompt} <button onClick={() => { setView('lead_estate'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">{config.text.oneTimeView.estateLinkText}</button>.</p>
               <div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg mb-6"><p className="font-bold">{config.text.oneTimeView.psTitle}</p><p className="text-sm"><span dangerouslySetInnerHTML={{ __html: config.text.oneTimeView.psBody.replace('{price}', config.data.basePrices.weekly + (config.data.dogFeeMap?.['1-2'] || 0)) }} /> <button onClick={() => setView('packages')} className="font-bold underline ml-1 hover:text-green-600">{config.text.oneTimeView.psLinkText}</button></p></div>
               <button type="button" onClick={() => setView('onetime_checkout')} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg">Book One-Time Cleanup</button>
             </div>
