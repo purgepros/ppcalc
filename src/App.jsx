@@ -5,9 +5,11 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 // --- Import Firebase for Site component ---
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
-import firebaseConfig from './firebaseConfig'; // Import directly
+// FIX: Added explicit .js extension to avoid build resolution errors
+import firebaseConfig from './firebaseConfig.js'; 
 
-// 2. Lazily load the AdminPanel so it doesn't slow down your main site
+// 2. Lazily load the AdminPanel
+// FIX: Ensure the path is explicit for the build system
 const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
 
 // --- Helper Functions ---
@@ -317,11 +319,28 @@ const YardButton = ({ title, description, icon, onClick, isSelected }) => (
 /**
  * VIEW 3B: The "Package Selection"
  */
-const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick, text, specialOffer }) => {
+const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, yardPlusPrice, onPlanSelect, onBack, onOneTimeClick, onInfoClick, onAlertsInfoClick, text, specialOffer, yardPlusSelected, setYardPlusSelected }) => {
+  // Calculate prices based on selection
   const plans = [
-    { key: 'biWeekly', ...planDetails.biWeekly, finalPrice: basePrices[planDetails.biWeekly.priceKey] + dogFee },
-    { key: 'weekly', ...planDetails.weekly, finalPrice: basePrices[planDetails.weekly.priceKey] + dogFee, popular: true },
-    { key: 'twiceWeekly', ...planDetails.twiceWeekly, finalPrice: basePrices[planDetails.twiceWeekly.priceKey] + dogFee },
+    { 
+      key: 'biWeekly', 
+      ...planDetails.biWeekly, 
+      // Add Yard+ price ONLY if selected
+      finalPrice: basePrices[planDetails.biWeekly.priceKey] + dogFee + (yardPlusSelected ? yardPlusPrice : 0) 
+    },
+    { 
+      key: 'weekly', 
+      ...planDetails.weekly, 
+      // Add Yard+ price ONLY if selected
+      finalPrice: basePrices[planDetails.weekly.priceKey] + dogFee + (yardPlusSelected ? yardPlusPrice : 0), 
+      popular: true 
+    },
+    { 
+      key: 'twiceWeekly', 
+      ...planDetails.twiceWeekly, 
+      // NEVER add Yard+ price (it's included)
+      finalPrice: basePrices[planDetails.twiceWeekly.priceKey] + dogFee 
+    },
   ];
   
   const dogText = dogCount === '1-2' ? 'up to 2 Dog' : `up to ${dogCount} Dog`;
@@ -331,6 +350,38 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, onPlanSele
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Selections</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text.title}</h2>
       
+      {/* --- YARD+ COVERAGE TOGGLE --- */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-1 bg-blue-100 p-2 rounded-full text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4a1 1 0 001-1v-1a1 1 0 10-2 0v1a1 1 0 001 1z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">Yard+ Coverage</h3>
+              <p className="text-sm text-gray-600">
+                Includes full front yard & side yards. Perfect for corner lots!
+              </p>
+            </div>
+          </div>
+          
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="sr-only peer"
+              checked={yardPlusSelected}
+              onChange={(e) => setYardPlusSelected(e.target.checked)}
+            />
+            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+            <span className="ml-3 text-sm font-medium text-gray-900">
+              {yardPlusSelected ? 'Added (+$20)' : 'Add to Plan'}
+            </span>
+          </label>
+        </div>
+      </div>
+
       <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-md flex items-center space-x-3 special-offer-glow">
         <svg className="w-8 h-8 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
         <div>
@@ -359,6 +410,9 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, onPlanSele
             return 0; // both free or both not free, keep order
           });
 
+          // Determine if we show the "Yard+ Included" badge
+          const isPristinePlus = plan.key === 'twiceWeekly';
+
           return (
             <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg best-value-glow' : 'border-gray-300'}`}>
               {plan.popular && (
@@ -371,6 +425,17 @@ const PackageSelector = ({ basePrices, planDetails, dogFee, dogCount, onPlanSele
                 <span className="text-5xl font-extrabold text-slate-900">${plan.finalPrice}</span>
                 <span className="text-xl font-medium text-slate-600">/mo</span>
               </div>
+              
+              {/* --- Yard+ Dynamic Badge --- */}
+              {isPristinePlus ? (
+                 <div className="mb-4 bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded text-center border border-green-200">
+                   Yard+ Coverage Included FREE!
+                 </div>
+              ) : yardPlusSelected ? (
+                 <div className="mb-4 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded text-center border border-blue-200">
+                   Includes Yard+ Coverage (+$20)
+                 </div>
+              ) : null}
               
               <ul className="space-y-3 mb-8 text-left max-w-xs mx-auto">
                 {/* 1. Dog Household */}
@@ -534,7 +599,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, text }
 /**
  * VIEW 5: The "Checkout"
  */
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, planKey, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode }) => {
+const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, planKey, onBack, onBailout, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -620,6 +685,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
         payment_term: paymentSelection.term,
         final_charge_amount: totalDueToday,
         savings: paymentSelection.savings,
+        yard_plus: yardPlusSelected ? 'Yes' : 'No', // Log this for GHL
         quote_link: generateQuoteLink({
             zip: zipCode,
             dogCount: dogCount,
@@ -650,7 +716,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
 
     const emailParams = {
         ...leadData,
-        description: `Plan: ${packageSelection.name} (${paymentSelection.term})`,
+        description: `Plan: ${packageSelection.name} (${paymentSelection.term}) ${yardPlusSelected ? '+ Yard+ Coverage' : ''}`,
         total_monthly: `$${packageSelection.finalMonthlyPrice}/mo`,
         per_visit: `$${perVisitPrice}`,
         final_charge: totalDueToday.toFixed(2), // Use consistent var
@@ -684,6 +750,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
             planKey: planKey,                // e.g., "weekly"
             paymentTerm: paymentSelection.term, // e.g., "Quarterly"
             totalDueToday: totalDueToday,
+            yardPlusSelected: yardPlusSelected, // PASS THE ADDON FLAG
           },
           leadData: leadData,     // For GHL
           emailParams: emailParams  // For EmailJS
@@ -753,6 +820,13 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
             <span className="text-slate-600">{packageSelection.name} ({paymentSelection.term} Plan)</span>
             <span className="font-medium text-slate-900">${paymentSelection.total.toFixed(2)}</span>
           </div>
+          
+          {yardPlusSelected && (
+             <div className="flex justify-between">
+               <span className="text-slate-600 italic">+ Yard+ Coverage Add-on</span>
+               <span className="text-slate-500 text-xs">(Included in total)</span>
+             </div>
+          )}
           
           <div className="flex justify-between">
             <span className="text-slate-600">One-Time Initial Yard Reset</span>
@@ -851,6 +925,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, p
  * VIEW 3A / One-Time: The Lead Form (Custom Quote & One-Time)
  */
 const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, text }) => {
+  // ... (Same as before)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -1689,6 +1764,9 @@ const Site = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   
+  // --- NEW: Addon State ---
+  const [yardPlusSelected, setYardPlusSelected] = useState(false);
+  
   const [packageSelection, setPackageSelection] = useState({ name: null, finalMonthlyPrice: 0, key: null });
   const [paymentSelection, setPaymentSelection] = useState({ term: 'Monthly', total: 0, savings: null, savingsValue: 0 });
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
@@ -2093,6 +2171,9 @@ const Site = () => {
               planDetails={appConfig.data.planDetails}
               dogFee={multiDogFee}
               dogCount={dogCount}
+              yardPlusPrice={appConfig.data.yardPlusPrice}
+              yardPlusSelected={yardPlusSelected}
+              setYardPlusSelected={setYardPlusSelected}
               onPlanSelect={handlePlanSelect}
               onBack={() => setView('sorter')}
               onOneTimeClick={() => setView('onetime')}
@@ -2132,6 +2213,7 @@ const Site = () => {
               cardElement={cardElement}
               text={appConfig.text.checkoutView}
               stripeMode={appConfig.data.STRIPE_MODE} // --- Pass Mode to Form ---
+              yardPlusSelected={yardPlusSelected} // --- Pass Toggle State ---
             />
           )}
           

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import firebaseConfig from './firebaseConfig'; // Import from the file
+import firebaseConfig from './firebaseConfig.js'; // Explicit extension
 
 // Initialize Firebase using the imported config
 const app = initializeApp(firebaseConfig);
@@ -408,6 +408,16 @@ const AdminDashboard = () => {
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
             </label>
+          </div>
+          
+          {/* --- NEW: YARD+ PRICE EDITING --- */}
+          <h4 className="text-md font-semibold mt-6 mb-2">Add-on Pricing ($)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <AdminInput
+              label="Yard+ Coverage Add-on"
+              value={config.data.yardPlusPrice || 20}
+              onChange={(e) => handleChange(e, 'data', 'yardPlusPrice')}
+            />
           </div>
         </div>
 

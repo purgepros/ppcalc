@@ -21,6 +21,7 @@
       "weekly": 109,
       "twiceWeekly": 169
     },
+    "yardPlusPrice": 20,
     "dogFeeMap": {
       "1-2": 0,
       "3": 15,
@@ -33,7 +34,7 @@
         "priceKey": "biWeekly",
         "frequency": "Service Every 2 Weeks",
         "features": [
-          "Yard+ Coverage (Front, Back, Sides)",
+          "Backyard Coverage Included",
           "FREE Treats Each Visit",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts",
@@ -47,7 +48,7 @@
         "priceKey": "weekly",
         "frequency": "Service Every Week",
         "features": [
-          "Yard+ Coverage (Front, Back, Sides)",
+          "Backyard Coverage Included",
           "Waste Hauled Away",
           "FREE Deodorizer (1x/Week - a $40 Value!)",
           "FREE WYSIwash® (1x/Month - A $30 Value!)",

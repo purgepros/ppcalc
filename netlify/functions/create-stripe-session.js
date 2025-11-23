@@ -3,6 +3,8 @@
  *
  * This backend handles the "Stripe Mode" toggle (Test vs Live).
  * It selects the correct Secret Key and Price IDs based on the 'stripeMode' param.
+ *
+ * UPDATED: Now supports "Yard+ Coverage" Add-on item.
  */
 
 const emailjs = require('@emailjs/nodejs');
@@ -15,6 +17,13 @@ const fetch = require('node-fetch');
 const PRICE_MAP = {
   test: {
     oneTime: 'price_1SS2h6GelkvkkUqXn5QoA37X', // Your TEST One-Time ID
+    // --- NEW: Yard+ Coverage Add-on Prices (TEST) ---
+    // YOU MUST CREATE THESE IN STRIPE AND PASTE THE IDs HERE
+    yardPlus: {
+      'Monthly': 'price_REPLACE_THIS_TEST_MONTHLY',
+      'Quarterly': 'price_REPLACE_THIS_TEST_QUARTERLY',
+      'Annual': 'price_REPLACE_THIS_TEST_ANNUAL'
+    },
     subs: {
       'Bi-Weekly Reset': {
         '1-2': {
@@ -88,6 +97,12 @@ const PRICE_MAP = {
   // --- LIVE MODE PRICES (YOU MUST FILL THESE IN) ---
   live: {
     oneTime: 'price_1SUuFIGelkvkkUqXtekC4fp6', 
+    // --- NEW: Yard+ Coverage Add-on Prices (LIVE) ---
+    yardPlus: {
+      'Monthly': 'price_REPLACE_THIS_LIVE_MONTHLY',
+      'Quarterly': 'price_REPLACE_THIS_LIVE_QUARTERLY',
+      'Annual': 'price_REPLACE_THIS_LIVE_ANNUAL'
+    },
     subs: {
       'Bi-Weekly Reset': {
         '1-2': { 'Monthly': 'price_1SUuGmGelkvkkUqXV63LDMdB', 'Quarterly': 'price_1SUuGlGelkvkkUqXOIRfhnns', 'Annual': 'price_1SUuGjGelkvkkUqXruQo42U8' },
@@ -191,17 +206,35 @@ exports.handler = async (event) => {
     } else {
       // --- IT'S A SUBSCRIPTION ---
       
-      // Find Price ID
-      const priceId = selectedPrices.subs[quote.planName]?.[quote.dogCount]?.[quote.paymentTerm];
+      // 1. Find Base Price ID
+      const basePriceId = selectedPrices.subs[quote.planName]?.[quote.dogCount]?.[quote.paymentTerm];
       
-      if (!priceId || priceId.includes('REPLACE')) {
+      if (!basePriceId || basePriceId.includes('REPLACE')) {
         throw new Error(`Price ID not found or not configured for: ${quote.planName}, ${quote.dogCount}, ${quote.paymentTerm} in ${stripeMode} mode.`);
       }
       
-      // Create Subscription
+      // 2. Construct Line Items Array
+      const subscriptionItems = [{ price: basePriceId }];
+      
+      // 3. Check for "Yard+ Coverage" Add-on
+      // Only add this if the user selected it AND the plan isn't "Pristine-Plus" (which includes it already)
+      if (quote.yardPlusSelected && quote.planKey !== 'twiceWeekly') {
+        const addonPriceId = selectedPrices.yardPlus?.[quote.paymentTerm];
+        
+        if (!addonPriceId || addonPriceId.includes('REPLACE')) {
+           console.error(`Yard+ Price ID missing for term: ${quote.paymentTerm}`);
+           // Optional: Throw error or fail silently depending on your preference. 
+           // Throwing error is safer to prevent undercharging.
+           throw new Error(`Yard+ Add-on Price ID not configured for ${quote.paymentTerm} in ${stripeMode} mode.`);
+        }
+        
+        subscriptionItems.push({ price: addonPriceId });
+      }
+      
+      // Create Subscription with MULTIPLE items (Base + Addon)
       stripeAction = await stripe.subscriptions.create({
         customer: stripeCustomer.id,
-        items: [{ price: priceId }],
+        items: subscriptionItems,
       });
     }
 
