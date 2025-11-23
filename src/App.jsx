@@ -342,7 +342,7 @@ const Header = ({ onSatisfactionClick }) => (
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
         <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
         <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -808,7 +808,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
     // BUT the PaymentPlanSelector already did the math for the total. 
     // We should show the Monthly Breakdown and then the multiplier.
     
-    return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs };
+    return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs, details };
   };
 
   const bd = getBreakdown();
@@ -894,10 +894,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
   if (paymentSelection.term === 'Quarterly') termNounDisplay = 'quarter';
   if (paymentSelection.term === 'Annual') termNounDisplay = 'year';
 
-  const whatHappensText = text?.whatHappensNextBody
-    ? text.whatHappensNextBody.replace('{term}', termNounDisplay)
-    : `Your payment today covers your first ${termNounDisplay} of service.`;
-
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back</button>
@@ -905,10 +901,20 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       
       {/* Detailed Order Summary */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
-        <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Plan Breakdown (Monthly Rate)</h4>
+        <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Plan Breakdown</h4>
         
         <div className="flex justify-between mb-1">
-          <span className="text-slate-600">Base Plan ({packageSelection.name})</span>
+           <span className="text-slate-600">Frequency</span>
+           <span className="font-medium">{bd.details?.frequency || packageSelection.name}</span>
+        </div>
+        
+         <div className="flex justify-between mb-1">
+           <span className="text-slate-600">Dogs Included</span>
+           <span className="font-medium">{bd.numDogs}</span>
+        </div>
+        
+        <div className="flex justify-between mb-1">
+          <span className="text-slate-600">Base Plan Rate</span>
           <span className="font-medium">${bd.baseRate}</span>
         </div>
         
@@ -921,16 +927,17 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         
         {bd.dogFee > 0 && (
           <div className="flex justify-between mb-1">
-            <span className="text-slate-600">Extra Dog Fee ({bd.numDogs} Dogs)</span>
+            <span className="text-slate-600">Extra Dog Fee</span>
             <span className="font-medium">+${bd.dogFee}</span>
           </div>
         )}
 
+        {/* Show Yard+ status regardless of selection (selected, included, or not selected) */}
         <div className="flex justify-between mb-1">
-           <span className="text-slate-600">Yard+ Coverage (Front/Sides)</span>
-           <span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : ''}`}>
-             {bd.yardPlusStatus === 'Included' ? 'Included' : (bd.yardPlusCost > 0 ? `+$${bd.yardPlusCost}` : 'Not Selected')}
-           </span>
+            <span className="text-slate-600">Yard+ Coverage (Front/Sides)</span>
+            <span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>
+            {bd.yardPlusStatus === 'Included' ? 'Included' : (bd.yardPlusCost > 0 ? `+$${bd.yardPlusCost}` : 'Not Selected')}
+            </span>
         </div>
 
         <div className="border-t border-slate-200 my-2 pt-2">
@@ -964,7 +971,17 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         </div>
       </div>
 
-      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800" dangerouslySetInnerHTML={{__html: whatHappensText}} />
+      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800">
+        <h4 className="font-bold mb-2">{text?.whatHappensNextTitle || "Here's What Happens Next:"}</h4>
+        <p className="mb-2">
+            Your payment today covers your first <strong>{termNounDisplay}</strong> of service. Your subscription will <strong>not</strong> begin until your <strong>first scheduled visit</strong>.
+        </p>
+        <p className="mb-2">After checkout, a team member will call you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
+        <ol className="list-decimal pl-5 space-y-1">
+            <li>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</li>
+            <li>Your First <em>Paid</em> Weekly Visit (which starts your subscription).</li>
+        </ol>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
