@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth'; 
-import { db, auth } from './firebase'; 
+import { db, auth } from './firebase.js'; // Added .js extension for explicit resolution
 
-// UPDATED: Switched to static import to fix build resolution error
+// UPDATED: Explicit extension to help build resolution
 import AdminPanel from './AdminPanel.jsx';
 
 // --- Helper Functions ---
@@ -234,7 +234,7 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
           emailParams: {
             email,
             plan: currentPlan?.name || 'Custom Quote',
-            dog_count: dogCount,
+            dog_count: dogCount || 'N/A',
             total_monthly: `$${monthly.toFixed(2)}`,
             per_visit: `$${perVisit.toFixed(2)}`,
             quote_link: quoteLink
@@ -285,38 +285,23 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
   );
 };
 
-// --- UPDATED Reusable Terms Checkbox ---
-const TermsCheckbox = ({ checked, onChange, includePaymentAuth }) => (
-  <div className="space-y-3">
-    <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
-      <input 
-        type="checkbox" 
-        className="mt-1 rounded border-gray-300 text-[var(--brand-green)] focus:ring-[var(--brand-green)]" 
-        checked={checked.terms} 
-        onChange={(e) => onChange('terms', e.target.checked)} 
-      />
-      <span>
-        I agree to the{' '}
-        <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
-        {' '}&{' '}
-        <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>.
-      </span>
-    </label>
-
-    {includePaymentAuth && (
-      <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
-        <input 
-          type="checkbox" 
-          className="mt-1 rounded border-gray-300 text-[var(--brand-green)] focus:ring-[var(--brand-green)]" 
-          checked={checked.auth} 
-          onChange={(e) => onChange('auth', e.target.checked)} 
-        />
-        <span>
-          I authorize Purge Pros to charge my payment method for future scheduled visits according to the selected plan frequency.
-        </span>
-      </label>
-    )}
-  </div>
+// --- UPDATED: Single Checkbox for Terms + Auth ---
+const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
+  <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer mt-2">
+    <input 
+      type="checkbox" 
+      className="mt-1 rounded border-gray-300 text-[var(--brand-green)] focus:ring-[var(--brand-green)]" 
+      checked={checked} 
+      onChange={(e) => onChange(e.target.checked)} 
+    />
+    <span>
+      I agree to the{' '}
+      <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
+      {' '}&{' '}
+      <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>
+      {isSubscription ? ', and I authorize Purge Pros to charge my payment method for future scheduled visits.' : '.'}
+    </span>
+  </label>
 );
 
 // --- Components ---
@@ -781,7 +766,8 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
 };
 
 const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false, auth: false });
+  // Updated state to just track one boolean for the checkbox
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const totalDue = paymentSelection.total;
@@ -819,8 +805,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.terms) { setError('Please agree to the terms.'); return; }
-    if (!formData.auth) { setError('Please authorize the payment method storage.'); return; }
+    if (!formData.agreed) { setError('Please agree to the terms and authorization.'); return; }
     if (!stripeInstance || !cardElement) { setError('Payment system not ready. Please wait or refresh.'); return; }
     
     setIsSubmitting(true);
@@ -856,20 +841,24 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       const payload = {
         stripeMode,
         paymentMethodId: paymentMethod.id,
-        customer: formData,
+        customer: { ...formData, terms: true, auth: true }, // Explicitly sending terms/auth based on single checkbox
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
         leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term },
+        // SANITIZED EMAIL PARAMS - Fixing "Dynamic Variables Corrupted"
         emailParams: { 
-          ...formData, 
-          plan: packageSelection.name, 
-          payment_term: paymentSelection.term,
+          name: formData.name || 'Valued Customer',
+          email: formData.email || '',
+          phone: formData.phone || '',
+          address: formData.address || '',
+          plan: packageSelection.name || 'Standard Plan', 
+          payment_term: paymentSelection.term || 'Monthly',
           term_noun: termNoun,
           total_monthly: `$${monthly.toFixed(2)}/mo`, 
           per_visit: `$${perVisit.toFixed(2)}`,
           final_charge: `$${totalDue.toFixed(2)}`,
           initial_savings: "99.99",
           total_savings: totalSavings.toFixed(2),
-          term_discount_row: termDiscountRow,
+          term_discount_row: termDiscountRow || '',
           term_savings_row: '',
           yard_plus_status: yardPlusSelected ? "Included" : "Not Selected"
         }
@@ -994,9 +983,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         </div>
 
         <TermsCheckbox 
-          checked={{terms: formData.terms, auth: formData.auth}} 
-          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
-          includePaymentAuth={true} 
+          checked={formData.agreed} 
+          onChange={(val) => setFormData(prev => ({...prev, agreed: val}))}
+          isSubscription={true} 
         />
         
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
@@ -1023,9 +1012,12 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
            leadType: 'customQuote',
            // Add dog_count explicitly for GHL
            leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Custom Quote Req' },
-           // Add needed template vars, SANITIZED to prevent empty values from causing issues
+           // SANITIZED EMAIL PARAMS - Fixing "Dynamic Variables Corrupted"
            emailParams: { 
-             ...formData, 
+             name: formData.name || 'Valued Customer',
+             email: formData.email || '',
+             phone: formData.phone || '',
+             address: formData.address || '',
              description: title || 'Custom Quote Request',
              plan: 'Custom Quote',
              zip: zipCode || 'N/A',
@@ -1057,7 +1049,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
 };
 
 const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const depositAmount = 99.99;
@@ -1065,7 +1057,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!formData.terms) { setError('You must agree to the Terms of Service.'); return; }
+    if (!formData.agreed) { setError('You must agree to the Terms of Service.'); return; }
     if (!stripeInstance || !cardElement) { setError('Payment system is not ready.'); return; }
     setIsSubmitting(true);
 
@@ -1082,17 +1074,20 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           stripeMode, paymentMethodId: paymentMethod.id,
-          customer: formData,
+          customer: { ...formData, terms: true }, // Explicitly passed
           quote: { zipCode, dogCount, planName: 'One-Time Yard Reset', planKey: 'oneTime', paymentTerm: 'One-Time Deposit', totalDueToday: depositAmount },
           // Ensure dog_count and zip are in leadData
           leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset' },
-          // Populate template vars
+          // SANITIZED EMAIL PARAMS
           emailParams: { 
-            ...formData, 
+            name: formData.name || 'Valued Customer',
+            email: formData.email || '',
+            phone: formData.phone || '',
+            address: formData.address || '',
             description: 'One-Time Yard Reset', 
             final_charge: `$${depositAmount.toFixed(2)}`,
-            zip: zipCode,
-            dog_count: dogCount
+            zip: zipCode || 'N/A',
+            dog_count: dogCount || 'N/A'
           }
         })
       });
@@ -1125,9 +1120,9 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         </div>
         
         <TermsCheckbox 
-          checked={{terms: formData.terms, auth: formData.auth}} 
-          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
-          includePaymentAuth={false} // One-time doesn't need auth
+          checked={formData.agreed} 
+          onChange={(val) => setFormData(prev => ({...prev, agreed: val}))}
+          isSubscription={false} 
         />
 
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
