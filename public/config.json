@@ -1,6 +1,7 @@
 {
   "data": {
     "FACEBOOK_PIXEL_ID": "770811879146972",
+    "STRIPE_MODE": "test",
     "APPROVED_ZIP_CODES": [
       "46011", "46012", "46013", "46014", "46015", "46016", "46032", "46033",
       "46034", "46035", "46036", "46037", "46038", "46039", "46040", "46041",
@@ -22,12 +23,12 @@
       "twiceWeekly": 169
     },
     "yardPlusPrice": 20,
-    "dogFeeMap": {
-      "1-2": 0,
-      "3": 15,
-      "4": 30,
-      "5": 45
+    "extraDogPrice": 15,
+    "lotFees": {
+      "tier1": 30,
+      "tier2": 60
     },
+    "quarterlyDiscount": 30,
     "planDetails": {
       "biWeekly": {
         "name": "Bi-Weekly Reset",
@@ -114,9 +115,9 @@
       "whatHappensNextBody": "Your $99.99 deposit is due today to book your service. This covers the first 30 minutes of cleanup.<br/><br/><strong>Additional time ($1/min) will be charged to this card *after* the service is complete.</strong> A team member will call you within 24 hours to get your cleanup on the schedule!"
     },
     "customQuoteView": {
-      "title": "You Qualify for a Custom 'Estate' Quote!",
-      "descMultiDog": "We love dogs! Properties with 6 or more dogs require a custom service plan. Please provide your info, and we will contact you for a free consultation.",
-      "descEstate": "Your property qualifies for our 'Estate Plan.' This requires a custom flat-rate quote. Please provide your info, and we will contact you for a free consultation."
+      "title": "You Qualify for a Custom Quote!",
+      "descMultiDog": "We love dogs! Properties with 10 or more dogs require a custom kennel service plan. Please provide your info, and we will contact you for a free consultation.",
+      "descEstate": "Your property is over 1 acre! This qualifies for our Commercial/Estate contract. Please provide your info, and we will contact you for a free consultation."
     },
     "leadForm": {
       "backLink": "&larr; Go Back",

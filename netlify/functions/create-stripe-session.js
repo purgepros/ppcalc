@@ -1,128 +1,89 @@
 /*
- * --- NETLIFY FUNCTION FOR STRIPE CHECKOUT ---
+ * --- NETLIFY FUNCTION FOR STRIPE CHECKOUT (UNIFIED SYSTEM) ---
  *
  * This backend handles the "Stripe Mode" toggle (Test vs Live).
- * It selects the correct Secret Key and Price IDs based on the 'stripeMode' param.
+ * It constructs the subscription by stacking products:
+ * 1. Base Plan (Monthly/Quarterly/Annual)
+ * 2. Lot Fee (If applicable)
+ * 3. Extra Dog Fee (If applicable, via Quantity)
+ * 4. Yard+ Add-on (If selected)
  *
- * UPDATED: Now supports "Yard+ Coverage" Add-on item.
+ * NOTE: You must create "Annual" versions of your Add-ons in Stripe
+ * (priced at 11x the monthly rate) to support the "1 Month Free" logic.
  */
 
 const emailjs = require('@emailjs/nodejs');
 const fetch = require('node-fetch');
 
 // --- 1. THE PRICE MAPS (TEST VS LIVE) ---
-// Stripe Price IDs are different in Test Mode vs Live Mode.
-// You must map them separately here.
-
+// YOU MUST FILL IN THESE IDs FROM YOUR STRIPE DASHBOARD
 const PRICE_MAP = {
   test: {
-    oneTime: 'price_1SS2h6GelkvkkUqXn5QoA37X', // Your TEST One-Time ID
-    // --- NEW: Yard+ Coverage Add-on Prices (TEST) ---
-    // YOU MUST CREATE THESE IN STRIPE AND PASTE THE IDs HERE
-    yardPlus: {
-      'Monthly': 'price_1SWTGkGelkvkkUqXeZuI487L',
-      'Quarterly': 'price_1SWTLaGelkvkkUqX1Gdzaqgx',
-      'Annual': 'price_1SWTLrGelkvkkUqXpBbodfD2'
+    oneTime: 'price_1SWViqGelkvkkUqXl8jzD7Za', // Your TEST One-Time ID
+    
+    // BASE PLANS (The core service)
+    base: {
+      'biWeekly': {
+        'Monthly': 'price_1SWVVvGelkvkkUqXck6r6av3',
+        'Quarterly': 'price_1SWVWbGelkvkkUqXl6w1RfSl',
+        'Annual': 'price_1SWVWyGelkvkkUqX1KeQYW5h',
+      },
+      'weekly': {
+        'Monthly': 'price_1SWVZKGelkvkkUqXYkPgNDSG',
+        'Quarterly': 'price_1SWVZWGelkvkkUqX1Np1OeNm',
+        'Annual': 'price_1SWVZKGelkvkkUqXYkPgNDSG',
+      },
+      'twiceWeekly': {
+        'Monthly': 'price_1SWVb6GelkvkkUqX4foVUqXY',
+        'Quarterly': 'price_1SWVbNGelkvkkUqX2lngbCgo',
+        'Annual': 'price_1SWVbdGelkvkkUqXI3XYNfGI',
+      }
     },
-    subs: {
-      'Bi-Weekly Reset': {
-        '1-2': {
-          'Monthly': 'price_1SRnhvGelkvkkUqXoy7Qefhk',
-          'Quarterly': 'price_1SRnjCGelkvkkUqXxvkqUY5Y',
-          'Annual': 'price_1SRnjQGelkvkkUqXD3WLIFQK',
-        },
-        '3': {
-          'Monthly': 'price_1SRnjbGelkvkkUqXWMUbTJcj',
-          'Quarterly': 'price_1SRnjnGelkvkkUqXqYGY72C4',
-          'Annual': 'price_1SRnk0GelkvkkUqXWiTqnfJz',
-        },
-        '4': {
-          'Monthly': 'price_1SRnkAGelkvkkUqXMej9i20q',
-          'Quarterly': 'price_1SRnkNGelkvkkUqXD1xuiKmV',
-          'Annual': 'price_1SRnkdGelkvkkUqX3bER93Od',
-        },
-        '5': {
-          'Monthly': 'price_1SRnktGelkvkkUqX2yQ6hdj5',
-          'Quarterly': 'price_1SRnl4GelkvkkUqXbzvhlUbH',
-          'Annual': 'price_1SRnlVGelkvkkUqXaHXns6PX',
-        },
+
+    // LOT SIZE FEES (The Land)
+    lot: {
+      'tier1': { // 1/4 to 1/2 Acre (+$30/mo)
+        'Monthly': 'price_1SWVdQGelkvkkUqXSMk0z6CL',
+        'Quarterly': 'price_1SWVdeGelkvkkUqXDpYTklRG',
+        'Annual': 'price_1SWVdrGelkvkkUqXMcBwIOj7',
       },
-      'Pristine-Clean': {
-        '1-2': {
-          'Monthly': 'price_1SRnljGelkvkkUqXrWJbNsc0',
-          'Quarterly': 'price_1SRnm1GelkvkkUqX2yuUtOpV',
-          'Annual': 'price_1SRnmIGelkvkkUqXQZ1l5tXa',
-        },
-        '3': {
-          'Monthly': 'price_1SRnmSGelkvkkUqXd6WFSU18',
-          'Quarterly': 'price_1SRnmdGelkvkkUqXeJEkMZ9E',
-          'Annual': 'price_1SRnmoGelkvkkUqXgRpwSIPE',
-        },
-        '4': {
-          'Monthly': 'price_1SRnmyGelkvkkUqXfn9hznqW',
-          'Quarterly': 'price_1SRnnHGelkvkkUqXMA6ENLgm',
-          'Annual': 'price_1SRnnWGelkvkkUqXUNDAuOdI',
-        },
-        '5': {
-          'Monthly': 'price_1SRnnnGelkvkkUqXFObuN8k5',
-          'Quarterly': 'price_1SRno1GelkvkkUqX27eThN0U',
-          'Annual': 'price_1SRnoGGelkvkkUqX4sERizjc',
-        },
-      },
-      'Pristine-Plus': {
-        '1-2': {
-          'Monthly': 'price_1SRnoTGelkvkkUqXe3ifwiKk',
-          'Quarterly': 'price_1SRnohGelkvkkUqXguRBbFcN',
-          'Annual': 'price_1SRnouGelkvkkUqXlZnphHIM',
-        },
-        '3': {
-          'Monthly': 'price_1SRnp6GelkvkkUqXd7xGDfqu',
-          'Quarterly': 'price_1SRnpFGelkvkkUqX6YRg75c9',
-          'Annual': 'price_1SRnpRGelkvkkUqXF5ym2ULq',
-        },
-        '4': {
-          'Monthly': 'price_1SRnpeGelkvkkUqXdK8vbl04',
-          'Quarterly': 'price_1SRnq5GelkvkkUqXHdhVJSn9',
-          'Annual': 'price_1SRnqHGelkvkkUqXGS3icKUs',
-        },
-        '5': {
-          'Monthly': 'price_1SRnqWGelkvkkUqXIruZuO2c',
-          'Quarterly': 'price_1SRnqlGelkvkkUqX86DHtYxF',
-          'Annual': 'price_1SRnr1GelkvkkUqXxKnK3zVT',
-        },
-      },
+      'tier2': { // 1/2 to 1 Acre (+$60/mo)
+        'Monthly': 'price_1SWVeaGelkvkkUqXK9rgUEPP',
+        'Quarterly': 'price_1SWVerGelkvkkUqX4HaPrZJw',
+        'Annual': 'price_1SWVf5GelkvkkUqXPOZlsMn7',
+      }
+    },
+
+    // EXTRA DOG FEE (The Volume)
+    // This is a single price ID. We use "Quantity" to handle multiple dogs.
+    extraDog: {
+      'Monthly': 'price_1SWVfzGelkvkkUqXLwiDt8Vr',
+      'Quarterly': 'price_1SWVgCGelkvkkUqXG1UkMUd8',
+      'Annual': 'price_1SWVgTGelkvkkUqXDS818kCL',
+    },
+
+    // YARD+ ADD-ON
+    yardPlus: {
+      'Monthly': 'price_1SWVhtGelkvkkUqXF79CUu0x',
+      'Quarterly': 'price_1SWVi5GelkvkkUqXH31oueSR',
+      'Annual': 'price_1SWViLGelkvkkUqXHAvxbEbC'
     }
   },
   
-  // --- LIVE MODE PRICES (YOU MUST FILL THESE IN) ---
+  // --- LIVE MODE PRICES (Fill these in before launching!) ---
   live: {
-    oneTime: 'price_1SUuFIGelkvkkUqXtekC4fp6', 
-    // --- NEW: Yard+ Coverage Add-on Prices (LIVE) ---
-    yardPlus: {
-      'Monthly': 'price_1SWTNTGelkvkkUqXZw11aSZn',
-      'Quarterly': 'price_1SWTNVGelkvkkUqX7tuyZd67',
-      'Annual': 'price_1SWTNXGelkvkkUqXHK9MphMz'
+    oneTime: 'price_1SWVoLGelkvkkUqXAJglWmsl', 
+    base: {
+      'biWeekly': { 'Monthly': 'price_1SWVnyGelkvkkUqX6tFDDXz7', 'Quarterly': 'price_1SWVnyGelkvkkUqXuGrXvcw3', 'Annual': 'price_1SWVnxGelkvkkUqXOlRaVL9S' },
+      'weekly':   { 'Monthly': 'price_1SWVo3GelkvkkUqXCnSOQUlX',   'Quarterly': 'price_1SWVo3GelkvkkUqXWxOKACq0',   'Annual': 'price_1SWVo3GelkvkkUqXKRTnS2rh' },
+      'twiceWeekly': { 'Monthly': 'price_1SWVo7GelkvkkUqXkKI4Av48', 'Quarterly': 'price_1SWVo7GelkvkkUqXpfp4U0gj', 'Annual': 'price_1SWVo7GelkvkkUqXl91VAnSf' }
     },
-    subs: {
-      'Bi-Weekly Reset': {
-        '1-2': { 'Monthly': 'price_1SUuGmGelkvkkUqXV63LDMdB', 'Quarterly': 'price_1SUuGlGelkvkkUqXOIRfhnns', 'Annual': 'price_1SUuGjGelkvkkUqXruQo42U8' },
-        '3':   { 'Monthly': 'price_1SUuGiGelkvkkUqXKMmid6hb', 'Quarterly': 'price_1SUuGgGelkvkkUqXJrHm0NSV', 'Annual': 'price_1SUuGfGelkvkkUqX6F3XHlCT' },
-        '4':   { 'Monthly': 'price_1SUuGdGelkvkkUqXber95dcN', 'Quarterly': 'price_1SUuGcGelkvkkUqXSwNpQEP7', 'Annual': 'price_1SUuGaGelkvkkUqX5KA7wZBm' },
-        '5':   { 'Monthly': 'price_1SUuGZGelkvkkUqXuQ3zaVxl', 'Quarterly': 'price_1SUuGXGelkvkkUqXXJpzfSf1', 'Annual': 'price_1SUuGTGelkvkkUqXCOlIN5G3' },
-      },
-      'Pristine-Clean': {
-        '1-2': { 'Monthly': 'price_1SUuGQGelkvkkUqXNboXafRk', 'Quarterly': 'price_1SUuGPGelkvkkUqX7CrCZmjT', 'Annual': 'price_1SUuGNGelkvkkUqXyTyjqC69' },
-        '3':   { 'Monthly': 'price_1SUuGMGelkvkkUqXihGtpf7t', 'Quarterly': 'price_1SUuGKGelkvkkUqXypTiNu2l', 'Annual': 'price_1SUuGJGelkvkkUqXtZsAgbX8' },
-        '4':   { 'Monthly': 'price_1SUuGFGelkvkkUqXgnFoG3mW', 'Quarterly': 'price_1SUuGCGelkvkkUqXFitnH1qb', 'Annual': 'price_1SUuGAGelkvkkUqX1z2GA5uV' },
-        '5':   { 'Monthly': 'price_1SUuG7GelkvkkUqX9MXsAK1b', 'Quarterly': 'price_1SUuG6GelkvkkUqXnN3S0tU2', 'Annual': 'price_1SUuG4GelkvkkUqX53xaJjl8' },
-      },
-      'Pristine-Plus': {
-        '1-2': { 'Monthly': 'price_1SUuFyGelkvkkUqXq4zFDwhR', 'Quarterly': 'price_1SUuFwGelkvkkUqXO0vaWDNa', 'Annual': 'price_1SUuFuGelkvkkUqXZhpV8QP5' },
-        '3':   { 'Monthly': 'price_1SUuFsGelkvkkUqXFnzDqS6G', 'Quarterly': 'price_1SUuFrGelkvkkUqXwRti5w9E', 'Annual': 'price_1SUuFpGelkvkkUqXEmgff84A' },
-        '4':   { 'Monthly': 'price_1SUuFhGelkvkkUqXTZsaKgTd', 'Quarterly': 'price_1SUuFfGelkvkkUqXETCkc7oE', 'Annual': 'price_1SUuFdGelkvkkUqX9kZwzWcu' },
-        '5':   { 'Monthly': 'price_1SUuFcGelkvkkUqXKHvM5OIB', 'Quarterly': 'price_1SUuFXGelkvkkUqXj7jz6ptA', 'Annual': 'price_1SUuFUGelkvkkUqXokRICdsS' },
-      },
-    }
+    lot: {
+      'tier1': { 'Monthly': 'price_1SWVoBGelkvkkUqX2YUDGmam', 'Quarterly': 'price_1SWVoBGelkvkkUqXyd7tyZmh', 'Annual': 'price_1SWVoBGelkvkkUqXiNLcsNlT' },
+      'tier2': { 'Monthly': 'price_1SWVoEGelkvkkUqXdLeWEQJ0', 'Quarterly': 'price_1SWVoDGelkvkkUqX5OSZArod', 'Annual': 'price_1SWVoDGelkvkkUqXNIVTjjJK' }
+    },
+    extraDog: { 'Monthly': 'price_1SWVoGGelkvkkUqX2DEbVnE5', 'Quarterly': 'price_1SWVoGGelkvkkUqXeiwTA6o4', 'Annual': 'price_1SWVoGGelkvkkUqXuwY6aYBF' },
+    yardPlus: { 'Monthly': 'price_1SWVoJGelkvkkUqXsInb8jeO', 'Quarterly': 'price_1SWVoJGelkvkkUqXnbFozIGa', 'Annual': 'price_1SWVoJGelkvkkUqXyRAJJ7vV' }
   }
 };
 
@@ -133,7 +94,7 @@ exports.handler = async (event) => {
   }
 
   const { 
-    stripeMode = 'test', // Default to test if not provided
+    stripeMode = 'test', 
     paymentMethodId, 
     customer, 
     quote, 
@@ -146,7 +107,6 @@ exports.handler = async (event) => {
   if (stripeMode === 'live') {
     secretKey = process.env.STRIPE_SECRET_KEY_LIVE;
   } else {
-    // Fallback to the generic key if specific TEST key isn't set
     secretKey = process.env.STRIPE_SECRET_KEY_TEST || process.env.STRIPE_SECRET_KEY;
   }
 
@@ -157,44 +117,29 @@ exports.handler = async (event) => {
     };
   }
 
-  // Initialize Stripe with the selected key
   const stripe = require('stripe')(secretKey);
-  
-  // Select the correct Price Map
   const selectedPrices = PRICE_MAP[stripeMode === 'live' ? 'live' : 'test'];
 
   try {
     let stripeAction;
     let isOneTime = false;
 
-    // --- Create the Stripe Customer ---
+    // --- Create Stripe Customer ---
     const stripeCustomer = await stripe.customers.create({
       payment_method: paymentMethodId,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
-      address: {
-        line1: customer.address,
-        postal_code: quote.zipCode,
-      },
-      invoice_settings: {
-        default_payment_method: paymentMethodId,
-      },
+      address: { line1: customer.address, postal_code: quote.zipCode },
+      invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    // --- Determine: Subscription or One-Time? ---
+    // --- Logic Split: One-Time vs Subscription ---
     if (quote.paymentTerm === 'One-Time Deposit') {
-      // --- IT'S A ONE-TIME CHARGE ---
+      // ... One Time Logic ...
       isOneTime = true;
-      
-      // Validate Price ID
-      if (!selectedPrices.oneTime || selectedPrices.oneTime.includes('REPLACE')) {
-         throw new Error(`One-Time Price ID is not configured for ${stripeMode} mode.`);
-      }
-      
-      // Create PaymentIntent
       stripeAction = await stripe.paymentIntents.create({
-        amount: 9999, // $99.99 in cents
+        amount: 9999, 
         currency: 'usd',
         customer: stripeCustomer.id,
         payment_method: paymentMethodId,
@@ -204,54 +149,66 @@ exports.handler = async (event) => {
       });
       
     } else {
-      // --- IT'S A SUBSCRIPTION ---
+      // --- SUBSCRIPTION STACKING LOGIC ---
       
-      // 1. Find Base Price ID
-      const basePriceId = selectedPrices.subs[quote.planName]?.[quote.dogCount]?.[quote.paymentTerm];
+      const items = [];
+      const term = quote.paymentTerm; // "Monthly", "Quarterly", or "Annual"
+      const planKey = quote.planKey;  // "weekly", "biWeekly", etc.
       
-      if (!basePriceId || basePriceId.includes('REPLACE')) {
-        throw new Error(`Price ID not found or not configured for: ${quote.planName}, ${quote.dogCount}, ${quote.paymentTerm} in ${stripeMode} mode.`);
+      // 1. BASE PLAN
+      const baseId = selectedPrices.base[planKey]?.[term];
+      if (!baseId) throw new Error(`Base Price ID missing for ${planKey} / ${term}`);
+      items.push({ price: baseId });
+
+      // 2. LOT SIZE FEE
+      if (quote.yardSize === 'tier1') {
+        const tier1Id = selectedPrices.lot.tier1?.[term];
+        if (tier1Id) items.push({ price: tier1Id });
+      } else if (quote.yardSize === 'tier2') {
+        const tier2Id = selectedPrices.lot.tier2?.[term];
+        if (tier2Id) items.push({ price: tier2Id });
       }
-      
-      // 2. Construct Line Items Array
-      const subscriptionItems = [{ price: basePriceId }];
-      
-      // 3. Check for "Yard+ Coverage" Add-on
-      // Only add this if the user selected it AND the plan isn't "Pristine-Plus" (which includes it already)
-      if (quote.yardPlusSelected && quote.planKey !== 'twiceWeekly') {
-        const addonPriceId = selectedPrices.yardPlus?.[quote.paymentTerm];
-        
-        if (!addonPriceId || addonPriceId.includes('REPLACE')) {
-           console.error(`Yard+ Price ID missing for term: ${quote.paymentTerm}`);
-           // Optional: Throw error or fail silently depending on your preference. 
-           // Throwing error is safer to prevent undercharging.
-           throw new Error(`Yard+ Add-on Price ID not configured for ${quote.paymentTerm} in ${stripeMode} mode.`);
+
+      // 3. EXTRA DOG FEE
+      // We parse the dog count string "1-2", "3", "4" to a number
+      let numDogs = 1;
+      if (quote.dogCount === '1-2') numDogs = 1; // Base covers this
+      else numDogs = parseInt(quote.dogCount, 10);
+
+      if (numDogs > 2) {
+        const extraDogs = numDogs - 2;
+        const dogPriceId = selectedPrices.extraDog?.[term];
+        if (dogPriceId) {
+          items.push({ price: dogPriceId, quantity: extraDogs });
         }
-        
-        subscriptionItems.push({ price: addonPriceId });
       }
-      
-      // Create Subscription with MULTIPLE items (Base + Addon)
+
+      // 4. YARD+ ADD-ON
+      // Only add if selected AND not already included (Twice Weekly includes it)
+      if (quote.yardPlusSelected && planKey !== 'twiceWeekly') {
+        const yardPlusId = selectedPrices.yardPlus?.[term];
+        if (yardPlusId) items.push({ price: yardPlusId });
+      }
+
+      // Create the Subscription with the "Stack"
       stripeAction = await stripe.subscriptions.create({
         customer: stripeCustomer.id,
-        items: subscriptionItems,
+        items: items,
       });
     }
 
-    // --- 3. POST-PAYMENT ACTIONS (Webhooks) ---
-
-    // A. Fire GHL Webhook
+    // --- 3. Webhooks (GHL & EmailJS) ---
+    // (Same as before - keeping existing integrations)
     try {
-      await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData),
-      });
-    } catch (e) {
-      console.error('GHL Webhook failed:', e);
-    }
+      if (process.env.GOHIGHLEVEL_WEBHOOK_URL) {
+        await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadData),
+        });
+      }
+    } catch (e) { console.error('GHL Webhook failed:', e); }
     
-    // B. Send EmailJS Confirmation
     try {
       const template = isOneTime
         ? process.env.EMAILJS_TEMPLATE_ID_ONETIME
@@ -261,23 +218,17 @@ exports.handler = async (event) => {
         process.env.EMAILJS_SERVICE_ID,
         template,
         emailParams,
-        {
-          publicKey: process.env.EMAILJS_PUBLIC_KEY,
-          privateKey: process.env.EMAILJS_PRIVATE_KEY,
-        }
+        { publicKey: process.env.EMAILJS_PUBLIC_KEY, privateKey: process.env.EMAILJS_PRIVATE_KEY }
       );
-    } catch (e) {
-      console.error('EmailJS send failed:', e);
-    }
+    } catch (e) { console.error('EmailJS send failed:', e); }
 
-    // --- 4. SUCCESS RESPONSE ---
     return {
       statusCode: 200,
       body: JSON.stringify({ status: 'success', data: stripeAction }),
     };
 
   } catch (error) {
-    console.error('Stripe or Server Error:', error);
+    console.error('Stripe/Server Error:', error);
     return {
       statusCode: 500,
       body: JSON.stringify({ status: 'error', message: error.message }),
