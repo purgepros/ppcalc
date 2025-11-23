@@ -2,11 +2,10 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth'; 
-// UPDATED: Import pre-initialized services from firebase.js to avoid config resolution issues
 import { db, auth } from './firebase'; 
 
-// UPDATED: Removed explicit extension to help build resolution
-const AdminPanel = lazy(() => import('./AdminPanel')); 
+// UPDATED: Switched to static import to fix build resolution error
+import AdminPanel from './AdminPanel.jsx';
 
 // --- Helper Functions ---
 
@@ -287,27 +286,22 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
 };
 
 // --- Reusable Terms Checkbox ---
-const TermsCheckbox = ({ checked, onChange, includePaymentAuth }) => (
-  <div className="space-y-3">
-    <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
-      <input type="checkbox" className="mt-1" checked={checked.terms} onChange={(e) => onChange('terms', e.target.checked)} />
-      <span>
-        I agree to the{' '}
-        <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
-        {' '}&{' '}
-        <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>.
-      </span>
-    </label>
-    
-    {includePaymentAuth && (
-      <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
-        <input type="checkbox" className="mt-1" checked={checked.auth} onChange={(e) => onChange('auth', e.target.checked)} />
-        <span>
-          I authorize Purge Pros to securely save my payment method on file for future scheduled charges according to my selected plan frequency.
-        </span>
-      </label>
-    )}
-  </div>
+const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
+  <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer">
+    <input 
+      type="checkbox" 
+      className="mt-1" 
+      checked={checked} 
+      onChange={(e) => onChange(e.target.checked)} 
+    />
+    <span>
+      I agree to the{' '}
+      <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
+      {' '}&{' '}
+      <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>
+      {isSubscription ? ', and I authorize Purge Pros to charge my payment method for future scheduled visits.' : '.'}
+    </span>
+  </label>
 );
 
 // --- Components ---
@@ -342,7 +336,7 @@ const Header = ({ onSatisfactionClick }) => (
         className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
       >
         <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
         </svg>
         <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -772,14 +766,13 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
 };
 
 const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false, auth: false });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', terms: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const totalDue = paymentSelection.total;
   const totalSavings = 99.99 + paymentSelection.savingsValue;
 
   // --- Calculation Helpers for Display ---
-  // We need to grab the base rates again to show the breakdown
   const getBreakdown = () => {
     if (!configData) return { base: 0, lot: 0, dog: 0, yardPlus: 0 };
     
@@ -804,10 +797,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
     const yardPlusCost = (yardPlusSelected && packageSelection.key !== 'twiceWeekly') ? yPlusPrice : 0;
     const yardPlusStatus = (packageSelection.key === 'twiceWeekly') ? 'Included' : (yardPlusSelected ? `$${yPlusPrice}` : 'Not Selected');
 
-    // If Annual or Quarterly, we need to multiply these monthly rates for the summary view
-    // BUT the PaymentPlanSelector already did the math for the total. 
-    // We should show the Monthly Breakdown and then the multiplier.
-    
     return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs, details };
   };
 
@@ -816,7 +805,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.terms) { setError('Please agree to the terms.'); return; }
-    if (!formData.auth) { setError('Please authorize the payment method storage.'); return; }
     if (!stripeInstance || !cardElement) { setError('Payment system not ready. Please wait or refresh.'); return; }
     
     setIsSubmitting(true);
@@ -838,7 +826,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       else if (packageSelection.key === 'biWeekly') perVisit = monthly / 2.17;
       else if (packageSelection.key === 'twiceWeekly') perVisit = monthly / 8.66;
 
-      // HTML Row for Term Discount (if any)
       let termDiscountRow = '';
       let termNoun = 'Month'; 
 
@@ -855,20 +842,18 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         paymentMethodId: paymentMethod.id,
         customer: formData,
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
-        // Ensure GHL gets 'zip' and 'dog_count'
         leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term },
         emailParams: { 
           ...formData, 
           plan: packageSelection.name, 
           payment_term: paymentSelection.term,
-          term_noun: termNoun, // New Variable for "First {term_noun} of service"
+          term_noun: termNoun,
           total_monthly: `$${monthly.toFixed(2)}/mo`, 
           per_visit: `$${perVisit.toFixed(2)}`,
           final_charge: `$${totalDue.toFixed(2)}`,
           initial_savings: "99.99",
           total_savings: totalSavings.toFixed(2),
           term_discount_row: termDiscountRow,
-          // Default footer or empty row
           term_savings_row: '',
           yard_plus_status: yardPlusSelected ? "Included" : "Not Selected"
         }
@@ -889,7 +874,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
     }
   };
 
-  // Grammar replacement for display
   let termNounDisplay = 'month';
   if (paymentSelection.term === 'Quarterly') termNounDisplay = 'quarter';
   if (paymentSelection.term === 'Annual') termNounDisplay = 'year';
@@ -932,7 +916,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           </div>
         )}
 
-        {/* Show Yard+ status regardless of selection (selected, included, or not selected) */}
         <div className="flex justify-between mb-1">
             <span className="text-slate-600">Yard+ Coverage (Front/Sides)</span>
             <span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>
@@ -994,9 +977,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         </div>
 
         <TermsCheckbox 
-          checked={{terms: formData.terms, auth: formData.auth}} 
-          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
-          includePaymentAuth={true} 
+          checked={formData.terms} 
+          onChange={(val) => setFormData(prev => ({...prev, terms: val}))}
+          isSubscription={true}
         />
         
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
@@ -1125,9 +1108,9 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         </div>
         
         <TermsCheckbox 
-          checked={{terms: formData.terms, auth: formData.auth}} 
-          onChange={(field, val) => setFormData(prev => ({...prev, [field]: val}))}
-          includePaymentAuth={false} // One-time doesn't need auth
+          checked={formData.terms} 
+          onChange={(val) => setFormData(prev => ({...prev, terms: val}))}
+          isSubscription={false} // One-time doesn't need recurring auth
         />
 
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
