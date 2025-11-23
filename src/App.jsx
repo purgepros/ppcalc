@@ -5,11 +5,11 @@ import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 // --- Import Firebase for Site component ---
 import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, enableNetwork, disableNetwork } from 'firebase/firestore';
-// FIX: Added explicit .js extension to avoid build resolution errors
+// FIX: Using relative path with explicit extension for reliability
 import firebaseConfig from './firebaseConfig.js'; 
 
 // 2. Lazily load the AdminPanel
-// FIX: Ensure the path is explicit for the build system
+// FIX: Using relative path with explicit extension
 const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
 
 // --- Helper Functions ---
@@ -1727,9 +1727,8 @@ const GlobalStyles = () => (
     .fade-in { animation: fadeIn 0.5s ease-out forwards; }
     
     .loader {
-      width: 24px; height: 24px; border: 3px solid rgba(255, 255, 255, 0.5);
-      border-top-color: #FFF;
-      border-radius: 50%;
+      width: 24px; height: 24px; border: 3px solid rgba(0,0,0,0.2);
+      border-top-color: var(--brand-blue); border-radius: 50%;
       animation: rotation 0.8s linear infinite;
     }
     @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
