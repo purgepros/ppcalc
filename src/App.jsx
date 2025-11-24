@@ -117,25 +117,28 @@ const YardHelperModal = ({ onClose }) => (
         </span>
         Which size is right?
       </h3>
-      <div className="space-y-4 text-sm text-slate-600">
-        <div className="border-b pb-2">
+      
+      {/* Content - Updated to use clean cards instead of list lines */}
+      <div className="space-y-3 text-sm text-slate-600 max-h-[60vh] overflow-y-auto pr-1">
+        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
           <p>Most common. Typical subdivision home with a standard backyard.</p>
         </div>
-        <div className="border-b pb-2">
+        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Medium Lot (0.25 - 0.5 Acre)</strong>
           <p>A bit more elbow room. Often found in older neighborhoods or corner lots.</p>
         </div>
-        <div className="border-b pb-2">
+        <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Large Lot (0.5 - 1 Acre)</strong>
           <p>Very spacious. Often feels like a double lot.</p>
         </div>
-        <div>
-          <strong className="block text-slate-800 text-base mb-1">Estate / Farm (1+ Acre)</strong>
-          <p>Massive property, rural land, or large estates. We'll need to give you a custom quote.</p>
+        <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+          <strong className="block text-blue-900 text-base mb-1">Estate / Farm (1+ Acre)</strong>
+          <p className="text-blue-800">Massive property, rural land, or large estates. We'll need to give you a custom quote.</p>
         </div>
       </div>
-      <button onClick={onClose} className="mt-6 w-full bg-slate-100 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-200 transition-all">Close</button>
+      
+      <button onClick={onClose} className="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Close</button>
     </div>
   </ModalOverlay>
 );
@@ -325,7 +328,7 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
-// --- REUSABLE SPECIAL OFFER COMPONENT ---
+// --- NEW: REUSABLE SPECIAL OFFER COMPONENT ---
 const SpecialOfferBox = ({ offer }) => {
   if (!offer) return null;
   return (
@@ -357,7 +360,7 @@ const Header = ({ onSatisfactionClick }) => (
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
       
-      {/* REDESIGNED BADGE */}
+      {/* UPDATED: REDESIGNED BADGE */}
       <button 
         onClick={onSatisfactionClick}
         className="group relative flex items-center bg-white rounded-full shadow-md border border-slate-200 px-5 py-2 transition-transform hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer"
@@ -1190,7 +1193,7 @@ const Site = () => {
     }
   }, [config]);
 
-  // --- SCROLL RESET EFFECT ---
+  // --- NEW: SCROLL RESET EFFECT ---
   // Whenever the 'view' changes, scroll the window to the top
   useEffect(() => {
     window.scrollTo(0, 0);
