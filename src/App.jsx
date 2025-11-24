@@ -472,10 +472,9 @@ const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
 /**
  * VIEW 2: The Sorter (Yard Size & Dog Count)
  */
-const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees }) => {
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
-  const [showYardHelp, setShowYardHelp] = useState(false); // New state for help modal
 
   const getDogNumber = (val) => {
     if (val === '1-2') return 2;
@@ -497,7 +496,8 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-bold text-slate-800">{text?.yardTitle || "1. Property Size?"}</h2>
-            <button onClick={() => setShowYardHelp(true)} className="text-xs text-blue-600 underline hover:text-blue-800 flex items-center">
+            {/* MOVED: onClick handler uses prop instead of internal state to fix fixed positioning issue */}
+            <button onClick={onYardHelperClick} className="text-xs text-blue-600 underline hover:text-blue-800 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Not sure?
             </button>
@@ -546,8 +546,6 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
       <button onClick={onBack} className="w-full text-center text-sm text-gray-600 hover:text-blue-600 hover:underline mt-4">
         &larr; Change Zip Code
       </button>
-
-      {showYardHelp && <YardHelperModal onClose={() => setShowYardHelp(false)} />}
     </div>
   );
 };
@@ -1176,6 +1174,7 @@ const Site = () => {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showSatisfactionModal, setShowSatisfactionModal] = useState(false);
+  const [showYardHelperModal, setShowYardHelperModal] = useState(false); // New state for moving YardModal to root
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
@@ -1292,7 +1291,7 @@ const Site = () => {
       
       <main className="container mx-auto px-4 max-w-xl pb-12">
         {view === 'zip' && <ZipCodeValidator onZipValidated={(z) => { setZipCode(z); setView('sorter'); }} approvedZipCodes={config.data.APPROVED_ZIP_CODES} text={config.text.zipView} />}
-        {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} />}
+        {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
         {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
@@ -1326,6 +1325,7 @@ const Site = () => {
       {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={config.text.modals.alertsInfo} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
+      {showYardHelperModal && <YardHelperModal onClose={() => setShowYardHelperModal(false)} />}
       
       {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
