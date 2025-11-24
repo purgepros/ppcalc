@@ -203,7 +203,7 @@ const PricingInfoModal = ({ onClose, text }) => (
   </ModalOverlay>
 );
 
-const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
+const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, text }) => {
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -226,13 +226,22 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
     else if (currentPlan?.key === 'biWeekly') perVisit = monthly / 2.17;
     else if (currentPlan?.key === 'twiceWeekly') perVisit = monthly / 8.66;
 
+    // Helper to make the yard size readable for humans
+    const yardSizeLabels = {
+      'standard': 'Standard (Up to 1/4 Acre)',
+      'tier1': 'Medium (1/4 - 1/2 Acre)',
+      'tier2': 'Large (1/2 - 1 Acre)',
+      'estate': 'Estate (Over 1 Acre)'
+    };
+    const readableYardSize = yardSizeLabels[yardSize] || yardSize || 'Not Selected';
+
     try {
       await fetch('/.netlify/functions/create-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leadType: 'exitIntent',
-          leadData: { email, zip: zipCode, dog_count: dogCount, lead_status: 'Exit Intent - Saved Quote' },
+          leadData: { email, zip: zipCode, dog_count: dogCount, yard_size: readableYardSize, lead_status: 'Exit Intent - Saved Quote' },
           emailParams: {
             email,
             plan: currentPlan?.name || 'Custom Quote',
@@ -240,7 +249,8 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, text }) => {
             total_monthly: `$${monthly.toFixed(2)}`,
             per_visit: `$${perVisit.toFixed(2)}`,
             quote_link: quoteLink,
-            zip: zipCode // Ensure zip is sent for exit intent too
+            zip: zipCode, 
+            yard_size: readableYardSize
           }
         })
       });
@@ -873,7 +883,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         paymentMethodId: paymentMethod.id,
         customer: { ...formData, terms: true, auth: true }, // Explicitly sending terms/auth based on single checkbox
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
-        leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term },
+        leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term, yard_size: readableYardSize },
         // SANITIZED EMAIL PARAMS - Fixing "Dynamic Variables Corrupted"
         emailParams: { 
           name: formData.name || 'Valued Customer',
@@ -1030,13 +1040,23 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
   );
 };
 
-const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount }) => {
+const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCount, yardSize }) => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', notes: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    // Helper to make the yard size readable for humans
+    const yardSizeLabels = {
+      'standard': 'Standard (Up to 1/4 Acre)',
+      'tier1': 'Medium (1/4 - 1/2 Acre)',
+      'tier2': 'Large (1/2 - 1 Acre)',
+      'estate': 'Estate (Over 1 Acre)'
+    };
+    const readableYardSize = yardSizeLabels[yardSize] || yardSize || "Custom Quote / Estate";
+
     try {
        const res = await fetch('/.netlify/functions/create-lead', {
          method: 'POST',
@@ -1044,7 +1064,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
          body: JSON.stringify({
            leadType: 'customQuote',
            // Add dog_count explicitly for GHL
-           leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Custom Quote Req' },
+           leadData: { ...formData, zip: zipCode, dog_count: dogCount, yard_size: readableYardSize, lead_status: 'Custom Quote Req' },
            // SANITIZED EMAIL PARAMS - Fixing "Dynamic Variables Corrupted"
            emailParams: { 
              name: formData.name || 'Valued Customer',
@@ -1056,7 +1076,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
              zip: zipCode || 'N/A',
              dog_count: dogCount || 'N/A',
              notes: formData.notes || 'No additional notes.',
-             yard_size: "Custom Quote / Estate"
+             yard_size: readableYardSize
            }
          })
        });
@@ -1111,7 +1131,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
           customer: { ...formData, terms: true }, // Explicitly passed
           quote: { zipCode, dogCount, planName: 'One-Time Yard Reset', planKey: 'oneTime', paymentTerm: 'One-Time Deposit', totalDueToday: depositAmount },
           // Ensure dog_count and zip are in leadData
-          leadData: { ...formData, zip: zipCode, dog_count: dogCount, lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset' },
+          leadData: { ...formData, zip: zipCode, dog_count: dogCount, yard_size: "One-Time Reset (Size N/A)", lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset' },
           // SANITIZED EMAIL PARAMS
           emailParams: { 
             name: formData.name || 'Valued Customer',
@@ -1313,8 +1333,8 @@ const Site = () => {
       <main className="container mx-auto px-4 max-w-xl pb-12">
         {view === 'zip' && <ZipCodeValidator onZipValidated={(z) => { setZipCode(z); setView('sorter'); }} approvedZipCodes={config.data.APPROVED_ZIP_CODES} text={config.text.zipView} />}
         {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
-        {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
-        {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
+        {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
+        {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
         {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
         {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} />}
@@ -1348,7 +1368,7 @@ const Site = () => {
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       {showYardHelperModal && <YardHelperModal onClose={() => setShowYardHelperModal(false)} />}
       
-      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
+      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} dogCount={dogCountLabel} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
   );
 };
