@@ -832,6 +832,15 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
     setIsSubmitting(true);
     setError('');
 
+    // Helper to make the yard size readable for humans
+    const yardSizeLabels = {
+      'standard': 'Standard (Up to 1/4 Acre)',
+      'tier1': 'Medium (1/4 - 1/2 Acre)',
+      'tier2': 'Large (1/2 - 1 Acre)',
+      'estate': 'Estate (Over 1 Acre)'
+    };
+    const readableYardSize = yardSizeLabels[yardSize] || yardSize;
+
     try {
       const { error: stripeError, paymentMethod } = await stripeInstance.createPaymentMethod({
         type: 'card',
@@ -883,7 +892,8 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           term_savings_row: '',
           yard_plus_status: yardPlusSelected ? "Included" : "Not Selected",
           zip: zipCode || '', // Added Missing Field
-          dog_count: dogCount || '' // Added Missing Field
+          dog_count: dogCount || '', // Added Missing Field
+          yard_size: readableYardSize // Added yard_size as requested
         }
       };
 
@@ -1045,7 +1055,8 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
              plan: 'Custom Quote',
              zip: zipCode || 'N/A',
              dog_count: dogCount || 'N/A',
-             notes: formData.notes || 'No additional notes.'
+             notes: formData.notes || 'No additional notes.',
+             yard_size: "Custom Quote / Estate"
            }
          })
        });
@@ -1110,7 +1121,8 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
             description: 'One-Time Yard Reset', 
             final_charge: `$${depositAmount.toFixed(2)}`,
             zip: zipCode || 'N/A',
-            dog_count: dogCount || 'N/A'
+            dog_count: dogCount || 'N/A',
+            yard_size: "One-Time Reset (Size N/A)"
           }
         })
       });
@@ -1220,6 +1232,15 @@ const Site = () => {
         setConfigSource('⚠️ Offline Mode');
       }
       setConfig(loadedConfig);
+
+      // --- RESTORED PIXEL TRIGGERS ---
+      // Checks if pixel IDs exist in the loaded config and initializes them.
+      if (loadedConfig.data?.FACEBOOK_PIXEL_ID) {
+        initFacebookPixel(loadedConfig.data.FACEBOOK_PIXEL_ID);
+      }
+      if (loadedConfig.data?.GOOGLE_TAG_ID) {
+        initGoogleTag(loadedConfig.data.GOOGLE_TAG_ID);
+      }
 
       let stripeKey = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
       
