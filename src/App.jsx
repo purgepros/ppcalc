@@ -97,13 +97,13 @@ const ModalOverlay = ({ children, onClose }) => (
 const SatisfactionModal = ({ onClose, text }) => (
   <ModalOverlay onClose={onClose}>
     <div className="p-8 text-center">
-      <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+      <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-green-200">
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       </div>
       <h3 className="text-2xl font-bold text-slate-800 mb-3">{text?.title || "Satisfaction Guaranteed"}</h3>
       <div className="text-slate-600 mb-6 leading-relaxed" dangerouslySetInnerHTML={{__html: text?.body || "We stand behind our work."}} />
       {text?.footer && <p className="text-sm text-slate-400 font-semibold border-t pt-4">{text.footer}</p>}
-      <button onClick={onClose} className="mt-6 w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Got it</button>
+      <button onClick={onClose} className="mt-6 w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all shadow-md">Got it</button>
     </div>
   </ModalOverlay>
 );
@@ -325,21 +325,57 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
+// --- REUSABLE SPECIAL OFFER COMPONENT ---
+const SpecialOfferBox = ({ offer }) => {
+  if (!offer) return null;
+  return (
+    <div className="bg-white border-2 border-dashed border-[var(--brand-green)] p-5 rounded-xl mb-6 shadow-sm relative overflow-hidden group">
+      <div className="absolute top-0 right-0 bg-[var(--brand-green)] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
+        Limited Time
+      </div>
+      <div className="flex items-start space-x-4">
+        <div className="flex-shrink-0 bg-green-100 p-3 rounded-full text-[var(--brand-green)]">
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+           </svg>
+        </div>
+        <div>
+          <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">
+            {offer.specialOfferTitle}
+          </h3>
+          <div className="text-slate-600 text-sm leading-relaxed space-y-1" dangerouslySetInnerHTML={{ __html: offer.specialOfferBody }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Header = ({ onSatisfactionClick }) => (
   <header className="py-6 text-center">
     <div className="container mx-auto px-4 flex flex-col items-center justify-center">
-      <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105 mb-4">
+      <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105 mb-6">
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
+      
+      {/* REDESIGNED BADGE */}
       <button 
         onClick={onSatisfactionClick}
-        className="flex items-center justify-center space-x-2 bg-white border border-gray-200 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+        className="group relative flex items-center bg-white rounded-full shadow-md border border-slate-200 px-5 py-2 transition-transform hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer"
       >
-        <svg className="w-5 h-5 text-[var(--brand-green)]" fill="currentColor" viewBox="0 0 20 20">
-           <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-        </svg>
-        <span className="text-sm font-bold text-gray-700 group-hover:text-[var(--brand-blue)]">100% Satisfaction Guaranteed</span>
-        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <div className="absolute inset-0 border-2 border-transparent group-hover:border-[var(--brand-green)]/30 rounded-full transition-all"></div>
+        <div className="flex-shrink-0 mr-3 text-[var(--brand-green)]">
+           {/* Shield Check Icon */}
+           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+           </svg>
+        </div>
+        <div className="text-left flex flex-col">
+          <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400 leading-none mb-0.5">Purge Pros Promise</span>
+          <span className="text-sm font-bold text-slate-800 group-hover:text-[var(--brand-blue)] transition-colors">100% Satisfaction Guaranteed</span>
+        </div>
+        <div className="ml-3 text-slate-300 group-hover:text-slate-400">
+           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
       </button>
     </div>
   </header>
@@ -497,17 +533,8 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
         </select>
       </div>
 
-      {specialOffer && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 shadow-sm flex items-center space-x-3">
-          <div className="flex-shrink-0">
-             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-          </div>
-          <div>
-            <p className="font-bold">{specialOffer.specialOfferTitle}</p>
-            <p className="text-sm" dangerouslySetInnerHTML={{ __html: specialOffer.specialOfferBody }} />
-          </div>
-        </div>
-      )}
+      {/* Use the new polished component */}
+      <SpecialOfferBox offer={specialOffer} />
 
       <button onClick={handleSubmit} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
         See My Price
@@ -620,15 +647,8 @@ const PackageSelector = ({
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Choose Your Plan"}</h2>
 
-      {specialOffer && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-900 p-4 rounded-r-lg mb-6 flex items-center space-x-3">
-           <div className="flex-shrink-0"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg></div>
-           <div>
-             <p className="font-bold">{specialOffer.specialOfferTitle}</p>
-             <p className="text-sm" dangerouslySetInnerHTML={{__html: specialOffer.specialOfferBody}}/>
-           </div>
-        </div>
-      )}
+      {/* Use the new polished component */}
+      <SpecialOfferBox offer={specialOffer} />
 
       <div className="space-y-6">
         {plans.map((plan) => (
@@ -1169,6 +1189,12 @@ const Site = () => {
       }
     }
   }, [config]);
+
+  // --- SCROLL RESET EFFECT ---
+  // Whenever the 'view' changes, scroll the window to the top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
 
   useEffect(() => {
     const init = async () => {
