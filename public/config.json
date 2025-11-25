@@ -36,13 +36,13 @@
         "frequency": "Every 2 Weeks",
         "serviceSubTitle": "(2 Visits/Month | Bi-Weekly Service)",
         "features": [
-          "Standard Backyard Coverage",
-          "Happy Dog Treato Drop!\n(Treats w/ Every Visit)",
+          "Yard Coverage\n(Backyard Only)",
+          "Happy Dog Treato Drop!\n(Treats Included w/ Every Visit!)",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts",
-          "!Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value!**)",
           "!Waste Hauled Away",
-          "!Yard+ Coverage\n(Front, Back, Sides)"
+          "!Seasonal Sanitation (Odor + Virus Elimination)\n(Activated Beginning May thru End of October - **$500/yr Value**)",
+          "!Yard+ Coverage\n(Front, Sides, Back Yard)"
         ]
       },
       "weekly": {
@@ -51,13 +51,13 @@
         "frequency": "Every Week",
         "serviceSubTitle": "(4-5 Visits/Month | Weekly Service)",
         "features": [
-          "Standard Backyard Coverage",
+          "Yard Coverage\n(Backyard Only)",
+          "Happy Dog Treato Drop!\n(Treats Included w/ Every Visit!)",
           "Waste Hauled Away",
-          "Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value!**)",
-          "Happy Dog Treato Drop!\n(Treats w/ Every Visit)",
+          "Seasonal Sanitation (Odor + Virus Elimination)\n(Activated Beginning May thru End of October - **$500/yr Value**)",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts",
-          "!Yard+ Coverage\n(Front, Back, Sides)"
+          "!Yard+ Coverage\n(Front, Sides, Back Yard)"
         ]
       },
       "twiceWeekly": {
@@ -66,10 +66,10 @@
         "frequency": "2x Per Week",
         "serviceSubTitle": "(8-9 Visits/Month | Twice-Weekly Service)",
         "features": [
-          "Yard+ Coverage\n(Front, Back, Sides)",
+          "Yard+ Coverage\n(Front, Sides, Back Yard)",
+          "Happy Dog Treato Drop!\n(Treats Included w/ Every Visit!)",
           "Waste Hauled Away",
-          "Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value!**)",
-          "Happy Dog Treato Drop!\n(Treats w/ Every Visit)",
+          "Seasonal Sanitation (Odor + Virus Elimination)\n(Activated Beginning May thru End of October - **$500/yr Value**)",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts"
         ]
@@ -129,9 +129,9 @@
       "serviceInfo": {
         "title": "About Seasonal Activation",
         "body": [
-          "<strong>The Concept: 'Blended Value'</strong><br/>You aren't just buying chemicals; you are buying a Sanitary Yard Subscription. In the summer, your rate covers expensive materials (Sanitizers & Deodorizers) to kill bacteria like Parvo/Giardia. In the winter, materials cost zero, but labor doubles (chipping frozen waste, sub-zero temps).",
+          "<strong>The Concept: 'Blended Value'</strong><br/>You aren't just buying chemicals; you are buying a Sanitary Yard Subscription. In the summer, your rate covers expensive materials (Sanitizers & Deodorizers) to kill bacteria. In the winter, materials cost zero, but labor doubles (chipping frozen waste, sub-zero temps).",
           "<strong>Seasonal Activation</strong><br/>This high-value feature (a $500/yr value) automatically activates from May through October to keep your yard fresh. It is included in your plan to ensure your yard remains safe and sanitary when it matters most.",
-          "<strong>Anti-Churn Protection</strong><br/>Your monthly rate stays flat because we average these costs over 12 months. This ensures you get the heavy-duty winter service you need without a price hike."
+          "<strong>Consistent Billing</strong><br/>Your monthly rate stays flat because we average these costs over 12 months. This ensures you get the heavy-duty winter service you need without a price hike."
         ]
       },
       "alertsInfo": {
