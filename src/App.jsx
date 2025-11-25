@@ -203,6 +203,39 @@ const PricingInfoModal = ({ onClose, text }) => (
   </ModalOverlay>
 );
 
+/* --- NEW MODAL: Savings Info --- */
+const SavingsInfoModal = ({ onClose }) => (
+  <ModalOverlay onClose={onClose}>
+    <div className="p-8">
+      <div className="flex items-center mb-4">
+        <div className="bg-green-100 p-2 rounded-full mr-3 text-green-600">
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <h3 className="text-xl font-bold text-slate-800">Your Savings Explained</h3>
+      </div>
+      
+      <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
+        <p>
+          The <strong className="text-green-700">$99.99</strong> savings figure shown is the <strong>minimum value</strong> of our 'Initial Yard Reset'.
+        </p>
+        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+          <p className="mb-2">
+            If your yard has a significant accumulation of waste (which can take our team hours to clear), a one-time cleanup would typically cost <strong>$150 to $300+</strong>.
+          </p>
+          <p>
+            With a subscription, we waive this fee <strong className="text-slate-900">100%</strong>, regardless of how long the first visit takes.
+          </p>
+        </div>
+        <p className="italic text-slate-500 text-center">
+          So if your yard needs a lot of work, your actual savings are likely much higher than what is shown!
+        </p>
+      </div>
+      
+      <button onClick={onClose} className="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Got it</button>
+    </div>
+  </ModalOverlay>
+);
+
 const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, text }) => {
   const [email, setEmail] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -825,7 +858,7 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
   );
 };
 
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData }) => {
+const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick }) => {
   // Updated state to just track one boolean for the checkbox
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1038,7 +1071,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           {/* Savings Breakdown */}
           <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
              <div className="flex justify-between items-center">
-               <span>100% Free First Visit / Waived Setup:</span>
+               <div className="flex items-center">
+                 <span>100% Free First Visit / Waived Setup</span>
+                 {/* New "i" Button */}
+                 <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this">
+                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                 </button>
+                 <span>:</span>
+               </div>
                <span className="font-bold">$99.99</span>
              </div>
              {paymentSelection.savingsValue > 0 && (
@@ -1266,6 +1306,7 @@ const Site = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showSatisfactionModal, setShowSatisfactionModal] = useState(false);
   const [showYardHelperModal, setShowYardHelperModal] = useState(false); // New state for moving YardModal to root
+  const [showSavingsModal, setShowSavingsModal] = useState(false); // New Savings Modal State
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
@@ -1396,7 +1437,7 @@ const Site = () => {
         {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
         {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
         {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
-        {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} />}
+        {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} onSavingsInfoClick={() => setShowSavingsModal(true)} />}
         {view === 'onetime' && (
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
               <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
@@ -1426,6 +1467,7 @@ const Site = () => {
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       {showYardHelperModal && <YardHelperModal onClose={() => setShowYardHelperModal(false)} />}
+      {showSavingsModal && <SavingsInfoModal onClose={() => setShowSavingsModal(false)} />}
       
       {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} dogCount={dogCountLabel} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
