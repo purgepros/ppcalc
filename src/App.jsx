@@ -1026,10 +1026,28 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           <span>${totalDue.toFixed(2)}</span>
         </div>
         
-        {/* Highlighted Savings Box */}
-        <div className="flex justify-between items-center bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-800 p-3 rounded-lg mt-4 shadow-sm">
-          <span className="font-bold text-sm">🎉 TOTAL SAVINGS APPLIED:</span>
-          <span className="font-extrabold text-lg">${totalSavings.toFixed(2)}</span>
+        {/* Highlighted Savings Box - Updated with Subheading */}
+        <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-900 p-3 rounded-lg mt-4 shadow-sm">
+          <div className="flex justify-between items-end mb-1">
+            <span className="font-extrabold text-sm flex items-center">
+              🎉 TOTAL SAVINGS APPLIED:
+            </span>
+            <span className="font-extrabold text-xl tracking-tight">${totalSavings.toFixed(2)}</span>
+          </div>
+          
+          {/* Savings Breakdown */}
+          <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
+             <div className="flex justify-between items-center">
+               <span>100% Free First Visit / Waived Setup:</span>
+               <span className="font-bold">$99.99</span>
+             </div>
+             {paymentSelection.savingsValue > 0 && (
+                <div className="flex justify-between items-center">
+                  <span>{paymentSelection.term} Payment Discount:</span>
+                  <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
+                </div>
+             )}
+          </div>
         </div>
       </div>
 
