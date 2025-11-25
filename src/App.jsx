@@ -118,6 +118,7 @@ const YardHelperModal = ({ onClose }) => (
         Which size is right?
       </h3>
       
+      {/* Content - Updated to use clean cards instead of list lines */}
       <div className="space-y-3 text-sm text-slate-600 max-h-[60vh] overflow-y-auto pr-1">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
@@ -686,10 +687,10 @@ const PackageSelector = ({
           <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg scale-[1.02]' : (plan.limited ? 'border-yellow-400 shadow-md' : 'border-gray-200')}`}>
             
             {/* Badges */}
-            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--brand-blue)] text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-md tracking-wide animate-pulse z-10 border-2 border-white">BEST VALUE</span>}
-            {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10 border-2 border-white">LIMITED AVAILABILITY</span>}
+            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-md tracking-wide animate-pulse">BEST VALUE</span>}
+            {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">LIMITED AVAILABILITY</span>}
             
-            <div className="text-center mb-4 mt-2">
+            <div className="text-center mb-4">
               <h3 className="text-2xl font-bold text-slate-800">{plan.name}</h3>
               <div className="mt-2 mb-2">
                 <span className="text-4xl font-extrabold text-slate-900">${plan.finalPrice}</span>
@@ -697,10 +698,9 @@ const PackageSelector = ({
               </div>
             </div>
 
-            {/* Service Level Header */}
+            {/* Service Subtitle Only (Header removed as requested) */}
             <div className="text-center mb-6 border-b pb-3">
-               <p className="font-bold text-slate-800 text-lg leading-tight">{plan.serviceTitle}</p>
-               <p className="text-sm text-slate-500 font-medium">{plan.serviceSubTitle}</p>
+               <p className="text-sm text-slate-600 font-bold uppercase tracking-wider">{plan.serviceSubTitle}</p>
             </div>
 
             {/* Perk Banners (Green) */}

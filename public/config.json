@@ -34,15 +34,14 @@
         "name": "Bi-Weekly Reset",
         "priceKey": "biWeekly",
         "frequency": "Every 2 Weeks",
-        "serviceTitle": "Maintenance Level Service",
         "serviceSubTitle": "(2 Visits/Month | Bi-Weekly Service)",
         "features": [
           "Standard Backyard Coverage",
           "Happy Dog Treato Drop!\n(Treats w/ Every Visit)",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts",
-          "!Waste Hauled Away",
           "!Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value!**)",
+          "!Waste Hauled Away",
           "!Yard+ Coverage\n(Front, Back, Sides)"
         ]
       },
@@ -50,13 +49,12 @@
         "name": "Pristine-Clean",
         "priceKey": "weekly",
         "frequency": "Every Week",
-        "serviceTitle": "Complete Weekly Service",
         "serviceSubTitle": "(4-5 Visits/Month | Weekly Service)",
         "features": [
+          "Standard Backyard Coverage",
           "Waste Hauled Away",
           "Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value!**)",
           "Happy Dog Treato Drop!\n(Treats w/ Every Visit)",
-          "Standard Backyard Coverage",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts",
           "!Yard+ Coverage\n(Front, Back, Sides)"
@@ -66,7 +64,6 @@
         "name": "Pristine-Plus",
         "priceKey": "twiceWeekly",
         "frequency": "2x Per Week",
-        "serviceTitle": "High Frequency Service",
         "serviceSubTitle": "(8-9 Visits/Month | Twice-Weekly Service)",
         "features": [
           "Yard+ Coverage\n(Front, Back, Sides)",
@@ -133,8 +130,8 @@
         "title": "About Seasonal Activation",
         "body": [
           "<strong>The Concept: 'Blended Value'</strong><br/>You aren't just buying chemicals; you are buying a Sanitary Yard Subscription. In the summer, your rate covers expensive materials (Sanitizers & Deodorizers) to kill bacteria like Parvo/Giardia. In the winter, materials cost zero, but labor doubles (chipping frozen waste, sub-zero temps).",
-          "<strong>Anti-Churn Protection</strong><br/>Your monthly rate stays flat because we average these costs over 12 months. This ensures you get the heavy-duty winter service you need without a price hike.",
-          "<strong>Seasonal Activation</strong><br/>This high-value feature (a $500/yr value) automatically activates from May through October to keep your yard fresh. It is included in your plan to ensure your yard remains safe and sanitary when it matters most."
+          "<strong>Seasonal Activation</strong><br/>This high-value feature (a $500/yr value) automatically activates from May through October to keep your yard fresh. It is included in your plan to ensure your yard remains safe and sanitary when it matters most.",
+          "<strong>Anti-Churn Protection</strong><br/>Your monthly rate stays flat because we average these costs over 12 months. This ensures you get the heavy-duty winter service you need without a price hike."
         ]
       },
       "alertsInfo": {
