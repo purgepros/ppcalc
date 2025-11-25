@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import firebaseConfig from './firebaseConfig'; // Explicit extension removed
+import firebaseConfig from './firebaseConfig'; 
 
 // Initialize Firebase using the imported config
 const app = initializeApp(firebaseConfig);
@@ -206,6 +206,10 @@ const AdminDashboard = () => {
     const { value } = e.target;
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
+      // Safety check to ensure array exists
+      if (!Array.isArray(newConfig[section][key][subKey])) {
+         newConfig[section][key][subKey] = [];
+      }
       newConfig[section][key][subKey][index] = value;
       return newConfig;
     });
@@ -320,6 +324,12 @@ const AdminDashboard = () => {
   // Safely access keys in case they don't exist yet in Firestore
   const stripeMode = config.data.STRIPE_MODE || 'test';
   const googleTagId = config.data.GOOGLE_TAG_ID || '';
+
+  // Helpers to safely get arrays (Prevent "map is not a function" crashes)
+  const getSafeArray = (obj, path) => {
+    const val = path.reduce((acc, curr) => acc && acc[curr], obj);
+    return Array.isArray(val) ? val : [val || ""];
+  };
 
   // --- Render the UI ---
   return (
@@ -500,7 +510,8 @@ const AdminDashboard = () => {
                     <AdminTextArea
                       label="Features List (One per line)"
                       rows={7}
-                      value={config.data.planDetails[planKey].features.join('\n')}
+                      // Safety check for array join
+                      value={(Array.isArray(config.data.planDetails[planKey].features) ? config.data.planDetails[planKey].features : []).join('\n')} 
                       onChange={(e) => handleFeaturesChange(e, planKey)}
                     />
                  </div>
@@ -576,7 +587,7 @@ const AdminDashboard = () => {
                 value={config.text.modals.serviceInfo.title}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'serviceInfo', 'title')}
               />
-              {config.text.modals.serviceInfo.body.map((text, index) => (
+              {getSafeArray(config, ['text', 'modals', 'serviceInfo', 'body']).map((text, index) => (
                 <AdminTextArea
                   key={index}
                   label={`Paragraph ${index + 1} (HTML)`}
@@ -599,7 +610,7 @@ const AdminDashboard = () => {
                 value={config.text.modals.alertsInfo.body}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'alertsInfo', 'body')}
               />
-              {config.text.modals.alertsInfo.bullets.map((text, index) => (
+              {getSafeArray(config, ['text', 'modals', 'alertsInfo', 'bullets']).map((text, index) => (
                 <AdminInput
                   key={index}
                   label={`Bullet ${index + 1} (HTML)`}
@@ -617,7 +628,7 @@ const AdminDashboard = () => {
                 value={config.text.modals.pricingInfo.title}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'pricingInfo', 'title')}
               />
-              {config.text.modals.pricingInfo.body.map((text, index) => (
+              {getSafeArray(config, ['text', 'modals', 'pricingInfo', 'body']).map((text, index) => (
                  <AdminTextArea 
                   key={index}
                   label={`Paragraph ${index + 1} (HTML)`}
@@ -625,7 +636,7 @@ const AdminDashboard = () => {
                   onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', 'body', index)}
                 />
               ))}
-              {config.text.modals.pricingInfo.bullets.map((text, index) => (
+              {getSafeArray(config, ['text', 'modals', 'pricingInfo', 'bullets']).map((text, index) => (
                 <AdminInput
                   key={index}
                   label={`Bullet ${index + 1} (HTML)`}
