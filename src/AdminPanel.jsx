@@ -177,7 +177,7 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
   
-  // 2. Handle "deep" state changes for nested objects
+  // 2. Handle "deep" state changes for nested objects (Safe Version)
   const handleChange = (e, section, key, subKey = null, subSubKey = null) => {
     const { value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
@@ -185,9 +185,11 @@ const AdminDashboard = () => {
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
       
+      // Safety checks to create objects if they don't exist
+      if (!newConfig[section]) newConfig[section] = {};
+      if (!newConfig[section][key]) newConfig[section][key] = {};
+
       if (subSubKey) {
-        // --- NEW: Safe Object Creation ---
-        // If the intermediate object (e.g. satisfactionInfo) is missing, create it.
         if (!newConfig[section][key][subKey]) {
             newConfig[section][key][subKey] = {};
         }
@@ -201,12 +203,14 @@ const AdminDashboard = () => {
     });
   };
 
-  // 3. Handle changes to items in an array (like modal bullets)
+  // 3. Handle changes to items in an array (Safe Version)
   const handleArrayChange = (e, section, key, subKey, index) => {
     const { value } = e.target;
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
-      // Safety check to ensure array exists
+      // Ensure array exists
+      if (!newConfig[section]) newConfig[section] = {};
+      if (!newConfig[section][key]) newConfig[section][key] = {};
       if (!Array.isArray(newConfig[section][key][subKey])) {
          newConfig[section][key][subKey] = [];
       }
@@ -215,15 +219,17 @@ const AdminDashboard = () => {
     });
   };
 
-  // 4. SPECIAL: Handle converting TextArea newlines to Array (for Plan Features)
+  // 4. SPECIAL: Handle converting TextArea newlines to Array
   const handleFeaturesChange = (e, planKey) => {
     const rawText = e.target.value;
-    // BUG FIX: Do NOT trim or filter here. Just split.
-    // This preserves spaces and empty lines while typing.
     const lines = rawText.split('\n');
     
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
+      if (!newConfig.data) newConfig.data = {};
+      if (!newConfig.data.planDetails) newConfig.data.planDetails = {};
+      if (!newConfig.data.planDetails[planKey]) newConfig.data.planDetails[planKey] = {};
+      
       newConfig.data.planDetails[planKey].features = lines;
       return newConfig;
     });
@@ -232,7 +238,6 @@ const AdminDashboard = () => {
   // 5. SPECIAL: Handle ZIP Codes
   const handleZipChange = (e) => {
     const rawText = e.target.value;
-    // BUG FIX: Do not trim/filter here. Allow the raw split to exist in state.
     const zips = rawText.split(',');
     
     setConfig(prevConfig => ({
@@ -268,13 +273,11 @@ const AdminDashboard = () => {
     setStatus('saving');
     setError('');
     
-    // --- CLEANUP STEP ---
-    // Before saving, we sanitize the data to remove empty lines/spaces
     const cleanConfig = JSON.parse(JSON.stringify(config));
 
     // Clean Features
     ['biWeekly', 'weekly', 'twiceWeekly'].forEach(plan => {
-       if (cleanConfig.data.planDetails[plan]?.features) {
+       if (cleanConfig.data?.planDetails?.[plan]?.features) {
          cleanConfig.data.planDetails[plan].features = cleanConfig.data.planDetails[plan].features
            .map(f => f.trim())
            .filter(f => f !== '');
@@ -282,7 +285,7 @@ const AdminDashboard = () => {
     });
 
     // Clean Zips
-    if (cleanConfig.data.APPROVED_ZIP_CODES) {
+    if (cleanConfig.data?.APPROVED_ZIP_CODES) {
       cleanConfig.data.APPROVED_ZIP_CODES = cleanConfig.data.APPROVED_ZIP_CODES
         .map(z => z.trim())
         .filter(z => z !== '');
@@ -297,7 +300,7 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify(cleanConfig) // Send the CLEAN config
+        body: JSON.stringify(cleanConfig) 
       });
 
       if (!response.ok) {
@@ -305,9 +308,7 @@ const AdminDashboard = () => {
         throw new Error(errData.message || 'Server error');
       }
       
-      // Update local state with the clean version too, so UI reflects the save
       setConfig(cleanConfig);
-
       setStatus('success');
       setTimeout(() => setStatus(''), 2000);
       
@@ -321,15 +322,15 @@ const AdminDashboard = () => {
     return <div className="p-8 text-center"><span className="loader"></span> Loading configuration...</div>;
   }
 
-  // Safely access keys in case they don't exist yet in Firestore
-  const stripeMode = config.data.STRIPE_MODE || 'test';
-  const googleTagId = config.data.GOOGLE_TAG_ID || '';
-
   // Helpers to safely get arrays (Prevent "map is not a function" crashes)
   const getSafeArray = (obj, path) => {
     const val = path.reduce((acc, curr) => acc && acc[curr], obj);
     return Array.isArray(val) ? val : [val || ""];
   };
+
+  // Safe access to simple values
+  const stripeMode = config.data?.STRIPE_MODE || 'test';
+  const googleTagId = config.data?.GOOGLE_TAG_ID || '';
 
   // --- Render the UI ---
   return (
@@ -369,7 +370,7 @@ const AdminDashboard = () => {
             />
             <AdminInput 
               label="Facebook Pixel ID"
-              value={config.data.FACEBOOK_PIXEL_ID}
+              value={config.data?.FACEBOOK_PIXEL_ID}
               onChange={(e) => handleChange(e, 'data', 'FACEBOOK_PIXEL_ID')}
             />
             <AdminInput 
@@ -380,7 +381,7 @@ const AdminDashboard = () => {
             />
             <AdminInput 
               label="Favicon URL"
-              value={config.data.FAVICON_URL}
+              value={config.data?.FAVICON_URL}
               onChange={(e) => handleChange(e, 'data', 'FAVICON_URL')}
             />
           </div>
@@ -397,7 +398,7 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium">Base Bi-Weekly ($)</span>
               <input
                 type="number"
-                value={config.data.basePrices.biWeekly}
+                value={config.data?.basePrices?.biWeekly}
                 onChange={(e) => handleChange(e, 'data', 'basePrices', 'biWeekly')}
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
@@ -406,7 +407,7 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium">Base Weekly ($)</span>
               <input
                 type="number"
-                value={config.data.basePrices.weekly}
+                value={config.data?.basePrices?.weekly}
                 onChange={(e) => handleChange(e, 'data', 'basePrices', 'weekly')}
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
@@ -415,7 +416,7 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium">Base Twice-Weekly ($)</span>
               <input
                 type="number"
-                value={config.data.basePrices.twiceWeekly}
+                value={config.data?.basePrices?.twiceWeekly}
                 onChange={(e) => handleChange(e, 'data', 'basePrices', 'twiceWeekly')}
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
@@ -427,7 +428,7 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium">3 Dogs (Fee)</span>
               <input
                 type="number"
-                value={config.data.dogFeeMap['3']}
+                value={config.data?.dogFeeMap?.['3']}
                 onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '3')}
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
@@ -436,7 +437,7 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium">4 Dogs (Fee)</span>
               <input
                 type="number"
-                value={config.data.dogFeeMap['4']}
+                value={config.data?.dogFeeMap?.['4']}
                 onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '4')}
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
@@ -445,7 +446,7 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium">5 Dogs (Fee)</span>
               <input
                 type="number"
-                value={config.data.dogFeeMap['5']}
+                value={config.data?.dogFeeMap?.['5']}
                 onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '5')}
                 className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
               />
@@ -457,7 +458,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <AdminInput
               label="Yard+ Coverage Add-on"
-              value={config.data.yardPlusPrice || 20}
+              value={config.data?.yardPlusPrice || 20}
               onChange={(e) => handleChange(e, 'data', 'yardPlusPrice')}
             />
           </div>
@@ -481,12 +482,12 @@ const AdminDashboard = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <AdminInput 
                           label="Plan Name Display"
-                          value={config.data.planDetails[planKey].name}
+                          value={config.data?.planDetails?.[planKey]?.name}
                           onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'name')}
                         />
                         <AdminInput 
                           label="Service Frequency"
-                          value={config.data.planDetails[planKey].frequency}
+                          value={config.data?.planDetails?.[planKey]?.frequency}
                           onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'frequency')}
                         />
                     </div>
@@ -496,13 +497,13 @@ const AdminDashboard = () => {
                         <AdminInput 
                           label="Main Service Title (Hidden on Card)"
                           placeholder="e.g. Maintenance Level Service"
-                          value={config.data.planDetails[planKey].serviceTitle || ""}
+                          value={config.data?.planDetails?.[planKey]?.serviceTitle || ""}
                           onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'serviceTitle')}
                         />
                         <AdminInput 
                           label="Service Sub-Title (Shows on Card)"
                           placeholder="e.g. (2 Visits/Month)"
-                          value={config.data.planDetails[planKey].serviceSubTitle || ""}
+                          value={config.data?.planDetails?.[planKey]?.serviceSubTitle || ""}
                           onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'serviceSubTitle')}
                         />
                     </div>
@@ -510,8 +511,8 @@ const AdminDashboard = () => {
                     <AdminTextArea
                       label="Features List (One per line)"
                       rows={7}
-                      // Safety check for array join
-                      value={(Array.isArray(config.data.planDetails[planKey].features) ? config.data.planDetails[planKey].features : []).join('\n')} 
+                      // Safely join the array or default to empty array
+                      value={(config.data?.planDetails?.[planKey]?.features || []).join('\n')}
                       onChange={(e) => handleFeaturesChange(e, planKey)}
                     />
                  </div>
@@ -526,7 +527,7 @@ const AdminDashboard = () => {
            <AdminTextArea
             label="ZIP Codes (comma-separated)"
             rows={5}
-            value={config.data.APPROVED_ZIP_CODES.join(',')}
+            value={(config.data?.APPROVED_ZIP_CODES || []).join(',')}
             onChange={handleZipChange}
            />
         </div>
@@ -537,17 +538,17 @@ const AdminDashboard = () => {
           <div className="space-y-4">
             <AdminInput 
               label="Zip Page Title"
-              value={config.text.zipView.title}
+              value={config.text?.zipView?.title}
               onChange={(e) => handleChange(e, 'text', 'zipView', 'title')}
             />
             <AdminTextArea 
               label="Special Offer Body (HTML allowed)"
-              value={config.text.globals.specialOfferBody}
+              value={config.text?.globals?.specialOfferBody}
               onChange={(e) => handleChange(e, 'text', 'globals', 'specialOfferBody')}
             />
              <AdminTextArea 
               label="Checkout: 'What Happens Next' Text (HTML)"
-              value={config.text.checkoutView.whatHappensNextBody}
+              value={config.text?.checkoutView?.whatHappensNextBody}
               rows={6}
               onChange={(e) => handleChange(e, 'text', 'checkoutView', 'whatHappensNextBody')}
             />
@@ -564,17 +565,17 @@ const AdminDashboard = () => {
               <h4 className="text-md font-semibold mb-2 text-green-800">Satisfaction Guarantee Modal (Header)</h4>
               <AdminInput 
                 label="Title"
-                value={config.text.modals.satisfactionInfo?.title || "100% Satisfaction Guaranteed"}
+                value={config.text?.modals?.satisfactionInfo?.title || "100% Satisfaction Guaranteed"}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'satisfactionInfo', 'title')}
               />
               <AdminTextArea 
                 label="Body Text"
-                value={config.text.modals.satisfactionInfo?.body || ""}
+                value={config.text?.modals?.satisfactionInfo?.body || ""}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'satisfactionInfo', 'body')}
               />
               <AdminInput 
                 label="Footer Text"
-                value={config.text.modals.satisfactionInfo?.footer || ""}
+                value={config.text?.modals?.satisfactionInfo?.footer || ""}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'satisfactionInfo', 'footer')}
               />
             </div>
@@ -584,7 +585,7 @@ const AdminDashboard = () => {
               <h4 className="text-md font-semibold mb-2">Service Info Modal (WYSIwash)</h4>
               <AdminInput 
                 label="Title"
-                value={config.text.modals.serviceInfo.title}
+                value={config.text?.modals?.serviceInfo?.title}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'serviceInfo', 'title')}
               />
               {getSafeArray(config, ['text', 'modals', 'serviceInfo', 'body']).map((text, index) => (
@@ -602,12 +603,12 @@ const AdminDashboard = () => {
               <h4 className="text-md font-semibold mb-2">Alerts Info Modal</h4>
               <AdminInput 
                 label="Title"
-                value={config.text.modals.alertsInfo.title}
+                value={config.text?.modals?.alertsInfo?.title}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'alertsInfo', 'title')}
               />
               <AdminTextArea 
                 label="Body Text"
-                value={config.text.modals.alertsInfo.body}
+                value={config.text?.modals?.alertsInfo?.body}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'alertsInfo', 'body')}
               />
               {getSafeArray(config, ['text', 'modals', 'alertsInfo', 'bullets']).map((text, index) => (
@@ -625,7 +626,7 @@ const AdminDashboard = () => {
               <h4 className="text-md font-semibold mb-2">Pricing Info Modal</h4>
               <AdminInput 
                 label="Title"
-                value={config.text.modals.pricingInfo.title}
+                value={config.text?.modals?.pricingInfo?.title}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'pricingInfo', 'title')}
               />
               {getSafeArray(config, ['text', 'modals', 'pricingInfo', 'body']).map((text, index) => (
@@ -646,7 +647,7 @@ const AdminDashboard = () => {
               ))}
                <AdminInput 
                 label="Footer Text"
-                value={config.text.modals.pricingInfo.footer}
+                value={config.text?.modals?.pricingInfo?.footer}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'pricingInfo', 'footer')}
               />
             </div>
@@ -660,22 +661,22 @@ const AdminDashboard = () => {
           <div className="space-y-4">
              <AdminInput 
               label="Address"
-              value={config.text.footer.address}
+              value={config.text?.footer?.address}
               onChange={(e) => handleChange(e, 'text', 'footer', 'address')}
             />
              <AdminInput 
               label="Phone 1"
-              value={config.text.footer.phone1}
+              value={config.text?.footer?.phone1}
               onChange={(e) => handleChange(e, 'text', 'footer', 'phone1')}
             />
              <AdminInput 
               label="Phone 2"
-              value={config.text.footer.phone2}
+              value={config.text?.footer?.phone2}
               onChange={(e) => handleChange(e, 'text', 'footer', 'phone2')}
             />
              <AdminInput 
               label="Email"
-              value={config.text.footer.email}
+              value={config.text?.footer?.email}
               onChange={(e) => handleChange(e, 'text', 'footer', 'email')}
             />
           </div>
