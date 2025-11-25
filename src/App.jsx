@@ -118,6 +118,7 @@ const YardHelperModal = ({ onClose }) => (
         Which size is right?
       </h3>
       
+      {/* Content - Updated to use clean cards instead of list lines */}
       <div className="space-y-3 text-sm text-slate-600 max-h-[60vh] overflow-y-auto pr-1">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
@@ -686,7 +687,7 @@ const PackageSelector = ({
           <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg scale-[1.02]' : (plan.limited ? 'border-yellow-400 shadow-md' : 'border-gray-200')}`}>
             
             {/* Badges */}
-            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--brand-green)] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">BEST VALUE</span>}
+            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-md tracking-wide animate-pulse">BEST VALUE</span>}
             {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">LIMITED AVAILABILITY</span>}
             
             <div className="text-center mb-4">
@@ -697,10 +698,9 @@ const PackageSelector = ({
               </div>
             </div>
 
-            {/* New Service Level Header */}
+            {/* Service Subtitle Only (Header removed as requested) */}
             <div className="text-center mb-6 border-b pb-3">
-               <p className="font-bold text-slate-800 text-lg leading-tight">{plan.serviceTitle}</p>
-               <p className="text-sm text-slate-500 font-medium">{plan.serviceSubTitle}</p>
+               <p className="text-sm text-slate-600 font-bold uppercase tracking-wider">{plan.serviceSubTitle}</p>
             </div>
 
             {/* Perk Banners (Green) */}
@@ -738,7 +738,7 @@ const PackageSelector = ({
                     <div className="flex-grow">
                       {plan.renderFeatureText(feat)}
                       {(feat.includes('Automated Reminders')) && (
-                        <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700 inline-block align-middle"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                        <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700 inline-block align-middle bg-white rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
                       )}
                     </div>
                   </li>
@@ -1016,9 +1016,10 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           <span>${totalDue.toFixed(2)}</span>
         </div>
         
-        <div className="flex justify-between items-center text-green-700 font-bold mt-4 text-sm bg-green-100 p-3 rounded-lg border-2 border-green-200 border-dashed shadow-sm animate-pulse">
-          <span>🎉 Total Savings Today:</span>
-          <span className="text-lg">${totalSavings.toFixed(2)} (Deducted)</span>
+        {/* Highlighted Savings Box */}
+        <div className="flex justify-between items-center bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-800 p-3 rounded-lg mt-4 shadow-sm">
+          <span className="font-bold text-sm">🎉 TOTAL SAVINGS APPLIED:</span>
+          <span className="font-extrabold text-lg">${totalSavings.toFixed(2)}</span>
         </div>
       </div>
 

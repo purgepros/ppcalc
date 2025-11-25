@@ -457,13 +457,13 @@ const AdminDashboard = () => {
                     {/* New Title Fields */}
                     <div className="grid grid-cols-2 gap-4 bg-white p-2 rounded border">
                         <AdminInput 
-                          label="Main Service Title"
+                          label="Main Service Title (Hidden on Card)"
                           placeholder="e.g. Maintenance Level Service"
                           value={config.data.planDetails[planKey].serviceTitle || ""}
                           onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'serviceTitle')}
                         />
                         <AdminInput 
-                          label="Service Sub-Title"
+                          label="Service Sub-Title (Shows on Card)"
                           placeholder="e.g. (2 Visits/Month)"
                           value={config.data.planDetails[planKey].serviceSubTitle || ""}
                           onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'serviceSubTitle')}
