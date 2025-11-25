@@ -428,7 +428,7 @@ const AdminDashboard = () => {
 
         {/* --- NEW: Section for Plan Features --- */}
         <div className="p-4 border rounded-lg">
-          <h3 className="text-lg font-semibold mb-4">Package Features</h3>
+          <h3 className="text-lg font-semibold mb-4">Package Features & Titles</h3>
           <p className="text-sm text-gray-500 mb-4">
              Enter one feature per line. Use "!" at the start of a line to strikethrough (exclude) that feature.
           </p>
@@ -441,11 +441,35 @@ const AdminDashboard = () => {
                  </div>
                  
                  <div className="grid grid-cols-1 gap-4">
-                    <AdminInput 
-                      label="Plan Name Display"
-                      value={config.data.planDetails[planKey].name}
-                      onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'name')}
-                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <AdminInput 
+                          label="Plan Name Display"
+                          value={config.data.planDetails[planKey].name}
+                          onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'name')}
+                        />
+                        <AdminInput 
+                          label="Service Frequency"
+                          value={config.data.planDetails[planKey].frequency}
+                          onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'frequency')}
+                        />
+                    </div>
+                    
+                    {/* New Title Fields */}
+                    <div className="grid grid-cols-2 gap-4 bg-white p-2 rounded border">
+                        <AdminInput 
+                          label="Main Service Title"
+                          placeholder="e.g. Maintenance Level Service"
+                          value={config.data.planDetails[planKey].serviceTitle || ""}
+                          onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'serviceTitle')}
+                        />
+                        <AdminInput 
+                          label="Service Sub-Title"
+                          placeholder="e.g. (2 Visits/Month)"
+                          value={config.data.planDetails[planKey].serviceSubTitle || ""}
+                          onChange={(e) => handleChange(e, 'data', 'planDetails', planKey, 'serviceSubTitle')}
+                        />
+                    </div>
+
                     <AdminTextArea
                       label="Features List (One per line)"
                       rows={7}

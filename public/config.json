@@ -33,41 +33,46 @@
       "biWeekly": {
         "name": "Bi-Weekly Reset",
         "priceKey": "biWeekly",
-        "frequency": "Service Every 2 Weeks",
+        "frequency": "Every 2 Weeks",
+        "serviceTitle": "Maintenance Level Service",
+        "serviceSubTitle": "(2 Visits/Month | Bi-Weekly Service)",
         "features": [
-          "Backyard Coverage Included",
-          "FREE Treats Each Visit",
+          "Standard Backyard Coverage",
+          "Happy Dog Treato Drop at Every Visit!",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts",
-          "!FREE Deodorizer (1x/Week - a $40 Value!)",
-          "!FREE WYSIwash® (1x/Month - A $30 Value!)",
-          "!Waste Hauled Away"
+          "!Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value**)",
+          "!Waste Hauled Away",
+          "!Yard+ Coverage\n(Front, Back, Sides)"
         ]
       },
       "weekly": {
         "name": "Pristine-Clean",
         "priceKey": "weekly",
-        "frequency": "Service Every Week",
+        "frequency": "Every Week",
+        "serviceTitle": "Complete Weekly Service",
+        "serviceSubTitle": "(4-5 Visits/Month | Weekly Service)",
         "features": [
-          "Backyard Coverage Included",
+          "Standard Backyard Coverage",
           "Waste Hauled Away",
-          "FREE Deodorizer (1x/Week - a $40 Value!)",
-          "FREE WYSIwash® (1x/Month - A $30 Value!)",
-          "FREE Treats Each Visit",
+          "Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value**)",
+          "Happy Dog Treato Drop at Every Visit!",
           "Pictures of Locked Gates",
-          "Automated Reminders & Alerts"
+          "Automated Reminders & Alerts",
+          "!Yard+ Coverage\n(Front, Back, Sides)"
         ]
       },
       "twiceWeekly": {
         "name": "Pristine-Plus",
         "priceKey": "twiceWeekly",
-        "frequency": "Service 2x Per Week",
+        "frequency": "2x Per Week",
+        "serviceTitle": "High Frequency Service",
+        "serviceSubTitle": "(8-9 Visits/Month | Twice-Weekly Service)",
         "features": [
-          "Yard+ Coverage (Front, Back, Sides)",
+          "Yard+ Coverage\n(Front, Back, Sides)",
           "Waste Hauled Away",
-          "FREE Deodorizer (2x/Week - an $80 Value!)",
-          "FREE WYSIwash® (1x/Month - A $30 Value!)",
-          "FREE Treats Each Visit",
+          "Seasonal Sanitation Protocol (Odor + Virus Elimination)\n(Activated May thru October - **$500/yr Value**)",
+          "Happy Dog Treato Drop at Every Visit!",
           "Pictures of Locked Gates",
           "Automated Reminders & Alerts"
         ]
@@ -96,7 +101,7 @@
     "checkoutView": {
       "title": "Final Step: Complete Your Order",
       "whatHappensNextTitle": "Here's What Happens Next:",
-      "whatHappensNextBody": "Your payment today covers your <strong>first {term} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.<br/><br/>After checkout, a team member will call you within 24 hours to schedule **two** separate appointments:<br/>1. Your 100% <strong>FREE 'Initial Yard Reset'</strong> ($99.99+ value).<br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).",
+      "whatHappensNextBody": "Your payment today covers your <strong>first {term} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.<br/><br/>After checkout, a team member will text (or call) you within 24 hours to schedule **two** separate appointments:<br/>1. Your 100% <strong>FREE 'Initial Yard Reset'</strong> ($99.99+ value).<br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).",
       "bailoutLink": "Prefer to set up your account over the phone? Click here."
     },
     "oneTimeView": {
@@ -125,12 +130,11 @@
     },
     "modals": {
       "serviceInfo": {
-        "title": "About Our FREE Add-Ons",
+        "title": "About Seasonal Sanitation",
         "body": [
-          "<strong>What is WYSIwash®?</strong> Our WYSIwash® Sanitizer is a hospital-grade, pet-safe disinfectant designed to kill harmful viruses and bacteria like Parvovirus and Giardia, ensuring your yard is not just clean, but sanitary.",
-          "Our Deodorizer and WYSIwash® Sanitizer are complimentary add-ons included in your plan to keep your yard fresh during warmer months.",
-          "To be effective, these treatments must be applied to a non-frozen ground. Service is typically paused during Indiana's frost months (roughly October - April).",
-          "Because these are free, value-added services, their seasonal availability does not affect your flat-rate monthly price."
+          "<strong>The Concept: 'Blended Value'</strong><br/>You aren't just buying chemicals; you are buying a Sanitary Yard Subscription. In the summer, your rate covers expensive materials (Sanitizers & Deodorizers) to kill bacteria like Parvo/Giardia. In the winter, materials cost zero, but labor doubles (chipping frozen waste, sub-zero temps).",
+          "<strong>Anti-Churn Protection</strong><br/>Your monthly rate stays flat because we average these costs over 12 months. This ensures you get the heavy-duty winter service you need without a price hike.",
+          "<strong>Seasonal Activation</strong><br/>This high-value feature (a $500/yr value) automatically activates from May through October to keep your yard fresh. It is included in your plan to ensure your yard remains safe and sanitary when it matters most."
         ]
       },
       "alertsInfo": {

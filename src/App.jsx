@@ -118,7 +118,6 @@ const YardHelperModal = ({ onClose }) => (
         Which size is right?
       </h3>
       
-      {/* Content - Updated to use clean cards instead of list lines */}
       <div className="space-y-3 text-sm text-slate-600 max-h-[60vh] overflow-y-auto pr-1">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
@@ -342,9 +341,9 @@ const FullPageLoader = ({ error = null }) => (
 const SpecialOfferBox = ({ offer }) => {
   if (!offer) return null;
   return (
-    <div className="bg-white border-2 border-dashed border-[var(--brand-green)] p-5 rounded-xl mb-6 shadow-sm relative overflow-hidden group">
-      <div className="absolute top-0 right-0 bg-[var(--brand-green)] text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">
-        Limited Time
+    <div className="bg-white border-2 border-dashed border-[var(--brand-green)] p-5 rounded-xl mb-6 shadow-sm relative overflow-hidden group transform transition-transform hover:scale-[1.01]">
+      <div className="absolute top-0 right-0 bg-[var(--brand-green)] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider shadow-sm">
+        🔥 PROMO
       </div>
       <div className="flex items-start space-x-4">
         <div className="flex-shrink-0 bg-green-100 p-3 rounded-full text-[var(--brand-green)]">
@@ -607,40 +606,61 @@ const PackageSelector = ({
     const isSelected = !!yardPlusSelections[key];
     const addonCost = (isSelected && !isIncluded) ? yPlusPrice : 0;
 
+    // Arrays for organizing features visually
     const featuredFreeFeatures = [];
     const standardFeatures = [];
+    const excludedFeatures = [];
     
+    // Keywords that trigger the "Perk" banner look (green background)
+    const perkKeywords = ["Seasonal Sanitation", "Treato Drop", "Waste Hauled Away", "Yard+ Coverage"];
+
     if (details.features && Array.isArray(details.features)) {
         details.features.forEach(feature => {
             const isExcluded = feature.startsWith('!');
-            const isFree = feature.toUpperCase().includes('FREE');
-            if (!isExcluded && isFree) {
-                featuredFreeFeatures.push(feature);
+            const cleanText = isExcluded ? feature.substring(1) : feature;
+            const isFree = cleanText.toUpperCase().includes('FREE') || perkKeywords.some(k => cleanText.includes(k));
+            
+            if (isExcluded) {
+                excludedFeatures.push(cleanText);
+            } else if (isFree) {
+                featuredFreeFeatures.push(cleanText);
             } else {
-                standardFeatures.push(feature);
+                standardFeatures.push(cleanText);
             }
         });
     }
 
-    standardFeatures.sort((a, b) => {
-        const aExcluded = a.startsWith('!');
-        const bExcluded = b.startsWith('!');
-        if (aExcluded && !bExcluded) return 1;
-        if (!aExcluded && bExcluded) return -1;
-        return 0;
-    });
+    // Helper to render features with subheadings (split by newline)
+    const renderFeatureText = (text) => {
+      if (text.includes('\n')) {
+        const [main, sub] = text.split('\n');
+        return (
+          <span>
+            {main}
+            <br />
+            <span className="text-xs font-medium opacity-90" dangerouslySetInnerHTML={{__html: sub.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}} />
+          </span>
+        );
+      }
+      return text;
+    }
 
     return {
       key,
       name: details.name,
+      serviceTitle: details.serviceTitle || details.name,
+      serviceSubTitle: details.serviceSubTitle || details.frequency,
       frequency: details.frequency,
       featuredFreeFeatures,
       standardFeatures,
+      excludedFeatures,
       finalPrice: base + lotFee + dogFee + addonCost, 
       basePrice: base,
       popular: isPopular,
+      limited: key === 'biWeekly', // New Limited Badge Logic
       canToggleYardPlus: !isIncluded, 
-      isYardPlusIncluded: isIncluded
+      isYardPlusIncluded: isIncluded,
+      renderFeatureText
     };
   };
 
@@ -663,80 +683,79 @@ const PackageSelector = ({
 
       <div className="space-y-6">
         {plans.map((plan) => (
-          <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg scale-[1.02]' : 'border-gray-200'}`}>
-            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--brand-green)] text-white text-xs font-bold px-3 py-1 rounded-full">BEST VALUE</span>}
+          <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg scale-[1.02]' : (plan.limited ? 'border-yellow-400 shadow-md' : 'border-gray-200')}`}>
             
-            <div className="text-center">
+            {/* Badges */}
+            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--brand-green)] text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">BEST VALUE</span>}
+            {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">LIMITED AVAILABILITY</span>}
+            
+            <div className="text-center mb-4">
               <h3 className="text-2xl font-bold text-slate-800">{plan.name}</h3>
-              <div className="mt-2 mb-4">
+              <div className="mt-2 mb-2">
                 <span className="text-4xl font-extrabold text-slate-900">${plan.finalPrice}</span>
                 <span className="text-slate-500 font-medium">/mo</span>
               </div>
             </div>
 
-            {plan.isYardPlusIncluded && (
-              <div className="mb-4 bg-green-100 text-green-800 text-xs font-bold px-2 py-2 rounded text-center border border-green-200">
-                Yard+ Coverage Included FREE!
-              </div>
-            )}
-            {yardPlusSelections[plan.key] && !plan.isYardPlusIncluded && (
-              <div className="mb-4 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-2 rounded text-center border border-blue-200">
-                Includes Yard+ Coverage (+${yPlusPrice})
-              </div>
-            )}
+            {/* New Service Level Header */}
+            <div className="text-center mb-6 border-b pb-3">
+               <p className="font-bold text-slate-800 text-lg leading-tight">{plan.serviceTitle}</p>
+               <p className="text-sm text-slate-500 font-medium">{plan.serviceSubTitle}</p>
+            </div>
 
-            {plan.featuredFreeFeatures.map((feature, idx) => {
-                let featureText = feature;
-                let featureSubtext = '';
-                if (feature.includes('(') && feature.endsWith(')')) {
-                  const parts = feature.split('(');
-                  featureText = parts[0].trim();
-                  featureSubtext = `(${parts[1]}`;
-                }
-                return (
-                  <div key={idx} className="mb-2 bg-green-100 text-green-800 text-xs font-bold px-2 py-2 rounded text-center border border-green-200 shadow-sm">
-                     <div className="flex items-center justify-center">
-                        <span>{featureText} Included FREE!</span>
-                        {(feature.includes('Deodorizer') || feature.includes('WYSIwash')) && (
-                        <button onClick={onInfoClick} className="ml-2 text-green-600 hover:text-green-800">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                        </button>
+            {/* Perk Banners (Green) */}
+            <div className="space-y-2 mb-4">
+              {plan.featuredFreeFeatures.map((feature, idx) => (
+                  <div key={idx} className="bg-green-50 text-green-800 text-sm font-bold px-3 py-2 rounded-lg text-center border border-green-200 shadow-sm flex flex-col justify-center items-center relative">
+                     <div className="flex items-center justify-center w-full">
+                        <span className="mr-1">✅</span>
+                        <span className="leading-tight">{plan.renderFeatureText(feature)}</span>
+                        {(feature.includes('Seasonal Sanitation')) && (
+                          <button onClick={onInfoClick} className="ml-2 text-blue-500 hover:text-blue-700 bg-white rounded-full p-0.5 shadow-sm">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                          </button>
                         )}
                      </div>
-                     {featureSubtext && <span className="block font-normal text-green-700 mt-0.5">{featureSubtext}</span>}
                   </div>
-                )
-            })}
+              ))}
+              {/* Explicitly handle Checked Yard+ if toggled */}
+              {yardPlusSelections[plan.key] && !plan.isYardPlusIncluded && (
+                <div className="bg-blue-50 text-blue-800 text-sm font-bold px-3 py-2 rounded-lg text-center border border-blue-200 shadow-sm">
+                  ✅ Includes Yard+ Coverage (+${yPlusPrice}/mo.)
+                </div>
+              )}
+            </div>
 
-            <ul className="space-y-2 mb-6 mt-4">
+            {/* Standard Features List */}
+            <ul className="space-y-3 mb-6">
               <li className="flex items-start text-sm text-slate-600">
                 <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>Service for <strong>{numDogs} Dogs</strong></span>
+                <span>Service for <strong>up to {numDogs} Dogs</strong></span>
               </li>
-              {plan.standardFeatures.map((feat, i) => {
-                const isExcluded = feat.startsWith('!');
-                const text = isExcluded ? feat.substring(1) : feat;
-                return (
-                  <li key={i} className={`flex items-start text-sm ${isExcluded ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
-                    {isExcluded ? (
-                      <svg className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    ) : (
-                      <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    )}
+              {plan.standardFeatures.map((feat, i) => (
+                  <li key={i} className="flex items-start text-sm text-slate-600">
+                    <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                     <div className="flex-grow">
-                      {text}
-                      {(text.includes('Automated Reminders')) && !isExcluded && (
-                        <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                      {plan.renderFeatureText(feat)}
+                      {(feat.includes('Automated Reminders')) && (
+                        <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700 inline-block align-middle"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
                       )}
                     </div>
                   </li>
-                );
-              })}
+              ))}
+              
+              {/* Excluded Features (Red X) */}
+              {plan.excludedFeatures.map((feat, i) => (
+                  <li key={`ex-${i}`} className="flex items-start text-sm text-slate-400 line-through decoration-slate-400">
+                    <svg className="w-5 h-5 text-red-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    <span className="opacity-70">{plan.renderFeatureText(feat)}</span>
+                  </li>
+              ))}
             </ul>
 
             {plan.canToggleYardPlus && (
               <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4 cursor-pointer border border-slate-200 hover:bg-slate-100">
-                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (Front & Side Yards) (+${yPlusPrice})</span>
+                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (Front & Side Yards) (+${yPlusPrice}/mo.)</span>
                 <input 
                   type="checkbox" 
                   className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
@@ -997,22 +1016,33 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           <span>${totalDue.toFixed(2)}</span>
         </div>
         
-        <div className="flex justify-between text-green-600 font-semibold mt-2 text-xs bg-green-50 p-2 rounded border border-green-100">
-          <span>Total Savings Today (Setup + Discount):</span>
-          <span>${totalSavings.toFixed(2)} (Already Deducted)</span>
+        <div className="flex justify-between items-center text-green-700 font-bold mt-4 text-sm bg-green-100 p-3 rounded-lg border-2 border-green-200 border-dashed shadow-sm animate-pulse">
+          <span>🎉 Total Savings Today:</span>
+          <span className="text-lg">${totalSavings.toFixed(2)} (Deducted)</span>
         </div>
       </div>
 
-      <div className="bg-blue-50 p-4 rounded-lg mb-6 text-sm text-blue-800">
-        <h4 className="font-bold mb-2">{text?.whatHappensNextTitle || "Here's What Happens Next:"}</h4>
-        <p className="mb-2">
+      <div className="bg-blue-50 p-5 rounded-xl mb-6 text-sm text-blue-800 border border-blue-100 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 bg-blue-100 p-2 rounded-bl-lg">
+           <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <h4 className="font-bold mb-3 text-blue-900 text-base flex items-center">
+           {text?.whatHappensNextTitle || "Here's What Happens Next:"}
+        </h4>
+        <p className="mb-3 leading-relaxed">
             Your payment today covers your first <strong>{termNounDisplay}</strong> of service. Your subscription will <strong>not</strong> begin until your <strong>first scheduled visit</strong>.
         </p>
-        <p className="mb-2">After checkout, a team member will call you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
-        <ol className="list-decimal pl-5 space-y-1">
-            <li>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</li>
-            <li>Your First <em>Paid</em> Visit (which starts your subscription).</li>
-        </ol>
+        <p className="mb-3">After checkout, a team member will text (or call) you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
+        <div className="space-y-2">
+            <div className="flex items-start">
+               <div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
+               <span>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</span>
+            </div>
+            <div className="flex items-start">
+               <div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
+               <span>Your First <em>Paid</em> Visit (which starts your subscription).</span>
+            </div>
+        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
