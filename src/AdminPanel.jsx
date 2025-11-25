@@ -239,6 +239,25 @@ const AdminDashboard = () => {
       }
     }));
   };
+
+  // --- NEW: Load from Local Config.json ---
+  const handleLoadFromLocal = async () => {
+    if (!window.confirm("Warning: This will overwrite the current Admin view with data from your 'config.json' file. You must click 'Save' afterwards to update the database. Continue?")) return;
+    
+    setStatus('loading');
+    try {
+      const res = await fetch('/config.json');
+      if (!res.ok) throw new Error('Failed to load local config');
+      const localConfig = await res.json();
+      setConfig(localConfig);
+      setStatus('success');
+      setTimeout(() => setStatus(''), 2000);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load config.json: ' + err.message);
+      setStatus('error');
+    }
+  };
   
   // 6. Handle saving data to the backend
   const handleSave = async () => {
@@ -305,14 +324,22 @@ const AdminDashboard = () => {
   // --- Render the UI ---
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold">Admin Dashboard</h2>
-        <button
-          onClick={() => signOut(auth)}
-          className="text-sm text-gray-600 hover:text-blue-600"
-        >
-          Sign Out
-        </button>
+        <div className="flex items-center gap-4">
+            <button
+                onClick={handleLoadFromLocal}
+                className="bg-gray-200 text-gray-700 text-sm font-bold py-2 px-4 rounded hover:bg-gray-300 transition-colors"
+            >
+                Load Defaults from Code
+            </button>
+            <button
+            onClick={() => signOut(auth)}
+            className="text-sm text-gray-600 hover:text-blue-600"
+            >
+            Sign Out
+            </button>
+        </div>
       </div>
 
       <div className="space-y-6">
