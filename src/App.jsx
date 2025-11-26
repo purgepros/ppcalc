@@ -38,6 +38,13 @@ const initFacebookPixel = (pixelId) => {
   fbq('track', 'PageView');
 };
 
+// Helper to safely track custom events
+const trackFbEvent = (eventName, params = {}) => {
+  if (window.fbq) {
+    window.fbq('track', eventName, params);
+  }
+};
+
 const initGoogleTag = (tagId) => {
   if (!tagId || document.getElementById('google-tag-script')) return;
   const script = document.createElement('script');
@@ -287,6 +294,10 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, te
           }
         })
       });
+      
+      // --- TRACK LEAD EVENT ---
+      trackFbEvent('Lead', { content_name: 'Exit Intent Saved Quote' });
+      
       setSent(true);
       setTimeout(onClose, 2000);
     } catch (e) {
@@ -977,6 +988,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
 
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment failed.');
+      
+      // --- TRACK PURCHASE EVENT ---
+      trackFbEvent('Purchase', {
+        value: totalDue,
+        currency: 'USD',
+        content_name: packageSelection.name
+      });
+
       onSubmitSuccess();
     } catch (err) {
       setError(err.message);
@@ -1179,7 +1198,11 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
            }
          })
        });
-       if (res.ok) onSubmitSuccess();
+       if (res.ok) {
+         // --- TRACK LEAD EVENT ---
+         trackFbEvent('Lead', { content_name: title });
+         onSubmitSuccess();
+       }
     } catch (e) { console.error(e); setIsSubmitting(false); }
   };
 
@@ -1247,6 +1270,14 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       });
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment processing failed.');
+      
+      // --- TRACK PURCHASE EVENT ---
+      trackFbEvent('Purchase', {
+        value: depositAmount,
+        currency: 'USD',
+        content_name: 'One-Time Yard Reset'
+      });
+
       onSubmitSuccess();
     } catch (err) {
       console.error('Submission Error:', err);
@@ -1310,6 +1341,10 @@ const Site = () => {
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
+
+  // --- NEW: ENABLE EXIT INTENT ---
+  // This was missing in the previous version!
+  useExitIntent(isFormSubmitted, () => setIsExitModalOpen(true));
 
   // --- NEW: URL Zip Checker ---
   useEffect(() => {
