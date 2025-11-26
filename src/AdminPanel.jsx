@@ -423,34 +423,13 @@ const AdminDashboard = () => {
             </label>
           </div>
           <h4 className="text-md font-semibold mt-6 mb-2">Additional Dog Fees ($)</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <label className="block">
-              <span className="text-sm font-medium">3 Dogs (Fee)</span>
-              <input
-                type="number"
-                value={config.data?.dogFeeMap?.['3']}
-                onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '3')}
-                className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">4 Dogs (Fee)</span>
-              <input
-                type="number"
-                value={config.data?.dogFeeMap?.['4']}
-                onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '4')}
-                className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
-              />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium">5 Dogs (Fee)</span>
-              <input
-                type="number"
-                value={config.data?.dogFeeMap?.['5']}
-                onChange={(e) => handleChange(e, 'data', 'dogFeeMap', '5')}
-                className="w-full p-2 border-2 border-gray-200 rounded-lg mt-1"
-              />
-            </label>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* FIXED: Updated to use single extraDogPrice instead of broken map */}
+            <AdminInput
+              label="Price Per Extra Dog (Over 2)"
+              value={config.data?.extraDogPrice}
+              onChange={(e) => handleChange(e, 'data', 'extraDogPrice')}
+            />
           </div>
           
           {/* --- NEW: YARD+ PRICE EDITING --- */}
