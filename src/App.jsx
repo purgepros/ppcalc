@@ -54,7 +54,9 @@ const initGoogleTag = (tagId) => {
   document.head.appendChild(script);
   window.dataLayer = window.dataLayer || [];
   function gtag(){window.dataLayer.push(arguments);}
+  // This 'js' command initializes the data layer
   gtag('js', new Date());
+  // This 'config' command AUTOMATICALLY tracks the Page View
   gtag('config', tagId);
 };
 
@@ -87,6 +89,26 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
     return () => clearTimeout(timerId);
   }, [isFormSubmitted, onIntent]);
 };
+
+// --- TRUST BADGE COMPONENT (New) ---
+const PaymentTrustBadge = () => (
+  <div className="flex items-center justify-between mt-2 px-1">
+    <div className="flex space-x-1 opacity-70 grayscale hover:grayscale-0 transition-all">
+      {/* Visa */}
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5" />
+      {/* Mastercard */}
+      <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+      {/* Amex */}
+      <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" className="h-5" />
+      {/* Discover */}
+      <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" alt="Discover" className="h-5" />
+    </div>
+    <div className="flex items-center text-[10px] text-gray-400 font-semibold">
+      <svg className="w-3 h-3 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+      SECURE SSL
+    </div>
+  </div>
+);
 
 // --- Modal Components ---
 
@@ -295,8 +317,16 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, te
         })
       });
       
-      // --- TRACK LEAD EVENT ---
+      // --- TRACK FACEBOOK EVENT ---
       trackFbEvent('Lead', { content_name: 'Exit Intent Saved Quote' });
+
+      // --- TRACK GOOGLE ADS CONVERSION (LEAD) ---
+      // Trigger: User saves quote (Lead)
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'conversion', {
+          'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC'
+        });
+      }
       
       setSent(true);
       setTimeout(onClose, 2000);
@@ -357,7 +387,7 @@ const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
       {' '}&{' '}
       <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>
       {/* UPDATED VERBIAGE */}
-      {isSubscription ? ', and I authorize Purge Pros to charge my payment method for future subscription renewals.' : '.'}
+      {isSubscription ? ', and I authorize Purge Pros to charge my payment method for future subscription renewals (Cancel Anytime).' : '.'}
     </span>
   </label>
 );
@@ -989,12 +1019,22 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment failed.');
       
-      // --- TRACK PURCHASE EVENT ---
+      // --- TRACK PURCHASE EVENT (FACEBOOK) ---
       trackFbEvent('Purchase', {
         value: totalDue,
         currency: 'USD',
         content_name: packageSelection.name
       });
+
+      // --- TRACK PURCHASE EVENT (GOOGLE ADS) ---
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'conversion', {
+          'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC',
+          'value': totalDue,
+          'currency': 'USD',
+          'transaction_id': 'txn_' + Date.now()
+        });
+      }
 
       onSubmitSuccess();
     } catch (err) {
@@ -1142,6 +1182,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         <div className="p-3 border rounded bg-white min-h-[50px]">
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
         </div>
+        
+        {/* ADDED: Visual Trust Signals */}
+        <PaymentTrustBadge />
 
         <TermsCheckbox 
           checked={formData.agreed} 
@@ -1199,8 +1242,17 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
          })
        });
        if (res.ok) {
-         // --- TRACK LEAD EVENT ---
+         // --- TRACK FACEBOOK LEAD EVENT ---
          trackFbEvent('Lead', { content_name: title });
+
+         // --- TRACK GOOGLE ADS CONVERSION (LEAD) ---
+         // Trigger: User requests a custom quote
+         if (typeof window.gtag === 'function') {
+           window.gtag('event', 'conversion', {
+             'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC'
+           });
+         }
+
          onSubmitSuccess();
        }
     } catch (e) { console.error(e); setIsSubmitting(false); }
@@ -1271,12 +1323,22 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment processing failed.');
       
-      // --- TRACK PURCHASE EVENT ---
+      // --- TRACK PURCHASE EVENT (FACEBOOK) ---
       trackFbEvent('Purchase', {
         value: depositAmount,
         currency: 'USD',
         content_name: 'One-Time Yard Reset'
       });
+
+      // --- TRACK PURCHASE EVENT (GOOGLE ADS) ---
+      if (typeof window.gtag === 'function') {
+        window.gtag('event', 'conversion', {
+          'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC',
+          'value': depositAmount,
+          'currency': 'USD',
+          'transaction_id': 'txn_' + Date.now()
+        });
+      }
 
       onSubmitSuccess();
     } catch (err) {
@@ -1304,6 +1366,9 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
         </div>
         
+        {/* ADDED: Visual Trust Signals */}
+        <PaymentTrustBadge />
+
         <TermsCheckbox 
           checked={formData.agreed} 
           onChange={(val) => setFormData(prev => ({...prev, agreed: val}))}
