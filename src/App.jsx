@@ -47,17 +47,22 @@ const trackFbEvent = (eventName, params = {}) => {
 
 const initGoogleTag = (tagId) => {
   if (!tagId || document.getElementById('google-tag-script')) return;
+  
   const script = document.createElement('script');
   script.id = 'google-tag-script';
   script.async = true;
   script.src = `https://www.googletagmanager.com/gtag/js?id=${tagId}`;
   document.head.appendChild(script);
+
   window.dataLayer = window.dataLayer || [];
-  function gtag(){window.dataLayer.push(arguments);}
-  // This 'js' command initializes the data layer
-  gtag('js', new Date());
-  // This 'config' command AUTOMATICALLY tracks the Page View
-  gtag('config', tagId);
+  
+  // --- THE FIX: Explicitly attach gtag to window ---
+  window.gtag = function(){
+    window.dataLayer.push(arguments);
+  };
+
+  window.gtag('js', new Date());
+  window.gtag('config', tagId);
 };
 
 const setFavicon = (href) => {
