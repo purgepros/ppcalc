@@ -330,7 +330,6 @@ const AdminDashboard = () => {
 
   // Safe access to simple values
   const stripeMode = config.data?.STRIPE_MODE || 'test';
-  const googleTagId = config.data?.GOOGLE_TAG_ID || '';
 
   // --- Render the UI ---
   return (
@@ -373,12 +372,17 @@ const AdminDashboard = () => {
               value={config.data?.FACEBOOK_PIXEL_ID}
               onChange={(e) => handleChange(e, 'data', 'FACEBOOK_PIXEL_ID')}
             />
-            <AdminInput 
-              label="Google Tag ID (G-XXXXXXXXXX)"
-              value={googleTagId}
-              placeholder="G-XXXXXXXXXX"
-              onChange={(e) => handleChange(e, 'data', 'GOOGLE_TAG_ID')}
-            />
+            
+            {/* UPDATED: Google Tag Instruction Box */}
+            <div className="p-3 border-2 border-gray-200 rounded-lg bg-gray-100 flex flex-col justify-center">
+              <span className="text-sm font-medium text-gray-700 mb-1">Google Tag ID</span>
+              <p className="text-xs text-gray-500">
+                This is now <strong>hardcoded in index.html</strong> to ensure Google verification works correctly.
+                <br/>
+                <span className="italic">To change the ID, you must edit the source code directly.</span>
+              </p>
+            </div>
+
             <AdminInput 
               label="Favicon URL"
               value={config.data?.FAVICON_URL}
