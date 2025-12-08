@@ -45,33 +45,6 @@ const trackFbEvent = (eventName, params = {}) => {
   }
 };
 
-const initGoogleTag = (tagId) => {
-  if (!tagId) return;
-  
-  // 1. Initialize dataLayer and gtag function IMMEDIATELY
-  window.dataLayer = window.dataLayer || [];
-  
-  if (!window.gtag) {
-    window.gtag = function(){
-      window.dataLayer.push(arguments);
-    };
-    window.gtag('js', new Date());
-  }
-
-  // 2. Configure the specific Tag ID
-  window.gtag('config', tagId);
-
-  // 3. Load the script only if it doesn't exist yet
-  if (!document.getElementById('google-tag-script')) {
-    const script = document.createElement('script');
-    script.id = 'google-tag-script';
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${tagId}`;
-    // Insert into HEAD to ensure earliest possible execution
-    document.head.appendChild(script);
-  }
-};
-
 const setFavicon = (href) => {
   if (!href) return;
   let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
@@ -1470,9 +1443,8 @@ const Site = () => {
       if (loadedConfig.data?.FACEBOOK_PIXEL_ID) {
         initFacebookPixel(loadedConfig.data.FACEBOOK_PIXEL_ID);
       }
-      if (loadedConfig.data?.GOOGLE_TAG_ID) {
-        initGoogleTag(loadedConfig.data.GOOGLE_TAG_ID);
-      }
+      
+      // NOTE: Google Tag has been removed from here and hardcoded in index.html to ensure verification.
 
       let stripeKey = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
       
