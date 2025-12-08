@@ -46,23 +46,30 @@ const trackFbEvent = (eventName, params = {}) => {
 };
 
 const initGoogleTag = (tagId) => {
-  if (!tagId || document.getElementById('google-tag-script')) return;
+  if (!tagId) return;
   
-  const script = document.createElement('script');
-  script.id = 'google-tag-script';
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${tagId}`;
-  document.head.appendChild(script);
-
+  // 1. Initialize dataLayer and gtag function IMMEDIATELY
   window.dataLayer = window.dataLayer || [];
   
-  // --- THE FIX: Explicitly attach gtag to window ---
-  window.gtag = function(){
-    window.dataLayer.push(arguments);
-  };
+  if (!window.gtag) {
+    window.gtag = function(){
+      window.dataLayer.push(arguments);
+    };
+    window.gtag('js', new Date());
+  }
 
-  window.gtag('js', new Date());
+  // 2. Configure the specific Tag ID
   window.gtag('config', tagId);
+
+  // 3. Load the script only if it doesn't exist yet
+  if (!document.getElementById('google-tag-script')) {
+    const script = document.createElement('script');
+    script.id = 'google-tag-script';
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${tagId}`;
+    // Insert into HEAD to ensure earliest possible execution
+    document.head.appendChild(script);
+  }
 };
 
 const setFavicon = (href) => {
