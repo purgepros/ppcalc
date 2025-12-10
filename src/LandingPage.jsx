@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }) => {
+const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, onAlertsInfoClick }) => {
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
 
@@ -55,7 +55,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
             <span className="text-[#38b6ff]">Get a Pristine, Sanitized Yard 24/7.</span>
           </h1>
           
-          <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto mb-10">
+          <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto mb-10 font-medium">
             The only pet waste service in Indy that <strong>Sanitizes, Deodorizes, and Hauls Away</strong>. No contracts. 100% Satisfaction Guarantee.
           </p>
 
@@ -152,10 +152,17 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
               </div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">2 Visits / Month</div>
               
-              <ul className="space-y-4 text-left flex-grow mb-8">
+              <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
+                <li className="flex items-start">
+                  <span className="text-[#38b6ff] mr-2">✔</span> 
+                  <div>
+                    Automated Reminders
+                    <button onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                  </div>
+                </li>
                 
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Waste Hauled Away</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Seasonal Sanitization</li>
@@ -184,8 +191,8 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
               </div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">4-5 Visits / Month (Weekly)</div>
               
-              <ul className="space-y-4 text-left flex-grow mb-8">
-                <li className="flex items-start font-bold"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
+              <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Waste Hauled Away</strong></li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
@@ -196,6 +203,13 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
                   </div>
                 </li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
+                <li className="flex items-start">
+                  <span className="text-[#38b6ff] mr-2">✔</span> 
+                  <div>
+                    Automated Reminders
+                    <button onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                  </div>
+                </li>
                 
                 {/* ADDED EXCLUDED YARD+ */}
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
@@ -218,7 +232,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
               </div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">8-9 Visits / Month (Twice-Weekly)</div>
               
-              <ul className="space-y-4 text-left flex-grow mb-8">
+              <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
