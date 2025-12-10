@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }) => {
+const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
 
@@ -30,7 +30,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Small timeout to allow scroll to start before focusing
+    // Small timeout to allow scroll to start before focusing input
     setTimeout(() => {
         document.getElementById('zip-input')?.focus();
     }, 300);
@@ -261,7 +261,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }
       <section className="py-12 bg-white border-t border-gray-100 text-center">
         <div className="container mx-auto px-4">
           <p className="text-gray-700">
-            Have a complex property or estate (Over 1/2 Acre)? <button onClick={onCustomQuoteClick} className="text-[#38b6ff] font-bold underline hover:text-[#2ea0e6] cursor-pointer">Click here for a Custom Proposal.</button>
+            Have a complex property or estate (Over 1/2 Acre)? <button onClick={scrollToTop} className="text-[#38b6ff] font-bold underline hover:text-[#2ea0e6] cursor-pointer">Click here for a Custom Proposal.</button>
           </p>
         </div>
       </section>
