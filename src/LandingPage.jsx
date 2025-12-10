@@ -42,7 +42,7 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
       {/* --- HERO SECTION --- */}
       <section className="relative bg-[#1a1a1a] text-white py-24 px-4 overflow-hidden">
         {/* Background Image Overlay */}
-        <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1920&q=80')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/69280cb88f8797014a8c54dd.jpg')] bg-cover bg-center"></div>
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/90 to-black/80"></div>
 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
@@ -123,7 +123,7 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
             
             <div className="relative">
               <img 
-                src="https://images.unsplash.com/photo-1594498653385-d51756b70025?auto=format&fit=crop&w=800&q=80" 
+                src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/693293301d466e353dc4236c.jpg" 
                 alt="Dirty Yard" 
                 className="rounded-2xl shadow-xl w-full object-cover h-[400px] opacity-90"
               />
