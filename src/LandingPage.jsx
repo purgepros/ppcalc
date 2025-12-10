@@ -42,8 +42,8 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
       {/* --- HERO SECTION --- */}
       <section className="relative bg-[#1a1a1a] text-white py-24 px-4 overflow-hidden">
         {/* Background Image Overlay */}
-        <div className="absolute inset-0 z-0 opacity-40 bg-[url('https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/69280cb88f8797014a8c54dd.jpg')] bg-cover bg-center"></div>
-        <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/90 to-black/80"></div>
+        <div className="absolute inset-0 z-0 opacity-70 bg-[url('https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/69280cb88f8797014a8c54dd.jpg')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/60 to-black/40"></div>
 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
           <div className="inline-block bg-[#38b6ff] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse">
