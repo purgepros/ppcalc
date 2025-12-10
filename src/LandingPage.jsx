@@ -5,7 +5,6 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
   const [error, setError] = useState('');
 
   // --- Dynamic Prices from Config ---
-  // Default to 0 if loading, to prevent crash, though parent handles loading state
   const prices = config?.data?.basePrices || { biWeekly: 0, weekly: 0, twiceWeekly: 0 };
 
   // --- Handlers ---
@@ -13,12 +12,10 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
     e.preventDefault();
     const approvedZips = config?.data?.APPROVED_ZIP_CODES || [];
     
-    // Basic format validation
     if (!/^\d{5}$/.test(zip)) {
       setError('Please enter a valid 5-digit ZIP code.');
       return;
     }
-    // Database validation
     if (!approvedZips.includes(zip)) {
       setError("We're sorry, but we do not service this area at this time.");
       return;
@@ -30,7 +27,6 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Small timeout to allow scroll to start before focusing input
     setTimeout(() => {
         document.getElementById('zip-input')?.focus();
     }, 300);
@@ -41,7 +37,6 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
       
       {/* --- HERO SECTION --- */}
       <section className="relative bg-[#1a1a1a] text-white py-24 px-4 overflow-hidden">
-        {/* Background Image Overlay */}
         <div className="absolute inset-0 z-0 opacity-70 bg-[url('https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/69280cb88f8797014a8c54dd.jpg')] bg-cover bg-center"></div>
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/60 to-black/40"></div>
 
@@ -153,22 +148,29 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">2 Visits / Month</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
+                {/* 1. Frequency (Added) */}
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Bi-Weekly Visits</strong></li>
+                
+                {/* 2. Standard Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
+                
+                {/* 3. Tech/Info Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
                     Automated Reminders
-                    <button onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                    <button type="button" onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
                   </div>
                 </li>
                 
+                {/* 4. Exclusions */}
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Waste Hauled Away</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Seasonal Sanitization</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
 
-                {/* ADDED BONUS */}
+                {/* 5. Bonus */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
                   <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
                 </li>
@@ -176,7 +178,6 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
                 Select Bi-Weekly
               </button>
-              {/* ADDED YARD+ INFO */}
               <p className="text-xs text-gray-500 mt-3">Yard+ Available as $20/mo Add-on</p>
             </div>
 
@@ -192,28 +193,38 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">4-5 Visits / Month (Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
+                {/* 1. Frequency (Added) */}
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Weekly Visits</strong></li>
+
+                {/* 2. High Value Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Waste Hauled Away</strong></li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
                     <strong>Seasonal Sanitization</strong>
-                    <button onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                    <button type="button" onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
                     <p className="text-xs text-gray-400 font-normal">($500/yr Value)</p>
                   </div>
                 </li>
+
+                {/* 3. Standard Features */}
+                <li className="flex items-start font-bold"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
+                
+                {/* 4. Tech/Info Features */}
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
                     Automated Reminders
-                    <button onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                    <button type="button" onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
                   </div>
                 </li>
                 
-                {/* ADDED EXCLUDED YARD+ */}
+                {/* 5. Exclusions */}
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
                 
+                {/* 6. Bonus */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
                   <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
                 </li>
@@ -233,6 +244,10 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">8-9 Visits / Month (Twice-Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
+                {/* 1. Frequency (Added to top) */}
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Twice-Weekly Visits</strong></li>
+
+                {/* 2. High Value Features */}
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
@@ -240,19 +255,30 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                     <p className="text-xs text-gray-400 font-normal">Front, Sides & Back Yard</p>
                   </div>
                 </li>
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Twice-Weekly Visits</strong></li>
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Waste Hauled Away</li>
-                
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Waste Hauled Away</strong></li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
                     <strong>Seasonal Sanitization</strong>
-                    {/* ADDED INFO ICON */}
-                    <button onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                    <button type="button" onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                    <p className="text-xs text-gray-400 font-normal">($500/yr Value)</p>
                   </div>
                 </li>
 
+                {/* 3. Standard Features */}
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
+                
+                {/* 4. Tech/Info Features */}
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
+                <li className="flex items-start">
+                  <span className="text-[#38b6ff] mr-2">✔</span> 
+                  <div>
+                    Automated Reminders
+                    <button type="button" onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                  </div>
+                </li>
+
+                {/* 5. Bonus */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
                   <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
                 </li>
