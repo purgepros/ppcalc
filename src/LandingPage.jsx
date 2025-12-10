@@ -170,7 +170,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
 
                 {/* ADDED BONUS */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -215,7 +215,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
                 
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-[#38b6ff] hover:bg-[#2ea0e6] text-white font-bold py-3 rounded-full transition-all shadow-lg hover:-translate-y-1 cursor-pointer">
@@ -254,7 +254,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 </li>
 
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
