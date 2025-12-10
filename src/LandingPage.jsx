@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
+const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick }) => {
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
 
@@ -47,7 +47,7 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
           <div className="inline-block bg-[#38b6ff] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse">
-            Limited Offer: Free Initial Yard Reset ($99 Value)
+            Limited Offer: Free Initial Yard Reset ($99+ Value)
           </div>
           
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
@@ -154,16 +154,23 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
               
               <ul className="space-y-4 text-left flex-grow mb-8">
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Service for Up to 2 Dogs</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
                 
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Waste Hauled Away</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Seasonal Sanitization</li>
+                <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
+
+                {/* ADDED BONUS */}
+                <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99)</strong>
+                </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
                 Select Bi-Weekly
               </button>
+              {/* ADDED YARD+ INFO */}
+              <p className="text-xs text-gray-500 mt-3">Yard+ Available as $20/mo Add-on</p>
             </div>
 
             {/* PLAN 2: WEEKLY (POPULAR) */}
@@ -188,11 +195,13 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
                     <p className="text-xs text-gray-400 font-normal">($500/yr Value)</p>
                   </div>
                 </li>
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Service for Up to 2 Dogs</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
                 
+                {/* ADDED EXCLUDED YARD+ */}
+                <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
+                
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset ($99)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-[#38b6ff] hover:bg-[#2ea0e6] text-white font-bold py-3 rounded-full transition-all shadow-lg hover:-translate-y-1 cursor-pointer">
@@ -218,10 +227,20 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
                   </div>
                 </li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Twice-Weekly Visits</strong></li>
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Waste Hauled Away</li>
-                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Seasonal Sanitization</li>
+                
+                <li className="flex items-start">
+                  <span className="text-[#38b6ff] mr-2">✔</span> 
+                  <div>
+                    <strong>Seasonal Sanitization</strong>
+                    {/* ADDED INFO ICON */}
+                    <button onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
+                  </div>
+                </li>
+
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset ($99)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -230,6 +249,8 @@ const LandingPage = ({ config, onZipValidated, onInfoClick }) => {
             </div>
 
           </div>
+          {/* ADDED GLOBAL DISCLAIMER */}
+          <p className="text-center text-gray-500 text-sm mt-8">Base pricing for up to 2 dogs and standard lot size.</p>
         </div>
       </section>
 
