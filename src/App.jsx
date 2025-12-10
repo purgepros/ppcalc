@@ -5,6 +5,8 @@ import { signInAnonymously } from 'firebase/auth';
 import { db, auth } from './firebase.js'; 
 
 import AdminPanel from './AdminPanel.jsx';
+// --- IMPORT NEW LANDING PAGE ---
+import LandingPage from './LandingPage.jsx';
 
 // --- Helper Functions ---
 
@@ -499,6 +501,7 @@ const Footer = ({ text }) => {
   );
 };
 
+// NO LONGER USED in 'zip' view, but kept in case of fallback
 const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
   const [zip, setZip] = useState('');
   const [error, setError] = useState('');
@@ -1512,40 +1515,53 @@ const Site = () => {
         Status: {configSource}
       </div>
 
-      <Header onSatisfactionClick={() => setShowSatisfactionModal(true)} />
+      {/* --- CONDITIONAL HEADER: Hide on Landing Page (view === 'zip') so Landing Page can handle its own Hero --- */}
+      {view !== 'zip' && <Header onSatisfactionClick={() => setShowSatisfactionModal(true)} />}
       
-      <main className="container mx-auto px-4 max-w-xl pb-12">
-        {view === 'zip' && <ZipCodeValidator onZipValidated={(z) => { setZipCode(z); setView('sorter'); }} approvedZipCodes={config.data.APPROVED_ZIP_CODES} text={config.text.zipView} />}
-        {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
-        {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
-        {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
-        {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
-        {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
-        {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} onSavingsInfoClick={() => setShowSavingsModal(true)} />}
-        {view === 'onetime' && (
-            <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-              <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
-              <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{config.text.oneTimeView.title}</h2>
-              <div className="text-center my-6 py-4 border-y border-gray-200"><span className="text-5xl font-extrabold text-slate-900">$99.99</span><p className="text-sm text-slate-500 mt-1">{config.text.oneTimeView.subTitle}</p></div>
-              <p className="text-slate-600 text-center mb-4">{config.text.oneTimeView.description}</p>
-              {/* FIX: Updated setView to use 'lead_estate' instead of invalid 'custom_quote' */}
-              <p className="text-slate-600 text-center text-sm mb-6">{config.text.oneTimeView.estatePrompt} <button onClick={() => { setView('lead_estate'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">{config.text.oneTimeView.estateLinkText}</button>.</p>
-              <div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg mb-6"><p className="font-bold">{config.text.oneTimeView.psTitle}</p><p className="text-sm"><span dangerouslySetInnerHTML={{ __html: config.text.oneTimeView.psBody.replace('{price}', config.data.basePrices.weekly + (config.data.dogFeeMap?.['1-2'] || 0)) }} /> <button onClick={() => setView('packages')} className="font-bold underline ml-1 hover:text-green-600">{config.text.oneTimeView.psLinkText}</button></p></div>
-              <button type="button" onClick={() => setView('onetime_checkout')} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg">Book One-Time Cleanup</button>
+      {/* --- MAIN CONTENT AREA --- */}
+      {/* If view is 'zip' (Landing Page), we render it Full Width (no container/padding constraints) */}
+      {view === 'zip' ? (
+        <LandingPage 
+          config={config} 
+          onZipValidated={(z) => { setZipCode(z); setView('sorter'); }}
+          onCustomQuoteClick={() => { setView('lead_estate'); setYardSize('estate'); }}
+          onInfoClick={() => setShowInfoModal(true)}
+        />
+      ) : (
+        <main className="container mx-auto px-4 max-w-xl pb-12">
+          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
+          {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
+          {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
+          {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
+          {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
+          {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} onSavingsInfoClick={() => setShowSavingsModal(true)} />}
+          {view === 'onetime' && (
+              <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
+                <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
+                <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{config.text.oneTimeView.title}</h2>
+                <div className="text-center my-6 py-4 border-y border-gray-200"><span className="text-5xl font-extrabold text-slate-900">$99.99</span><p className="text-sm text-slate-500 mt-1">{config.text.oneTimeView.subTitle}</p></div>
+                <p className="text-slate-600 text-center mb-4">{config.text.oneTimeView.description}</p>
+                {/* FIX: Updated setView to use 'lead_estate' instead of invalid 'custom_quote' */}
+                <p className="text-slate-600 text-center text-sm mb-6">{config.text.oneTimeView.estatePrompt} <button onClick={() => { setView('lead_estate'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">{config.text.oneTimeView.estateLinkText}</button>.</p>
+                <div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg mb-6"><p className="font-bold">{config.text.oneTimeView.psTitle}</p><p className="text-sm"><span dangerouslySetInnerHTML={{ __html: config.text.oneTimeView.psBody.replace('{price}', config.data.basePrices.weekly + (config.data.dogFeeMap?.['1-2'] || 0)) }} /> <button onClick={() => setView('packages')} className="font-bold underline ml-1 hover:text-green-600">{config.text.oneTimeView.psLinkText}</button></p></div>
+                <button type="button" onClick={() => setView('onetime_checkout')} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg">Book One-Time Cleanup</button>
+              </div>
+          )}
+          {view === 'onetime_checkout' && <OneTimeCheckoutForm zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('onetime')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.oneTimeCheckoutView} stripeMode={config.data.STRIPE_MODE} />}
+          {view === 'success' && (
+            <div className="bg-white p-8 rounded-xl shadow-lg text-center fade-in">
+              <div className="w-16 h-16 bg-green-100 text-green-600 flex items-center justify-center rounded-full mx-auto mb-4"><svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg></div>
+              <h2 className="text-2xl font-bold text-gray-800">All Set!</h2>
+              <p className="text-gray-600 mt-2">We've received your info. A team member will contact you shortly!</p>
             </div>
-        )}
-        {view === 'onetime_checkout' && <OneTimeCheckoutForm zipCode={zipCode} dogCount={dogCountLabel} onBack={() => setView('onetime')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.oneTimeCheckoutView} stripeMode={config.data.STRIPE_MODE} />}
-        {view === 'success' && (
-          <div className="bg-white p-8 rounded-xl shadow-lg text-center fade-in">
-            <div className="w-16 h-16 bg-green-100 text-green-600 flex items-center justify-center rounded-full mx-auto mb-4"><svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg></div>
-            <h2 className="text-2xl font-bold text-gray-800">All Set!</h2>
-            <p className="text-gray-600 mt-2">We've received your info. A team member will contact you shortly!</p>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      )}
 
-      <Footer text={config.text.footer} />
+      {/* --- FOOTER: Hide on Landing Page because Landing Page has its own simplified footer/layout --- */}
+      {view !== 'zip' && <Footer text={config.text.footer} />}
 
+      {/* --- MODALS (Global) --- */}
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} text={config.text.modals.serviceInfo} />}
       {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={config.text.modals.alertsInfo} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
