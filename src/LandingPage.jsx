@@ -118,7 +118,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             
             <div className="relative">
               <img 
-                src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/693293301d466e353dc4236c.jpg" 
+                src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/693a5b40acebf7000f1f51fc.jpg" 
                 alt="Dirty Yard" 
                 className="rounded-2xl shadow-xl w-full object-cover h-[400px] opacity-90"
               />
