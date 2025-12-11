@@ -1526,6 +1526,8 @@ const Site = () => {
           onZipValidated={(z) => { setZipCode(z); setView('sorter'); }}
           onCustomQuoteClick={() => { setView('lead_estate'); setYardSize('estate'); }}
           onInfoClick={() => setShowInfoModal(true)}
+          // --- FIXED: ADDED MISSING HANDLER ---
+          onAlertsInfoClick={() => setShowAlertsModal(true)}
         />
       ) : (
         <main className="container mx-auto px-4 max-w-xl pb-12">
