@@ -648,7 +648,11 @@ const PackageSelector = ({
       {isPromoActive ? (
         <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center p-4 rounded-xl mb-6 shadow-md animate-pulse">
           <h3 className="text-lg font-bold uppercase tracking-wider">🔥 Special Offer Unlocked 🔥</h3>
-          <p className="text-sm font-medium opacity-90">{promoBannerText}</p>
+          {/* ENABLE HTML RENDERING HERE */}
+          <div 
+            className="text-sm font-medium opacity-90 leading-relaxed" 
+            dangerouslySetInnerHTML={{ __html: promoBannerText }} 
+          />
         </div>
       ) : (
         <SpecialOfferBox offer={specialOffer} />
