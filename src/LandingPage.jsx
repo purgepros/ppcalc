@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, onAlertsInfoClick }) => {
   const [zip, setZip] = useState('');
@@ -6,6 +6,18 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
 
   // --- Dynamic Prices from Config ---
   const prices = config?.data?.basePrices || { biWeekly: 0, weekly: 0, twiceWeekly: 0 };
+
+  // --- Load TrustIndex Review Widget ---
+  useEffect(() => {
+    // Check if script is already there to prevent duplicates
+    if (!document.querySelector('script[src*="trustindex.io"]')) {
+      const script = document.createElement('script');
+      script.src = "https://cdn.trustindex.io/loader.js?bcbd78c609d5338ba8463b296ff";
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
 
   // --- Handlers ---
   const handleZipSubmit = (e) => {
@@ -51,7 +63,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
           </h1>
           
           <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto mb-10 font-medium">
-            The only pet waste service in Indy that <strong>Sanitizes, Deodorizes, and Hauls Away</strong>. No contracts. 100% Satisfaction Guarantee.
+            The only pet waste service in Indy that <strong>Sanitizes, Deodorizes, and Hauls Away</strong>. Reduce bacteria. Eliminate odor. Protect your pets.
           </p>
 
           {/* --- ZIP CODE GATE --- */}
@@ -69,13 +81,26 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 onChange={(e) => setZip(e.target.value)}
                 required
               />
-              <button type="submit" className="bg-black text-[#38b6ff] font-bold uppercase py-4 px-8 rounded-lg hover:bg-gray-800 transition-colors shadow-md whitespace-nowrap">
+              <button type="submit" className="bg-black text-[#38b6ff] font-bold uppercase py-4 px-8 rounded-lg hover:bg-gray-800 transition-colors shadow-md whitespace-nowrap cursor-pointer">
                 Get Started
               </button>
             </form>
             {error && <p className="text-red-600 font-bold mt-3 text-sm">{error}</p>}
             <p className="text-gray-500 text-xs mt-3">Instant online quote. No phone call required.</p>
           </div>
+        </div>
+      </section>
+
+      {/* --- SOCIAL PROOF / REVIEWS SECTION --- */}
+      <section className="bg-gray-50 py-10 border-b border-gray-100">
+        <div className="container mx-auto max-w-4xl px-4 text-center">
+            <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-6">Trusted by Indy's Top Pet Owners</p>
+            {/* The TrustIndex script will inject the widget here automatically if configured as a floating or embedded widget. 
+                If it needs a specific container, we can add it, but usually the script handles injection. */}
+            <div className="min-h-[100px] flex items-center justify-center">
+                {/* Fallback text while loading */}
+                <div id="trustindex-widget-container"></div>
+            </div>
         </div>
       </section>
 
@@ -93,24 +118,30 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <span className="text-red-500 text-2xl mr-4 font-bold">✖</span>
+                  <div className="bg-red-100 p-2 rounded-full mr-4">
+                    <span className="text-red-600 text-xl font-bold">✖</span>
+                  </div>
                   <div>
                     <strong className="block text-gray-900 text-lg">The Bacteria Stays</strong>
-                    <p className="text-gray-600">Parvo, Giardia, and E. Coli live in your soil long after the waste is gone.</p>
+                    <p className="text-gray-600">Parvo, Giardia, and E. Coli can survive in your soil long after the visible waste is gone.</p>
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <span className="text-red-500 text-2xl mr-4 font-bold">✖</span>
+                  <div className="bg-red-100 p-2 rounded-full mr-4">
+                    <span className="text-red-600 text-xl font-bold">✖</span>
+                  </div>
                   <div>
                     <strong className="block text-gray-900 text-lg">The Smell Lingers</strong>
-                    <p className="text-gray-600">Without professional deodorizer, your patio remains a "no-go zone."</p>
+                    <p className="text-gray-600">Without professional enzyme treatment, your patio remains a "no-go zone."</p>
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <span className="text-red-500 text-2xl mr-4 font-bold">✖</span>
+                  <div className="bg-red-100 p-2 rounded-full mr-4">
+                    <span className="text-red-600 text-xl font-bold">✖</span>
+                  </div>
                   <div>
                     <strong className="block text-gray-900 text-lg">The Bin Stinks</strong>
-                    <p className="text-gray-600">They leave bags in <em>your</em> trash can to bake in the sun all week.</p>
+                    <p className="text-gray-600">They leave bags in <em>your</em> trash can to bake in the sun all week. We haul it away.</p>
                   </div>
                 </div>
               </div>
@@ -122,12 +153,57 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 alt="Dirty Yard" 
                 className="rounded-2xl shadow-xl w-full object-cover h-[400px] opacity-90"
               />
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg hidden md:block">
+              <div className="absolute -bottom-6 -left-6 bg-white p-5 rounded-xl shadow-lg hidden md:block border-l-4 border-[#38b6ff]">
                 <div className="text-sm font-bold text-gray-500 uppercase tracking-wide">The Purge Pros Difference</div>
-                <div className="text-2xl font-extrabold text-[#38b6ff]">100% Sanitized</div>
+                <div className="text-xl font-extrabold text-[#38b6ff]">Sanitized & Safe</div>
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* --- US VS THEM COMPARISON (THE "MISSING" PIECE) --- */}
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto max-w-4xl px-4">
+            <h2 className="text-3xl font-extrabold text-center mb-10">Why We Are Different</h2>
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                <div className="grid grid-cols-3 bg-gray-900 text-white py-4 px-6 text-sm md:text-base font-bold">
+                    <div>Feature</div>
+                    <div className="text-center text-[#38b6ff]">Purge Pros</div>
+                    <div className="text-center text-gray-400">The "Other Guys"</div>
+                </div>
+                
+                {/* Row 1 */}
+                <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center">
+                    <div className="font-bold text-gray-800">Removes Dog Waste</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓</div>
+                </div>
+                {/* Row 2 */}
+                <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center bg-blue-50/50">
+                    <div className="font-bold text-gray-800">Sanitizing Treatment</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
+                    <div className="text-center text-gray-400 text-xl">-</div>
+                </div>
+                {/* Row 3 */}
+                <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center">
+                    <div className="font-bold text-gray-800">Hauls Waste Away</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
+                    <div className="text-center text-red-400 text-sm font-bold">Left in YOUR bin</div>
+                </div>
+                {/* Row 4 */}
+                <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center bg-blue-50/50">
+                    <div className="font-bold text-gray-800">Locked Gate Photo</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓</div>
+                    <div className="text-center text-gray-400 text-xl">-</div>
+                </div>
+                {/* Row 5 */}
+                <div className="grid grid-cols-3 py-4 px-6 items-center">
+                    <div className="font-bold text-gray-800">Free Initial Clean</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓</div>
+                    <div className="text-center text-red-400 text-sm font-bold">Charge Extra</div>
+                </div>
+            </div>
         </div>
       </section>
 
@@ -148,14 +224,9 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">2 Visits / Month</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
-                {/* 1. Frequency (Added) */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Bi-Weekly Visits</strong></li>
-                
-                {/* 2. Standard Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
-                
-                {/* 3. Tech/Info Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
@@ -165,14 +236,12 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                   </div>
                 </li>
                 
-                {/* 4. Exclusions */}
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Waste Hauled Away</li>
-                <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Seasonal Sanitization</li>
+                <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Sanitizing Treatment</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
 
-                {/* 5. Bonus */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -193,25 +262,20 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">4-5 Visits / Month (Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
-                {/* 1. Frequency (Added) */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Weekly Visits</strong></li>
 
-                {/* 2. High Value Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Waste Hauled Away</strong></li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
-                    <strong>Seasonal Sanitization</strong>
+                    <strong>Sanitizing Treatment</strong>
                     <button type="button" onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
-                    <p className="text-xs text-gray-400 font-normal">($500/yr Value)</p>
+                    <p className="text-xs text-gray-400 font-normal">Odor & Bacteria Defense (May-Oct)</p>
                   </div>
                 </li>
 
-                {/* 3. Standard Features */}
                 <li className="flex items-start font-bold"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
-                
-                {/* 4. Tech/Info Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
@@ -221,12 +285,10 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                   </div>
                 </li>
                 
-                {/* 5. Exclusions */}
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
                 
-                {/* 6. Bonus */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 Value)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-[#38b6ff] hover:bg-[#2ea0e6] text-white font-bold py-3 rounded-full transition-all shadow-lg hover:-translate-y-1 cursor-pointer">
@@ -244,10 +306,8 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">8-9 Visits / Month (Twice-Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
-                {/* 1. Frequency (Added to top) */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Twice-Weekly Visits</strong></li>
 
-                {/* 2. High Value Features */}
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
@@ -259,28 +319,18 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <li className="flex items-start">
                   <span className="text-[#38b6ff] mr-2">✔</span> 
                   <div>
-                    <strong>Seasonal Sanitization</strong>
+                    <strong>Sanitizing Treatment</strong>
                     <button type="button" onClick={onInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
-                    <p className="text-xs text-gray-400 font-normal">($500/yr Value)</p>
+                    <p className="text-xs text-gray-400 font-normal">Odor & Bacteria Defense (May-Oct)</p>
                   </div>
                 </li>
 
-                {/* 3. Standard Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
-                
-                {/* 4. Tech/Info Features */}
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
-                <li className="flex items-start">
-                  <span className="text-[#38b6ff] mr-2">✔</span> 
-                  <div>
-                    Automated Reminders
-                    <button type="button" onClick={onAlertsInfoClick} className="ml-1 text-gray-500 hover:text-white cursor-pointer align-text-bottom"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/></svg></button>
-                  </div>
-                </li>
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Automated Reminders</li>
 
-                {/* 5. Bonus */}
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 in Savings)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -289,7 +339,6 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             </div>
 
           </div>
-          {/* ADDED GLOBAL DISCLAIMER */}
           <p className="text-center text-gray-500 text-sm mt-8">Base pricing for up to 2 dogs and standard lot size.</p>
         </div>
       </section>
