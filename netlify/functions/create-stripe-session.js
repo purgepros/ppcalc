@@ -99,7 +99,8 @@ exports.handler = async (event) => {
     customer, 
     quote, 
     leadData, 
-    emailParams 
+    emailParams,
+    promo // <--- FIX 1: Extract the promo object
   } = JSON.parse(event.body);
 
   // --- SELECT STRIPE SECRET KEY ---
@@ -190,11 +191,20 @@ exports.handler = async (event) => {
         if (yardPlusId) items.push({ price: yardPlusId });
       }
 
-      // Create the Subscription with the "Stack"
-      stripeAction = await stripe.subscriptions.create({
+      // --- FIX 2: Prepare Subscription Options ---
+      const subOptions = {
         customer: stripeCustomer.id,
         items: items,
-      });
+      };
+
+      // --- FIX 3: Apply Coupon if Present ---
+      // We only apply it if 'promo.applied' is true and 'promo.couponId' exists.
+      if (promo && promo.applied && promo.couponId) {
+        subOptions.coupon = promo.couponId;
+      }
+
+      // Create the Subscription with the "Stack" (and optional coupon)
+      stripeAction = await stripe.subscriptions.create(subOptions);
     }
 
     // --- 3. Webhooks (GHL & EmailJS) ---
