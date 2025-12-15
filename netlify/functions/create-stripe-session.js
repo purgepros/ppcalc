@@ -100,7 +100,7 @@ exports.handler = async (event) => {
     quote, 
     leadData, 
     emailParams,
-    promo // <--- FIX 1: Extract the promo object
+    promo // Extract the promo object
   } = JSON.parse(event.body);
 
   // --- SELECT STRIPE SECRET KEY ---
@@ -197,18 +197,17 @@ exports.handler = async (event) => {
         items: items,
       };
 
-      // --- FIX 3: Apply Coupon if Present ---
-      // We only apply it if 'promo.applied' is true and 'promo.couponId' exists.
+      // --- FIX 3: Apply Coupon using 'discounts' parameter ---
+      // Stripe API v19+ requires 'discounts' array instead of 'coupon' string
       if (promo && promo.applied && promo.couponId) {
-        subOptions.coupon = promo.couponId;
+        subOptions.discounts = [{ coupon: promo.couponId }];
       }
 
-      // Create the Subscription with the "Stack" (and optional coupon)
+      // Create the Subscription with the "Stack" (and optional discount)
       stripeAction = await stripe.subscriptions.create(subOptions);
     }
 
     // --- 3. Webhooks (GHL & EmailJS) ---
-    // (Same as before - keeping existing integrations)
     try {
       if (process.env.GOHIGHLEVEL_WEBHOOK_URL) {
         await fetch(process.env.GOHIGHLEVEL_WEBHOOK_URL, {
@@ -224,7 +223,6 @@ exports.handler = async (event) => {
         ? process.env.EMAILJS_TEMPLATE_ID_ONETIME
         : process.env.EMAILJS_TEMPLATE_ID_SUBSCRIPTION;
       
-      // SANITY CHECK: Ensure params are safe
       const safeParams = {
         ...emailParams,
         zip: emailParams.zip || 'N/A',
@@ -234,7 +232,7 @@ exports.handler = async (event) => {
       await emailjs.send(
         process.env.EMAILJS_SERVICE_ID,
         template,
-        safeParams, // This now contains zip and dog_count from the frontend payload
+        safeParams,
         { publicKey: process.env.EMAILJS_PUBLIC_KEY, privateKey: process.env.EMAILJS_PRIVATE_KEY }
       );
     } catch (e) { console.error('EmailJS send failed:', e); }
