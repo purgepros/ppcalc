@@ -1,3 +1,6 @@
+/* REPLACE the entire content of src/AdminPanel.jsx with this.
+   I have added the "Promotions" section near the top of the dashboard.
+*/
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -58,6 +61,19 @@ const AdminSelect = ({ label, value, onChange, options }) => (
         </option>
       ))}
     </select>
+  </label>
+);
+
+/**
+ * A reusable toggle switch
+ */
+const AdminToggle = ({ label, checked, onChange }) => (
+  <label className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 cursor-pointer">
+    <span className="text-sm font-medium text-gray-700">{label}</span>
+    <div className="relative inline-flex items-center cursor-pointer">
+      <input type="checkbox" className="sr-only peer" checked={checked || false} onChange={onChange} />
+      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+    </div>
   </label>
 );
 
@@ -373,13 +389,10 @@ const AdminDashboard = () => {
               onChange={(e) => handleChange(e, 'data', 'FACEBOOK_PIXEL_ID')}
             />
             
-            {/* UPDATED: Google Tag Instruction Box */}
             <div className="p-3 border-2 border-gray-200 rounded-lg bg-gray-100 flex flex-col justify-center">
               <span className="text-sm font-medium text-gray-700 mb-1">Google Tag ID</span>
               <p className="text-xs text-gray-500">
-                This is now <strong>hardcoded in index.html</strong> to ensure Google verification works correctly.
-                <br/>
-                <span className="italic">To change the ID, you must edit the source code directly.</span>
+                This is hardcoded in index.html for verification.
               </p>
             </div>
 
@@ -389,9 +402,47 @@ const AdminDashboard = () => {
               onChange={(e) => handleChange(e, 'data', 'FAVICON_URL')}
             />
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            * Changing Stripe Mode requires you to Save, then refresh the main site. Ensure you have both Test and Live keys set up in your Netlify Environment Variables.
+        </div>
+
+        {/* --- PROMOTIONS SECTION (NEW) --- */}
+        <div className="p-4 border-2 border-green-200 bg-green-50 rounded-lg shadow-sm">
+          <h3 className="text-lg font-bold text-green-800 mb-2 flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+            Promotions & Offers
+          </h3>
+          <p className="text-xs text-green-700 mb-4">
+            Activate a "50% Off First Month" trial. You must create coupons in Stripe Dashboard with "Duration: Once" and "Percentage off: 50%".
           </p>
+          
+          <div className="grid grid-cols-1 gap-4">
+             <AdminToggle 
+               label="ACTIVATE '50% Off First Month' Trial"
+               checked={config.data?.promotions?.isActive}
+               onChange={(e) => handleChange(e, 'data', 'promotions', 'isActive')}
+             />
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AdminInput 
+                  label="Test Mode Coupon ID (From Stripe)"
+                  placeholder="e.g. 8K9sJ2Lp"
+                  value={config.data?.promotions?.couponIdTest}
+                  onChange={(e) => handleChange(e, 'data', 'promotions', 'couponIdTest')}
+                />
+                <AdminInput 
+                  label="Live Mode Coupon ID (From Stripe)"
+                  placeholder="e.g. PROMO50"
+                  value={config.data?.promotions?.couponIdLive}
+                  onChange={(e) => handleChange(e, 'data', 'promotions', 'couponIdLive')}
+                />
+             </div>
+             
+             <AdminInput 
+               label="Banner Text (Displayed on Packages)"
+               placeholder="Limited Time: Get 50% Off Your First Month!"
+               value={config.data?.promotions?.bannerText}
+               onChange={(e) => handleChange(e, 'data', 'promotions', 'bannerText')}
+             />
+          </div>
         </div>
 
         {/* --- Section for Prices --- */}
@@ -428,15 +479,12 @@ const AdminDashboard = () => {
           </div>
           <h4 className="text-md font-semibold mt-6 mb-2">Additional Dog Fees ($)</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* FIXED: Updated to use single extraDogPrice instead of broken map */}
             <AdminInput
               label="Price Per Extra Dog (Over 2)"
               value={config.data?.extraDogPrice}
               onChange={(e) => handleChange(e, 'data', 'extraDogPrice')}
             />
           </div>
-          
-          {/* --- NEW: YARD+ PRICE EDITING --- */}
           <h4 className="text-md font-semibold mt-6 mb-2">Add-on Pricing ($)</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <AdminInput
@@ -447,7 +495,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* --- NEW: Section for Plan Features --- */}
+        {/* --- Section for Plan Features --- */}
         <div className="p-4 border rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Package Features & Titles</h3>
           <p className="text-sm text-gray-500 mb-4">
@@ -475,7 +523,6 @@ const AdminDashboard = () => {
                         />
                     </div>
                     
-                    {/* New Title Fields */}
                     <div className="grid grid-cols-2 gap-4 bg-white p-2 rounded border">
                         <AdminInput 
                           label="Main Service Title (Hidden on Card)"
@@ -494,7 +541,6 @@ const AdminDashboard = () => {
                     <AdminTextArea
                       label="Features List (One per line)"
                       rows={7}
-                      // Safely join the array or default to empty array
                       value={(config.data?.planDetails?.[planKey]?.features || []).join('\n')}
                       onChange={(e) => handleFeaturesChange(e, planKey)}
                     />
@@ -538,12 +584,11 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        {/* --- Section for Modals ("i" buttons) --- */}
+        {/* --- Section for Modals --- */}
         <div className="p-4 border rounded-lg">
           <h3 className="text-lg font-semibold mb-4">Modal Text ("i" Buttons)</h3>
           
           <div className="space-y-4">
-            {/* Satisfaction Info Modal */}
             <div className="p-3 border rounded-md bg-green-50 border-green-200">
               <h4 className="text-md font-semibold mb-2 text-green-800">Satisfaction Guarantee Modal (Header)</h4>
               <AdminInput 
@@ -563,9 +608,8 @@ const AdminDashboard = () => {
               />
             </div>
 
-            {/* Service Info Modal */}
             <div className="p-3 border rounded-md">
-              <h4 className="text-md font-semibold mb-2">Service Info Modal (WYSIwash)</h4>
+              <h4 className="text-md font-semibold mb-2">Service Info Modal</h4>
               <AdminInput 
                 label="Title"
                 value={config.text?.modals?.serviceInfo?.title}
@@ -581,7 +625,6 @@ const AdminDashboard = () => {
               ))}
             </div>
 
-            {/* Alerts Info Modal */}
             <div className="p-3 border rounded-md">
               <h4 className="text-md font-semibold mb-2">Alerts Info Modal</h4>
               <AdminInput 
@@ -604,7 +647,6 @@ const AdminDashboard = () => {
               ))}
             </div>
 
-            {/* Pricing Info Modal */}
             <div className="p-3 border rounded-md">
               <h4 className="text-md font-semibold mb-2">Pricing Info Modal</h4>
               <AdminInput 

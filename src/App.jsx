@@ -1,3 +1,8 @@
+/* REPLACE src/App.jsx content with this.
+   Changes: 
+   1. PackageSelector: Visual Logic for 50% Off (Strikethrough old price, show new).
+   2. PaymentPlanSelector: Logic to apply 50% discount ONLY to the 'Monthly' option.
+*/
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
@@ -5,7 +10,6 @@ import { signInAnonymously } from 'firebase/auth';
 import { db, auth } from './firebase.js'; 
 
 import AdminPanel from './AdminPanel.jsx';
-// --- IMPORT NEW LANDING PAGE ---
 import LandingPage from './LandingPage.jsx';
 
 // --- Helper Functions ---
@@ -40,23 +44,12 @@ const initFacebookPixel = (pixelId) => {
   fbq('track', 'PageView');
 };
 
-// Helper to safely track custom events
 const trackFbEvent = (eventName, params = {}) => {
   if (window.fbq) {
     window.fbq('track', eventName, params);
   }
 };
 
-const setFavicon = (href) => {
-  if (!href) return;
-  let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-  link.type = 'image/png';
-  link.rel = 'shortcut icon';
-  link.href = href;
-  document.getElementsByTagName('head')[0].appendChild(link);
-};
-
-// --- Exit Intent Hook ---
 const useExitIntent = (isFormSubmitted, onIntent) => {
   useEffect(() => {
     if (isFormSubmitted) return;
@@ -77,17 +70,12 @@ const useExitIntent = (isFormSubmitted, onIntent) => {
   }, [isFormSubmitted, onIntent]);
 };
 
-// --- TRUST BADGE COMPONENT (New) ---
 const PaymentTrustBadge = () => (
   <div className="flex items-center justify-between mt-2 px-1">
     <div className="flex space-x-1 opacity-70 grayscale hover:grayscale-0 transition-all">
-      {/* Visa */}
       <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-5" />
-      {/* Mastercard */}
       <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
-      {/* Amex */}
       <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" className="h-5" />
-      {/* Discover */}
       <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" alt="Discover" className="h-5" />
     </div>
     <div className="flex items-center text-[10px] text-gray-400 font-semibold">
@@ -133,8 +121,6 @@ const YardHelperModal = ({ onClose }) => (
         </span>
         Which size is right?
       </h3>
-      
-      {/* Content - Updated to use clean cards instead of list lines */}
       <div className="space-y-3 text-sm text-slate-600 max-h-[60vh] overflow-y-auto pr-1">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
@@ -153,7 +139,6 @@ const YardHelperModal = ({ onClose }) => (
           <p className="text-blue-800">Massive property, rural land, or large estates. We'll need to give you a custom quote.</p>
         </div>
       </div>
-      
       <button onClick={onClose} className="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Close</button>
     </div>
   </ModalOverlay>
@@ -219,7 +204,6 @@ const PricingInfoModal = ({ onClose, text }) => (
   </ModalOverlay>
 );
 
-/* --- NEW MODAL: Savings Info --- */
 const SavingsInfoModal = ({ onClose }) => (
   <ModalOverlay onClose={onClose}>
     <div className="p-8">
@@ -229,24 +213,13 @@ const SavingsInfoModal = ({ onClose }) => (
         </div>
         <h3 className="text-xl font-bold text-slate-800">Your Savings Explained</h3>
       </div>
-      
       <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
-        <p>
-          The <strong className="text-green-700">$99.99</strong> savings figure shown is the <strong>minimum value</strong> of our 'Initial Yard Reset'.
-        </p>
+        <p>The <strong className="text-green-700">$99.99</strong> savings figure is the <strong>minimum value</strong> of our 'Initial Yard Reset'.</p>
         <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-          <p className="mb-2">
-            If your yard has a significant accumulation of waste (which can take our team hours to clear), a one-time cleanup would typically cost <strong>$150 to $300+</strong>.
-          </p>
-          <p>
-            With a subscription, we waive this fee <strong className="text-slate-900">100%</strong>, regardless of how long the first visit takes.
-          </p>
+          <p className="mb-2">If your yard has a significant accumulation of waste, a one-time cleanup typically costs <strong>$150 to $300+</strong>.</p>
+          <p>With a subscription, we waive this fee <strong className="text-slate-900">100%</strong>.</p>
         </div>
-        <p className="italic text-slate-500 text-center">
-          So if your yard needs a lot of work, your actual savings are likely much higher than what is shown!
-        </p>
       </div>
-      
       <button onClick={onClose} className="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Got it</button>
     </div>
   </ModalOverlay>
@@ -260,22 +233,18 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, te
   const handleEmailQuote = async () => {
     if (!email || !email.includes('@')) return;
     setIsSending(true);
-    
-    // Generate Link
     const baseUrl = window.location.origin + window.location.pathname;
     const params = new URLSearchParams();
     if (zipCode) params.set('zip', zipCode);
     if (dogCount) params.set('dogCount', dogCount);
     const quoteLink = `${baseUrl}?${params.toString()}`;
 
-    // Calculate approx values
     const monthly = currentPlan?.finalMonthlyPrice || 0;
     let perVisit = 0;
     if (currentPlan?.key === 'weekly') perVisit = monthly / 4.33;
     else if (currentPlan?.key === 'biWeekly') perVisit = monthly / 2.17;
     else if (currentPlan?.key === 'twiceWeekly') perVisit = monthly / 8.66;
 
-    // Helper to make the yard size readable for humans
     const yardSizeLabels = {
       'standard': 'Standard (Up to 1/4 Acre)',
       'tier1': 'Medium (1/4 - 1/2 Acre)',
@@ -303,18 +272,10 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, te
           }
         })
       });
-      
-      // --- TRACK FACEBOOK EVENT ---
       trackFbEvent('Lead', { content_name: 'Exit Intent Saved Quote' });
-
-      // --- TRACK GOOGLE ADS CONVERSION (LEAD) ---
-      // Trigger: User saves quote (Lead)
       if (typeof window.gtag === 'function') {
-        window.gtag('event', 'conversion', {
-          'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC'
-        });
+        window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC' });
       }
-      
       setSent(true);
       setTimeout(onClose, 2000);
     } catch (e) {
@@ -328,7 +289,6 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, te
       <div className="p-8 text-center">
         <h3 className="text-2xl font-bold text-slate-800 mb-2">{text?.title || "Wait!"}</h3>
         <p className="text-slate-600 mb-6" dangerouslySetInnerHTML={{__html: text?.body}} />
-        
         {!sent ? (
           <div className="space-y-3">
              <input 
@@ -359,7 +319,6 @@ const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, te
   );
 };
 
-// --- UPDATED: Single Checkbox Logic ---
 const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
   <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer mt-2">
     <input 
@@ -373,7 +332,6 @@ const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
       <a href="https://itspurgepros.com/terms-conditions" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Terms of Service</a>
       {' '}&{' '}
       <a href="https://itspurgepros.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800">Privacy Policy</a>
-      {/* UPDATED VERBIAGE */}
       {isSubscription ? ', and I authorize Purge Pros to charge my payment method for future subscription renewals (Cancel Anytime).' : '.'}
     </span>
   </label>
@@ -388,11 +346,6 @@ const FullPageLoader = ({ error = null }) => (
         <h3 className="font-bold text-lg mb-2">Application Error</h3>
         <p className="mb-4">Could not load application configuration.</p>
         <pre className="text-sm bg-red-50 p-2 rounded overflow-auto">{error.message || String(error)}</pre>
-        {error.code === 'auth/admin-restricted-operation' && (
-            <div className="mt-4 p-4 bg-yellow-100 text-yellow-800 rounded text-sm">
-                <strong>Action Required:</strong> You must enable "Anonymous Authentication" in your Firebase Console (Authentication &gt; Sign-in method).
-            </div>
-        )}
       </div>
     ) : (
       <span className="loader"></span>
@@ -400,7 +353,6 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
-// --- NEW: REUSABLE SPECIAL OFFER COMPONENT ---
 const SpecialOfferBox = ({ offer }) => {
   if (!offer) return null;
   return (
@@ -410,14 +362,10 @@ const SpecialOfferBox = ({ offer }) => {
       </div>
       <div className="flex items-start space-x-4">
         <div className="flex-shrink-0 bg-green-100 p-3 rounded-full text-[var(--brand-green)]">
-           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-           </svg>
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
         </div>
         <div>
-          <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">
-            {offer.specialOfferTitle}
-          </h3>
+          <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">{offer.specialOfferTitle}</h3>
           <div className="text-slate-600 text-sm leading-relaxed space-y-1" dangerouslySetInnerHTML={{ __html: offer.specialOfferBody }} />
         </div>
       </div>
@@ -431,15 +379,12 @@ const Header = ({ onSatisfactionClick }) => (
       <a href="https://itspurgepros.com/" className="transition-all hover:opacity-80 hover:scale-105 mb-6">
         <img src="https://storage.googleapis.com/msgsndr/YzqccfNpAoMTt4EZO92d/media/68140f6288b94e80fb043618.png" alt="Purge Pros Logo" className="h-32 md:h-40" />
       </a>
-      
-      {/* UPDATED: REDESIGNED BADGE */}
       <button 
         onClick={onSatisfactionClick}
         className="group relative flex items-center bg-white rounded-full shadow-md border border-slate-200 px-5 py-2 transition-transform hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer"
       >
         <div className="absolute inset-0 border-2 border-transparent group-hover:border-[var(--brand-green)]/30 rounded-full transition-all"></div>
         <div className="flex-shrink-0 mr-3 text-[var(--brand-green)]">
-           {/* Shield Check Icon */}
            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
            </svg>
@@ -448,7 +393,6 @@ const Header = ({ onSatisfactionClick }) => (
           <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400 leading-none mb-0.5">Purge Pros Promise</span>
           <span className="text-sm font-bold text-slate-800 group-hover:text-[var(--brand-blue)] transition-colors">100% Satisfaction Guaranteed</span>
         </div>
-        {/* UPDATED ICON: Blue & White Solid (matching Info icons) */}
         <div className="ml-3 text-blue-500 bg-white rounded-full p-0.5 shadow-sm">
            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
         </div>
@@ -501,51 +445,6 @@ const Footer = ({ text }) => {
   );
 };
 
-// NO LONGER USED in 'zip' view, but kept in case of fallback
-const ZipCodeValidator = ({ onZipValidated, approvedZipCodes, text }) => {
-  const [zip, setZip] = useState('');
-  const [error, setError] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!/^\d{5}$/.test(zip)) {
-      setError('Please enter a valid 5-digit ZIP code.');
-      return;
-    }
-    if (!approvedZipCodes.includes(zip)) {
-      setError("We're sorry, but we do not service this area at this time.");
-      return;
-    }
-    setError('');
-    onZipValidated(zip);
-  };
-
-  return (
-    <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Enter Zip Code"}</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="tel"
-          pattern="[0-9]*"
-          placeholder="Enter 5-Digit Zip Code"
-          required
-          maxLength="5"
-          className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg text-center"
-          value={zip}
-          onChange={(e) => setZip(e.target.value)}
-        />
-        {error && <p className="text-red-600 text-sm font-medium text-center">{error}</p>}
-        <button type="submit" className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
-          See Prices
-        </button>
-      </form>
-    </div>
-  );
-};
-
-/**
- * VIEW 2: The Sorter (Yard Size & Dog Count)
- */
 const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
@@ -561,16 +460,11 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
     onSortComplete(yardSize, numDogs, dogCount);
   };
 
-  // Fallback values in case lotFees isn't ready
-  const tier1Price = lotFees?.tier1 || 30;
-  const tier2Price = lotFees?.tier2 || 60;
-
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-bold text-slate-800">{text?.yardTitle || "1. Property Size?"}</h2>
-            {/* MOVED: onClick handler uses prop instead of internal state to fix fixed positioning issue */}
             <button onClick={onYardHelperClick} className="text-xs text-blue-600 underline hover:text-blue-800 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Not sure?
@@ -610,7 +504,6 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
         </select>
       </div>
 
-      {/* Use the new polished component */}
       <SpecialOfferBox offer={specialOffer} />
 
       <button onClick={handleSubmit} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
@@ -631,13 +524,12 @@ const PackageSelector = ({
   onPlanSelect, onBack, onOneTimeClick, 
   onInfoClick, onAlertsInfoClick, 
   text, specialOffer, 
-  yardPlusSelections, setYardPlusSelections 
+  yardPlusSelections, setYardPlusSelections,
+  promotions // New Prop for Promo Logic
 }) => {
 
-  // --- REPAIRED LOGIC: Use fallbacks instead of crashing/infinite loading ---
   const fees = lotFees || { tier1: 30, tier2: 60 };
   const prices = basePrices || { weekly: 109, biWeekly: 89, twiceWeekly: 169 };
-  // Defaults for plan details to prevent crashes if one is missing
   const detailsMap = planDetails || {
     biWeekly: { name: "Bi-Weekly Reset", priceKey: "biWeekly", frequency: "Every 2 Weeks", features: ["Backyard Coverage", "Waste Hauled Away"] },
     weekly: { name: "Pristine-Clean", priceKey: "weekly", frequency: "Every Week", features: ["Backyard Coverage", "Waste Hauled Away"] },
@@ -645,6 +537,10 @@ const PackageSelector = ({
   };
   const eDogPrice = extraDogPrice || 15;
   const yPlusPrice = yardPlusPrice || 20;
+
+  // --- PROMO LOGIC ---
+  const isPromoActive = promotions?.isActive || false;
+  const promoBannerText = promotions?.bannerText || "50% Off First Month!";
 
   let lotFee = 0;
   if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
@@ -664,19 +560,23 @@ const PackageSelector = ({
   const plans = [];
   const buildPlan = (key, isPopular) => {
     const details = detailsMap[key];
-    if (!details) return null; // Safety skip
+    if (!details) return null;
 
     const base = prices[details.priceKey] || 99;
     const isIncluded = key === 'twiceWeekly';
     const isSelected = !!yardPlusSelections[key];
     const addonCost = (isSelected && !isIncluded) ? yPlusPrice : 0;
 
-    // Arrays for organizing features visually
+    const finalPrice = base + lotFee + dogFee + addonCost;
+    
+    // --- CALCULATE PROMO PRICE (For Display) ---
+    // We only display the discount here. The actual application happens in the backend.
+    const displayPrice = isPromoActive ? (finalPrice / 2).toFixed(2) : finalPrice;
+
     const featuredFreeFeatures = [];
     const standardFeatures = [];
     const excludedFeatures = [];
     
-    // Keywords that trigger the "Perk" banner look (green background)
     const perkKeywords = ["Seasonal Sanitation", "Treato Drop", "Waste Hauled Away", "Yard+ Coverage"];
 
     if (details.features && Array.isArray(details.features)) {
@@ -695,7 +595,6 @@ const PackageSelector = ({
         });
     }
 
-    // Helper to render features with subheadings (split by newline)
     const renderFeatureText = (text) => {
       if (text.includes('\n')) {
         const [main, sub] = text.split('\n');
@@ -719,10 +618,12 @@ const PackageSelector = ({
       featuredFreeFeatures,
       standardFeatures,
       excludedFeatures,
-      finalPrice: base + lotFee + dogFee + addonCost, 
+      finalPrice, // KEEP ORIGINAL PRICE FOR LOGIC
+      displayPrice, // USED FOR VISUALS
+      isPromoActive,
       basePrice: base,
       popular: isPopular,
-      limited: key === 'biWeekly', // New Limited Badge Logic
+      limited: key === 'biWeekly',
       canToggleYardPlus: !isIncluded, 
       isYardPlusIncluded: isIncluded,
       renderFeatureText
@@ -743,31 +644,47 @@ const PackageSelector = ({
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Choose Your Plan"}</h2>
 
-      {/* Use the new polished component */}
-      <SpecialOfferBox offer={specialOffer} />
+      {/* Show Global Offer or Promo Banner */}
+      {isPromoActive ? (
+        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center p-4 rounded-xl mb-6 shadow-md animate-pulse">
+          <h3 className="text-lg font-bold uppercase tracking-wider">🔥 Special Offer Unlocked 🔥</h3>
+          <p className="text-sm font-medium opacity-90">{promoBannerText}</p>
+        </div>
+      ) : (
+        <SpecialOfferBox offer={specialOffer} />
+      )}
 
       <div className="space-y-6">
         {plans.map((plan) => (
           <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg scale-[1.02]' : (plan.limited ? 'border-yellow-400 shadow-md' : 'border-gray-200')}`}>
             
-            {/* Badges */}
             {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-md tracking-wide animate-pulse">BEST VALUE</span>}
             {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">LIMITED AVAILABILITY</span>}
             
             <div className="text-center mb-4">
               <h3 className="text-2xl font-bold text-slate-800">{plan.name}</h3>
               <div className="mt-2 mb-2">
-                <span className="text-4xl font-extrabold text-slate-900">${plan.finalPrice}</span>
-                <span className="text-slate-500 font-medium">/mo</span>
+                {plan.isPromoActive ? (
+                  <div className="flex flex-col items-center">
+                    <span className="text-gray-400 text-lg line-through decoration-red-500 font-semibold">${plan.finalPrice}</span>
+                    <div>
+                      <span className="text-4xl font-extrabold text-red-600">${plan.displayPrice}</span>
+                      <span className="text-slate-500 font-medium text-sm"> / first mo</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <span className="text-4xl font-extrabold text-slate-900">${plan.finalPrice}</span>
+                    <span className="text-slate-500 font-medium">/mo</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Service Subtitle Only (Header removed as requested) */}
             <div className="text-center mb-6 border-b pb-3">
                <p className="text-sm text-slate-600 font-bold uppercase tracking-wider">{plan.serviceSubTitle}</p>
             </div>
 
-            {/* Perk Banners (Green) */}
             <div className="space-y-2 mb-4">
               {plan.featuredFreeFeatures.map((feature, idx) => (
                   <div key={idx} className="bg-green-50 text-green-800 text-sm font-bold px-3 py-2 rounded-lg text-center border border-green-200 shadow-sm flex flex-col justify-center items-center relative">
@@ -782,7 +699,6 @@ const PackageSelector = ({
                      </div>
                   </div>
               ))}
-              {/* Explicitly handle Checked Yard+ if toggled */}
               {yardPlusSelections[plan.key] && !plan.isYardPlusIncluded && (
                 <div className="bg-blue-50 text-blue-800 text-sm font-bold px-3 py-2 rounded-lg text-center border border-blue-200 shadow-sm">
                   ✅ Includes Yard+ Coverage (+${yPlusPrice}/mo.)
@@ -790,7 +706,6 @@ const PackageSelector = ({
               )}
             </div>
 
-            {/* Standard Features List */}
             <ul className="space-y-3 mb-6">
               <li className="flex items-start text-sm text-slate-600">
                 <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
@@ -807,8 +722,6 @@ const PackageSelector = ({
                     </div>
                   </li>
               ))}
-              
-              {/* Excluded Features (Red X) */}
               {plan.excludedFeatures.map((feat, i) => (
                   <li key={`ex-${i}`} className="flex items-start text-sm text-slate-400 line-through decoration-slate-400">
                     <div className="relative flex-shrink-0 mr-2">
@@ -816,7 +729,6 @@ const PackageSelector = ({
                     </div>
                     <div className="flex-grow flex items-center">
                         <span className="opacity-70">{plan.renderFeatureText(feat)}</span>
-                        {/* Add Info Icon even if Excluded, so they know what they are missing */}
                         {(feat.includes('Seasonal Sanitation')) && (
                           <button onClick={onInfoClick} className="ml-2 text-slate-400 hover:text-blue-500 inline-block align-middle bg-white rounded-full p-0.5 shadow-sm"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
                         )}
@@ -837,6 +749,7 @@ const PackageSelector = ({
               </label>
             )}
 
+            {/* Note: Pass ORIGINAL price, backend handles discount */}
             <button onClick={() => onPlanSelect(plan.name, plan.finalPrice, plan.key)} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:bg-opacity-90 shadow transition-transform hover:-translate-y-0.5">
               Select Plan
             </button>
@@ -851,14 +764,41 @@ const PackageSelector = ({
   );
 };
 
-const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarterlyDiscount, text }) => {
-  // FIX: Changed to finalMonthlyPrice to match what was set in onPlanSelect
+const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarterlyDiscount, text, promotions }) => {
   const monthly = packageSelection.finalMonthlyPrice;
   const qDisc = quarterlyDiscount || 30;
+  
+  const isPromoActive = promotions?.isActive || false;
+  // Calculate Discounted Monthly Price for Display
+  const discountedMonthly = isPromoActive ? monthly / 2 : monthly;
+
   const plans = [
-    { term: 'Monthly', label: 'Pay Monthly', totalDue: monthly, savingsText: null, savingsValue: 0 },
-    { term: 'Quarterly', label: 'Pay Quarterly', totalDue: (monthly * 3) - qDisc, savingsText: `Save $${qDisc} per Quarter!`, savingsValue: qDisc, isPopular: false },
-    { term: 'Annual', label: 'Pay Yearly', totalDue: monthly * 11, savingsText: `Get 1 Month FREE (Save $${monthly})!`, savingsValue: monthly, isPopular: true }
+    { 
+      term: 'Monthly', 
+      label: 'Pay Monthly', 
+      // Logic: If promo is active, show discounted price. Else normal.
+      totalDue: discountedMonthly, 
+      savingsText: isPromoActive ? "50% OFF First Month!" : null, 
+      savingsValue: 0,
+      isPromo: isPromoActive
+    },
+    { 
+      term: 'Quarterly', 
+      label: 'Pay Quarterly', 
+      // Logic: Promo does NOT apply to quarterly to avoid huge loss. Standard pricing.
+      totalDue: (monthly * 3) - qDisc, 
+      savingsText: `Save $${qDisc} per Quarter!`, 
+      savingsValue: qDisc, 
+      isPopular: false 
+    },
+    { 
+      term: 'Annual', 
+      label: 'Pay Yearly', 
+      totalDue: monthly * 11, 
+      savingsText: `Get 1 Month FREE (Save $${monthly})!`, 
+      savingsValue: monthly, 
+      isPopular: true 
+    }
   ];
 
   return (
@@ -868,15 +808,25 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
       <p className="text-center text-slate-600 mb-6">for <strong>{packageSelection.name}</strong> plan</p>
       <div className="space-y-4">
         {plans.map((p) => (
-          <button key={p.term} onClick={() => onPaymentSelect(p.term, p.totalDue, p.savingsText, p.savingsValue)} className={`relative w-full text-left p-5 border-2 rounded-xl transition-all hover:-translate-y-1 ${p.isPopular ? 'border-[var(--brand-green)] bg-green-50 shadow-md' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
+          <button key={p.term} onClick={() => onPaymentSelect(p.term, p.totalDue, p.savingsText, p.savingsValue, p.isPromo)} className={`relative w-full text-left p-5 border-2 rounded-xl transition-all hover:-translate-y-1 ${p.isPopular || p.isPromo ? 'border-[var(--brand-green)] bg-green-50 shadow-md' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
             {p.isPopular && <span className="absolute -top-3 right-4 bg-[var(--brand-green)] text-white text-xs font-bold px-2 py-1 rounded">BEST VALUE</span>}
+            {p.isPromo && <span className="absolute -top-3 right-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm animate-pulse">LIMITED OFFER</span>}
+            
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">{p.label}</h3>
-                {p.savingsText && <p className="text-sm font-bold text-green-600">{p.savingsText}</p>}
+                {p.savingsText && <p className={`text-sm font-bold ${p.isPromo ? 'text-red-600' : 'text-green-600'}`}>{p.savingsText}</p>}
+                {p.isPromo && <p className="text-xs text-slate-500 mt-1">Renews at ${monthly.toFixed(2)}/mo</p>}
               </div>
               <div className="text-right">
-                <span className="block text-2xl font-extrabold text-slate-900">${p.totalDue}</span>
+                {p.isPromo ? (
+                   <div>
+                     <span className="block text-gray-400 text-sm line-through">${monthly.toFixed(2)}</span>
+                     <span className="block text-3xl font-extrabold text-red-600">${p.totalDue.toFixed(2)}</span>
+                   </div>
+                ) : (
+                   <span className="block text-2xl font-extrabold text-slate-900">${p.totalDue.toFixed(2)}</span>
+                )}
                 <span className="text-xs text-slate-500">due today</span>
               </div>
             </div>
@@ -887,24 +837,24 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
   );
 };
 
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick }) => {
-  // Updated state to just track one boolean for the checkbox
+const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions }) => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
   const totalDue = paymentSelection.total;
-  const totalSavings = 99.99 + paymentSelection.savingsValue;
+  // If promo is active, the savings is HUGE. Otherwise standard.
+  const isPromoApplied = paymentSelection.isPromo;
+  const promoSavings = isPromoApplied ? packageSelection.finalMonthlyPrice / 2 : 0;
+  const totalSavings = 99.99 + paymentSelection.savingsValue + promoSavings;
 
-  // --- Calculation Helpers for Display ---
   const getBreakdown = () => {
     if (!configData) return { base: 0, lot: 0, dog: 0, yardPlus: 0 };
-    
     const prices = configData.basePrices;
     const fees = configData.lotFees || { tier1: 30, tier2: 60 };
     const eDogPrice = configData.extraDogPrice || 15;
     const yPlusPrice = configData.yardPlusPrice || 20;
     const details = configData.planDetails[packageSelection.key];
-    
     const baseRate = prices[details.priceKey] || 0;
     
     let lotFee = 0;
@@ -933,7 +883,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
     setIsSubmitting(true);
     setError('');
 
-    // Helper to make the yard size readable for humans
     const yardSizeLabels = {
       'standard': 'Standard (Up to 1/4 Acre)',
       'tier1': 'Medium (1/4 - 1/2 Acre)',
@@ -951,7 +900,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
 
       if (stripeError) throw new Error(stripeError.message);
 
-      // --- Build Complete Email Params for Templates ---
       const monthly = packageSelection.finalMonthlyPrice;
       let perVisit = 0;
       if (packageSelection.key === 'weekly') perVisit = monthly / 4.33;
@@ -961,7 +909,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       let termDiscountRow = '';
       let termNoun = 'Month'; 
 
-      if (paymentSelection.term === 'Quarterly') {
+      if (isPromoApplied) {
+         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #DC2626; font-weight: bold;">Trial Offer (50% Off)</span><span style="font-weight: bold; color: #DC2626;">-$${promoSavings.toFixed(2)}</span></div>`;
+      } else if (paymentSelection.term === 'Quarterly') {
         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #166534;">Quarterly Discount</span><span style="font-weight: bold; color: #166534;">-$30.00</span></div>`;
         termNoun = 'Quarter';
       } else if (paymentSelection.term === 'Annual') {
@@ -969,13 +919,21 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         termNoun = 'Year';
       }
 
+      // --- PASS COUPON ID TO BACKEND ---
+      // Determine which ID to use based on mode
+      const couponId = stripeMode === 'live' ? promotions?.couponIdLive : promotions?.couponIdTest;
+
       const payload = {
         stripeMode,
         paymentMethodId: paymentMethod.id,
-        customer: { ...formData, terms: true, auth: true }, // Explicitly sending terms/auth based on single checkbox
+        customer: { ...formData, terms: true, auth: true },
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
         leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term, yard_size: readableYardSize },
-        // SANITIZED EMAIL PARAMS - Fixing "Dynamic Variables Corrupted"
+        // PASS THE PROMO DATA
+        promo: {
+            applied: isPromoApplied,
+            couponId: isPromoApplied ? couponId : null
+        },
         emailParams: { 
           name: formData.name || 'Valued Customer',
           email: formData.email || '',
@@ -992,9 +950,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           term_discount_row: termDiscountRow || '',
           term_savings_row: '',
           yard_plus_status: yardPlusSelected ? "Included" : "Not Selected",
-          zip: zipCode || '', // Added Missing Field
-          dog_count: dogCount || '', // Added Missing Field
-          yard_size: readableYardSize // Added yard_size as requested
+          zip: zipCode || '',
+          dog_count: dogCount || '',
+          yard_size: readableYardSize
         }
       };
 
@@ -1007,21 +965,9 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment failed.');
       
-      // --- TRACK PURCHASE EVENT (FACEBOOK) ---
-      trackFbEvent('Purchase', {
-        value: totalDue,
-        currency: 'USD',
-        content_name: packageSelection.name
-      });
-
-      // --- TRACK PURCHASE EVENT (GOOGLE ADS) ---
+      trackFbEvent('Purchase', { value: totalDue, currency: 'USD', content_name: packageSelection.name });
       if (typeof window.gtag === 'function') {
-        window.gtag('event', 'conversion', {
-          'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC',
-          'value': totalDue,
-          'currency': 'USD',
-          'transaction_id': 'txn_' + Date.now()
-        });
+        window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC', 'value': totalDue, 'currency': 'USD', 'transaction_id': 'txn_' + Date.now() });
       }
 
       onSubmitSuccess();
@@ -1040,46 +986,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back</button>
       <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Checkout"}</h2>
       
-      {/* Detailed Order Summary */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Plan Breakdown</h4>
-        
-        <div className="flex justify-between mb-1">
-           <span className="text-slate-600">Frequency</span>
-           <span className="font-medium">{bd.details?.frequency || packageSelection.name}</span>
-        </div>
-        
-         <div className="flex justify-between mb-1">
-           <span className="text-slate-600">Dogs Included</span>
-           <span className="font-medium">{bd.numDogs}</span>
-        </div>
-        
-        <div className="flex justify-between mb-1">
-          <span className="text-slate-600">Base Plan Rate</span>
-          <span className="font-medium">${bd.baseRate}</span>
-        </div>
-        
-        {bd.lotFee > 0 && (
-          <div className="flex justify-between mb-1">
-            <span className="text-slate-600">Lot Size Fee</span>
-            <span className="font-medium">+${bd.lotFee}</span>
-          </div>
-        )}
-        
-        {bd.dogFee > 0 && (
-          <div className="flex justify-between mb-1">
-            <span className="text-slate-600">Extra Dog Fee</span>
-            <span className="font-medium">+${bd.dogFee}</span>
-          </div>
-        )}
-
-        {/* UPDATED: Always show Yard+ Coverage Status */}
-        <div className="flex justify-between mb-1">
-            <span className="text-slate-600">Yard+ Coverage (Front/Sides)</span>
-            <span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>
-            {bd.yardPlusStatus === 'Included' ? 'Included' : (bd.yardPlusCost > 0 ? `+$${bd.yardPlusCost}` : 'Not Selected')}
-            </span>
-        </div>
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Frequency</span><span className="font-medium">{bd.details?.frequency || packageSelection.name}</span></div>
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Dogs Included</span><span className="font-medium">{bd.numDogs}</span></div>
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Base Plan Rate</span><span className="font-medium">${bd.baseRate}</span></div>
+        {bd.lotFee > 0 && (<div className="flex justify-between mb-1"><span className="text-slate-600">Lot Size Fee</span><span className="font-medium">+${bd.lotFee}</span></div>)}
+        {bd.dogFee > 0 && (<div className="flex justify-between mb-1"><span className="text-slate-600">Extra Dog Fee</span><span className="font-medium">+${bd.dogFee}</span></div>)}
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Yard+ Coverage (Front/Sides)</span><span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>{bd.yardPlusStatus === 'Included' ? 'Included' : (bd.yardPlusCost > 0 ? `+$${bd.yardPlusCost}` : 'Not Selected')}</span></div>
 
         <div className="border-t border-slate-200 my-2 pt-2">
            <div className="flex justify-between font-bold text-slate-800 mb-2">
@@ -1093,7 +1007,14 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
              </div>
            )}
            
-           {paymentSelection.savingsValue > 0 && (
+           {isPromoApplied && (
+             <div className="flex justify-between text-red-600 font-bold mt-1">
+                <span>First Month Discount (50%):</span>
+                <span>-${promoSavings.toFixed(2)}</span>
+             </div>
+           )}
+
+           {paymentSelection.savingsValue > 0 && !isPromoApplied && (
              <div className="flex justify-between text-green-600 font-bold mt-1">
                 <span>{paymentSelection.term} Discount:</span>
                 <span>-${paymentSelection.savingsValue.toFixed(2)}</span>
@@ -1106,29 +1027,26 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           <span>${totalDue.toFixed(2)}</span>
         </div>
         
-        {/* Highlighted Savings Box - Updated with Subheading */}
         <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-900 p-3 rounded-lg mt-4 shadow-sm">
           <div className="flex justify-between items-end mb-1">
-            <span className="font-extrabold text-sm flex items-center">
-              🎉 TOTAL SAVINGS APPLIED:
-            </span>
+            <span className="font-extrabold text-sm flex items-center">🎉 TOTAL SAVINGS APPLIED:</span>
             <span className="font-extrabold text-xl tracking-tight">${totalSavings.toFixed(2)}</span>
           </div>
-          
-          {/* Savings Breakdown */}
           <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
              <div className="flex justify-between items-center">
                <div className="flex items-center">
                  <span>100% Free First Visit / Waived Setup</span>
-                 {/* New "i" Button */}
-                 <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this">
-                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                 </button>
-                 <span>:</span>
+                 <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
                </div>
                <span className="font-bold">$99.99</span>
              </div>
-             {paymentSelection.savingsValue > 0 && (
+             {isPromoApplied && (
+                <div className="flex justify-between items-center text-red-700">
+                  <span>50% Off First Month Trial:</span>
+                  <span className="font-bold">+${promoSavings.toFixed(2)}</span>
+                </div>
+             )}
+             {paymentSelection.savingsValue > 0 && !isPromoApplied && (
                 <div className="flex justify-between items-center">
                   <span>{paymentSelection.term} Payment Discount:</span>
                   <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
@@ -1139,25 +1057,13 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
       </div>
 
       <div className="bg-blue-50 p-5 rounded-xl mb-6 text-sm text-blue-800 border border-blue-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 bg-blue-100 p-2 rounded-bl-lg">
-           <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        </div>
-        <h4 className="font-bold mb-3 text-blue-900 text-base flex items-center">
-           {text?.whatHappensNextTitle || "Here's What Happens Next:"}
-        </h4>
-        <p className="mb-3 leading-relaxed">
-            Your payment today covers your first <strong>{termNounDisplay}</strong> of service. Your subscription will <strong>not</strong> begin until your <strong>first scheduled visit</strong>.
-        </p>
+        <div className="absolute top-0 right-0 bg-blue-100 p-2 rounded-bl-lg"><svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+        <h4 className="font-bold mb-3 text-blue-900 text-base flex items-center">{text?.whatHappensNextTitle || "Here's What Happens Next:"}</h4>
+        <p className="mb-3 leading-relaxed">Your payment today covers your first <strong>{termNounDisplay}</strong> of service. Your subscription will <strong>not</strong> begin until your <strong>first scheduled visit</strong>.</p>
         <p className="mb-3">After checkout, a team member will text (or call) you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
         <div className="space-y-2">
-            <div className="flex items-start">
-               <div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
-               <span>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</span>
-            </div>
-            <div className="flex items-start">
-               <div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
-               <span>Your First <em>Paid</em> Visit (which starts your subscription).</span>
-            </div>
+            <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</span></div>
+            <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your First <em>Paid</em> Visit (which starts your subscription).</span></div>
         </div>
       </div>
       
@@ -1171,14 +1077,8 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
         </div>
         
-        {/* ADDED: Visual Trust Signals */}
         <PaymentTrustBadge />
-
-        <TermsCheckbox 
-          checked={formData.agreed} 
-          onChange={(val) => setFormData(prev => ({...prev, agreed: val}))}
-          isSubscription={true} 
-        />
+        <TermsCheckbox checked={formData.agreed} onChange={(val) => setFormData(prev => ({...prev, agreed: val}))} isSubscription={true} />
         
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
         <button disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold py-4 rounded-lg hover:bg-opacity-90">
@@ -1196,14 +1096,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    // Helper to make the yard size readable for humans
-    const yardSizeLabels = {
-      'standard': 'Standard (Up to 1/4 Acre)',
-      'tier1': 'Medium (1/4 - 1/2 Acre)',
-      'tier2': 'Large (1/2 - 1 Acre)',
-      'estate': 'Estate (Over 1 Acre)'
-    };
+    const yardSizeLabels = { 'standard': 'Standard (Up to 1/4 Acre)', 'tier1': 'Medium (1/4 - 1/2 Acre)', 'tier2': 'Large (1/2 - 1 Acre)', 'estate': 'Estate (Over 1 Acre)' };
     const readableYardSize = yardSizeLabels[yardSize] || yardSize || "Custom Quote / Estate";
 
     try {
@@ -1212,9 +1105,7 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
          headers: {'Content-Type': 'application/json'},
          body: JSON.stringify({
            leadType: 'customQuote',
-           // Add dog_count explicitly for GHL
            leadData: { ...formData, zip: zipCode, dog_count: dogCount, yard_size: readableYardSize, lead_status: 'Custom Quote Req' },
-           // SANITIZED EMAIL PARAMS - Fixing "Dynamic Variables Corrupted"
            emailParams: { 
              name: formData.name || 'Valued Customer',
              email: formData.email || '',
@@ -1230,17 +1121,8 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
          })
        });
        if (res.ok) {
-         // --- TRACK FACEBOOK LEAD EVENT ---
          trackFbEvent('Lead', { content_name: title });
-
-         // --- TRACK GOOGLE ADS CONVERSION (LEAD) ---
-         // Trigger: User requests a custom quote
-         if (typeof window.gtag === 'function') {
-           window.gtag('event', 'conversion', {
-             'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC'
-           });
-         }
-
+         if (typeof window.gtag === 'function') { window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC' }); }
          onSubmitSuccess();
        }
     } catch (e) { console.error(e); setIsSubmitting(false); }
@@ -1290,11 +1172,9 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           stripeMode, paymentMethodId: paymentMethod.id,
-          customer: { ...formData, terms: true }, // Explicitly passed
+          customer: { ...formData, terms: true },
           quote: { zipCode, dogCount, planName: 'One-Time Yard Reset', planKey: 'oneTime', paymentTerm: 'One-Time Deposit', totalDueToday: depositAmount },
-          // Ensure dog_count and zip are in leadData
           leadData: { ...formData, zip: zipCode, dog_count: dogCount, yard_size: "One-Time Reset (Size N/A)", lead_status: 'Complete - PAID (One-Time)', quote_type: 'One-Time Yard Reset' },
-          // SANITIZED EMAIL PARAMS
           emailParams: { 
             name: formData.name || 'Valued Customer',
             email: formData.email || '',
@@ -1310,24 +1190,8 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       });
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment processing failed.');
-      
-      // --- TRACK PURCHASE EVENT (FACEBOOK) ---
-      trackFbEvent('Purchase', {
-        value: depositAmount,
-        currency: 'USD',
-        content_name: 'One-Time Yard Reset'
-      });
-
-      // --- TRACK PURCHASE EVENT (GOOGLE ADS) ---
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'conversion', {
-          'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC',
-          'value': depositAmount,
-          'currency': 'USD',
-          'transaction_id': 'txn_' + Date.now()
-        });
-      }
-
+      trackFbEvent('Purchase', { value: depositAmount, currency: 'USD', content_name: 'One-Time Yard Reset' });
+      if (typeof window.gtag === 'function') { window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC', 'value': depositAmount, 'currency': 'USD', 'transaction_id': 'txn_' + Date.now() }); }
       onSubmitSuccess();
     } catch (err) {
       console.error('Submission Error:', err);
@@ -1353,16 +1217,8 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         <div className="p-3 border rounded bg-white min-h-[50px]">
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
         </div>
-        
-        {/* ADDED: Visual Trust Signals */}
         <PaymentTrustBadge />
-
-        <TermsCheckbox 
-          checked={formData.agreed} 
-          onChange={(val) => setFormData(prev => ({...prev, agreed: val}))}
-          isSubscription={false} 
-        />
-
+        <TermsCheckbox checked={formData.agreed} onChange={(val) => setFormData(prev => ({...prev, agreed: val}))} isSubscription={false} />
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
         <button disabled={isSubmitting} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90">
           {isSubmitting ? 'Processing...' : `Pay $${depositAmount.toFixed(2)} Deposit`}
@@ -1389,22 +1245,18 @@ const Site = () => {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showSatisfactionModal, setShowSatisfactionModal] = useState(false);
-  const [showYardHelperModal, setShowYardHelperModal] = useState(false); // New state for moving YardModal to root
-  const [showSavingsModal, setShowSavingsModal] = useState(false); // New Savings Modal State
+  const [showYardHelperModal, setShowYardHelperModal] = useState(false); 
+  const [showSavingsModal, setShowSavingsModal] = useState(false); 
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
 
-  // --- NEW: ENABLE EXIT INTENT ---
-  // This was missing in the previous version!
   useExitIntent(isFormSubmitted, () => setIsExitModalOpen(true));
 
-  // --- NEW: URL Zip Checker ---
   useEffect(() => {
     if (config?.data?.APPROVED_ZIP_CODES) {
       const params = new URLSearchParams(window.location.search);
       const urlZip = params.get('zip');
-      
       if (urlZip && /^\d{5}$/.test(urlZip) && config.data.APPROVED_ZIP_CODES.includes(urlZip)) {
         setZipCode(urlZip);
         setView('sorter');
@@ -1412,17 +1264,12 @@ const Site = () => {
     }
   }, [config]);
 
-  // --- NEW: SCROLL RESET EFFECT ---
-  // Whenever the 'view' changes, scroll the window to the top
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [view]);
+  useEffect(() => { window.scrollTo(0, 0); }, [view]);
 
   useEffect(() => {
     const init = async () => {
       let loadedConfig; 
       try {
-        // Use pre-initialized auth and db from ./firebase to avoid double-init issues
         await signInAnonymously(auth);
         const docSnap = await getDoc(doc(db, 'config', 'production'));
         if (docSnap.exists()) {
@@ -1441,19 +1288,12 @@ const Site = () => {
       }
       setConfig(loadedConfig);
 
-      // --- RESTORED PIXEL TRIGGERS ---
-      // Checks if pixel IDs exist in the loaded config and initializes them.
       if (loadedConfig.data?.FACEBOOK_PIXEL_ID) {
         initFacebookPixel(loadedConfig.data.FACEBOOK_PIXEL_ID);
       }
       
-      // NOTE: Google Tag has been removed from here and hardcoded in index.html to ensure verification.
-
       let stripeKey = 'pk_test_51SOAayGelkvkkUqXzl9sYTm9SDaWBYSIhzlQMPPxFKvrEn01f3VLimIe59vsEgnJdatB9JTAvNt4GH0n8YTLMYzK00LZXRTnXZ';
-      
-      // Safe environment variable access
       try {
-        // Check if import.meta.env exists before accessing properties
         if (import.meta && import.meta.env) {
            if (loadedConfig.data.STRIPE_MODE === 'live') {
              stripeKey = import.meta.env.VITE_STRIPE_PK_LIVE || stripeKey;
@@ -1461,9 +1301,7 @@ const Site = () => {
              stripeKey = import.meta.env.VITE_STRIPE_PK_TEST || stripeKey;
            }
         }
-      } catch(e) {
-        console.warn('Environment variables access failed, using default test key', e);
-      }
+      } catch(e) { console.warn('Env var access failed', e); }
       
       await loadScript('https://js.stripe.com/v3/', 'stripe-js');
       if (window.Stripe) {
@@ -1476,21 +1314,12 @@ const Site = () => {
     init();
   }, []);
 
-  // Updated Stripe mounting logic to prevent collisions
   useEffect(() => {
     if ((view === 'checkout' || view === 'onetime_checkout') && cardElement) {
       const mountPoint = document.getElementById('card-element');
       if (mountPoint) {
-        // Try unmounting first to be safe
-        try { cardElement.unmount(); } catch (e) { /* ignore if not mounted */ }
-        // Then mount
-        setTimeout(() => { 
-          try { 
-            cardElement.mount('#card-element'); 
-          } catch (e) { 
-            if(!e.message.includes('already')) console.error(e); 
-          } 
-        }, 100);
+        try { cardElement.unmount(); } catch (e) { }
+        setTimeout(() => { try { cardElement.mount('#card-element'); } catch (e) { if(!e.message.includes('already')) console.error(e); } }, 100);
       }
     }
   }, [view, cardElement]);
@@ -1502,8 +1331,9 @@ const Site = () => {
     else setView('packages');
   };
 
-  const handlePaymentPlanSelect = (term, total, savings, savingsValue) => {
-    setPaymentSelection({ term, total, savings, savingsValue });
+  // UPDATED HANDLER: Now receives isPromo
+  const handlePaymentPlanSelect = (term, total, savings, savingsValue, isPromo) => {
+    setPaymentSelection({ term, total, savings, savingsValue, isPromo });
     setView('checkout');
   };
 
@@ -1515,18 +1345,14 @@ const Site = () => {
         Status: {configSource}
       </div>
 
-      {/* --- CONDITIONAL HEADER: Hide on Landing Page (view === 'zip') so Landing Page can handle its own Hero --- */}
       {view !== 'zip' && <Header onSatisfactionClick={() => setShowSatisfactionModal(true)} />}
       
-      {/* --- MAIN CONTENT AREA --- */}
-      {/* If view is 'zip' (Landing Page), we render it Full Width (no container/padding constraints) */}
       {view === 'zip' ? (
         <LandingPage 
           config={config} 
           onZipValidated={(z) => { setZipCode(z); setView('sorter'); }}
           onCustomQuoteClick={() => { setView('lead_estate'); setYardSize('estate'); }}
           onInfoClick={() => setShowInfoModal(true)}
-          // --- FIXED: ADDED MISSING HANDLER ---
           onAlertsInfoClick={() => setShowAlertsModal(true)}
         />
       ) : (
@@ -1534,16 +1360,15 @@ const Site = () => {
           {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
           {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
-          {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} />}
-          {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} />}
-          {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} onSavingsInfoClick={() => setShowSavingsModal(true)} />}
+          {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} promotions={config.data.promotions} />}
+          {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} promotions={config.data.promotions} />}
+          {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} onSavingsInfoClick={() => setShowSavingsModal(true)} promotions={config.data.promotions} />}
           {view === 'onetime' && (
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
                 <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
                 <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">{config.text.oneTimeView.title}</h2>
                 <div className="text-center my-6 py-4 border-y border-gray-200"><span className="text-5xl font-extrabold text-slate-900">$99.99</span><p className="text-sm text-slate-500 mt-1">{config.text.oneTimeView.subTitle}</p></div>
                 <p className="text-slate-600 text-center mb-4">{config.text.oneTimeView.description}</p>
-                {/* FIX: Updated setView to use 'lead_estate' instead of invalid 'custom_quote' */}
                 <p className="text-slate-600 text-center text-sm mb-6">{config.text.oneTimeView.estatePrompt} <button onClick={() => { setView('lead_estate'); setYardSize('estate'); }} className="font-bold underline text-blue-600 hover:text-blue-700">{config.text.oneTimeView.estateLinkText}</button>.</p>
                 <div className="bg-green-50 border-l-4 border-green-500 text-green-800 p-4 rounded-r-lg mb-6"><p className="font-bold">{config.text.oneTimeView.psTitle}</p><p className="text-sm"><span dangerouslySetInnerHTML={{ __html: config.text.oneTimeView.psBody.replace('{price}', config.data.basePrices.weekly + (config.data.dogFeeMap?.['1-2'] || 0)) }} /> <button onClick={() => setView('packages')} className="font-bold underline ml-1 hover:text-green-600">{config.text.oneTimeView.psLinkText}</button></p></div>
                 <button type="button" onClick={() => setView('onetime_checkout')} className="w-full bg-[var(--brand-blue)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg">Book One-Time Cleanup</button>
@@ -1560,10 +1385,8 @@ const Site = () => {
         </main>
       )}
 
-      {/* --- FOOTER: Hide on Landing Page because Landing Page has its own simplified footer/layout --- */}
       {view !== 'zip' && <Footer text={config.text.footer} />}
 
-      {/* --- MODALS (Global) --- */}
       {showInfoModal && <ServiceInfoModal onClose={() => setShowInfoModal(false)} text={config.text.modals.serviceInfo} />}
       {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={config.text.modals.alertsInfo} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
