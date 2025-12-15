@@ -9,13 +9,16 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
 
   // --- Load TrustIndex Review Widget ---
   useEffect(() => {
-    // Check if script is already there to prevent duplicates
-    if (!document.querySelector('script[src*="trustindex.io"]')) {
+    // Target the specific container instead of the body
+    const container = document.getElementById('trustindex-widget-container');
+    
+    // Check if script is already there to prevent duplicates inside the container
+    if (container && !container.querySelector('script[src*="trustindex.io"]')) {
       const script = document.createElement('script');
       script.src = "https://cdn.trustindex.io/loader.js?bcbd78c609d5338ba8463b296ff";
       script.async = true;
       script.defer = true;
-      document.body.appendChild(script);
+      container.appendChild(script);
     }
   }, []);
 
@@ -98,7 +101,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             {/* The TrustIndex script will inject the widget here automatically if configured as a floating or embedded widget. 
                 If it needs a specific container, we can add it, but usually the script handles injection. */}
             <div className="min-h-[100px] flex items-center justify-center">
-                {/* Fallback text while loading */}
+                {/* Script is injected here by useEffect */}
                 <div id="trustindex-widget-container"></div>
             </div>
         </div>
