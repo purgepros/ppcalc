@@ -56,8 +56,9 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/60 to-black/40"></div>
 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
-          <div className="inline-block bg-[#38b6ff] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse">
-            Limited Offer: Free Initial Yard Reset ($99+ Value)
+          {/* NUCLEAR OFFER BANNER */}
+          <div className="inline-block bg-[#38b6ff] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse border border-white/20">
+            DOUBLE DEAL: 50% OFF First Month + FREE Initial Reset ($150+ Savings)
           </div>
           
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
@@ -98,10 +99,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
       <section className="bg-gray-50 py-10 border-b border-gray-100">
         <div className="container mx-auto max-w-4xl px-4 text-center">
             <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-6">Trusted by Indy's Top Pet Owners</p>
-            {/* The TrustIndex script will inject the widget here automatically if configured as a floating or embedded widget. 
-                If it needs a specific container, we can add it, but usually the script handles injection. */}
             <div className="min-h-[100px] flex items-center justify-center">
-                {/* Script is injected here by useEffect */}
                 <div id="trustindex-widget-container"></div>
             </div>
         </div>
@@ -165,7 +163,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
         </div>
       </section>
 
-      {/* --- US VS THEM COMPARISON (THE "MISSING" PIECE) --- */}
+      {/* --- US VS THEM COMPARISON TABLE --- */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto max-w-4xl px-4">
             <h2 className="text-3xl font-extrabold text-center mb-10">Why We Are Different</h2>
@@ -187,7 +185,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center bg-blue-50/50">
                     <div className="font-bold text-gray-800">Hauls Waste Away</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
-                    <div className="text-center text-red-400 text-sm font-bold">Left in YOUR bin</div>
+                    <div className="text-center text-red-500 text-sm font-bold">Left in YOUR bin</div>
                 </div>
 
                 {/* Row 3 - Sanitizing & Deodorizing (Moved down & Bundled) */}
@@ -208,7 +206,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <div className="grid grid-cols-3 py-4 px-6 items-center">
                     <div className="font-bold text-gray-800">Free Initial Clean</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
-                    <div className="text-center text-red-500 text-sm font-bold">Charges $40 - $100+</div>
+                    <div className="text-center text-red-600 text-sm font-bold">Charges $40 - $100+</div>
                 </div>
             </div>
         </div>
@@ -228,6 +226,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-4xl font-extrabold text-[#38b6ff] mb-2">
                 ${prices.biWeekly}<span className="text-lg text-white font-medium">/mo</span>
               </div>
+              <div className="text-[#38b6ff] text-xs font-bold uppercase tracking-wide mb-2">First Month: 50% OFF</div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">2 Visits / Month</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
@@ -266,6 +265,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-4xl font-extrabold text-[#38b6ff] mb-2">
                 ${prices.weekly}<span className="text-lg text-white font-medium">/mo</span>
               </div>
+              <div className="text-[#38b6ff] text-xs font-bold uppercase tracking-wide mb-2">First Month: 50% OFF</div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">4-5 Visits / Month (Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
@@ -310,6 +310,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               <div className="text-4xl font-extrabold text-[#38b6ff] mb-2">
                 ${prices.twiceWeekly}<span className="text-lg text-white font-medium">/mo</span>
               </div>
+              <div className="text-[#38b6ff] text-xs font-bold uppercase tracking-wide mb-2">First Month: 50% OFF</div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">8-9 Visits / Month (Twice-Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
