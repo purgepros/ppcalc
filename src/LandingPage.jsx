@@ -182,29 +182,33 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
                 </div>
-                {/* Row 2 */}
+                
+                {/* Row 2 - Hauls Waste Away (Moved up) */}
                 <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center bg-blue-50/50">
-                    <div className="font-bold text-gray-800">Sanitizing Treatment</div>
-                    <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
-                    <div className="text-center text-gray-400 text-xl">-</div>
-                </div>
-                {/* Row 3 */}
-                <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center">
                     <div className="font-bold text-gray-800">Hauls Waste Away</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
                     <div className="text-center text-red-400 text-sm font-bold">Left in YOUR bin</div>
                 </div>
-                {/* Row 4 */}
+
+                {/* Row 3 - Sanitizing & Deodorizing (Moved down & Bundled) */}
+                <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center">
+                    <div className="font-bold text-gray-800">Sanitizing & Deodorizing</div>
+                    <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
+                    <div className="text-center text-gray-400 text-xl">-</div>
+                </div>
+
+                {/* Row 4 - Locked Gate Photo */}
                 <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center bg-blue-50/50">
                     <div className="font-bold text-gray-800">Locked Gate Photo</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
-                    <div className="text-center text-gray-400 text-xl">-</div>
+                    <div className="text-center text-gray-400 text-xl">Varies</div>
                 </div>
-                {/* Row 5 */}
+
+                {/* Row 5 - Free Initial Clean */}
                 <div className="grid grid-cols-3 py-4 px-6 items-center">
                     <div className="font-bold text-gray-800">Free Initial Clean</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
-                    <div className="text-center text-red-400 text-sm font-bold">Charge Extra</div>
+                    <div className="text-center text-red-500 text-sm font-bold">Charges $40 - $100+</div>
                 </div>
             </div>
         </div>
