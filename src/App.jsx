@@ -1,9 +1,4 @@
-/* REPLACE src/App.jsx content with this.
-   Changes: 
-   1. Terminology: "First Cleanup" instead of "Initial Reset".
-   2. Flow: Merged Payment Frequency into CheckoutForm.
-   3. Defaults: Default to Monthly payment.
-*/
+/* REPLACE src/App.jsx content with this. */
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
@@ -355,8 +350,10 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
-const SpecialOfferBox = ({ offer }) => {
+const SpecialOfferBox = ({ offer, promotions }) => {
   if (!offer) return null;
+  const isPromoActive = promotions?.isActive;
+  
   return (
     <div className="bg-white border-2 border-dashed border-[var(--brand-green)] p-5 rounded-xl mb-6 shadow-sm relative overflow-hidden group transform transition-transform hover:scale-[1.01]">
       <div className="absolute top-0 right-0 bg-[var(--brand-green)] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider shadow-sm">
@@ -369,6 +366,15 @@ const SpecialOfferBox = ({ offer }) => {
         <div>
           <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">{offer.specialOfferTitle}</h3>
           <div className="text-slate-600 text-sm leading-relaxed space-y-1" dangerouslySetInnerHTML={{ __html: offer.specialOfferBody }} />
+          
+          {/* NEW: Promo Addition */}
+          {isPromoActive && (
+            <div className="mt-3 pt-2 border-t border-green-100">
+               <p className="text-sm font-bold text-red-600 flex items-center animate-pulse">
+                 <span className="mr-1">✚</span> {promotions.bannerText || "50% Off First Month!"}
+               </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -447,7 +453,7 @@ const Footer = ({ text }) => {
   );
 };
 
-const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick }) => {
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
 
@@ -506,7 +512,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
         </select>
       </div>
 
-      <SpecialOfferBox offer={specialOffer} />
+      <SpecialOfferBox offer={specialOffer} promotions={promotions} />
 
       <button onClick={handleSubmit} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
         See My Price
@@ -1365,7 +1371,7 @@ const Site = () => {
         />
       ) : (
         <main className="container mx-auto px-4 max-w-xl pb-12">
-          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
+          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} promotions={config.data.promotions} />}
           {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           
