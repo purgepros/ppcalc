@@ -99,7 +99,7 @@
     "checkoutView": {
       "title": "Final Step: Complete Your Order",
       "whatHappensNextTitle": "Here's What Happens Next:",
-      "whatHappensNextBody": "Your payment today covers your <strong>first {term} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.<br/><br/>After checkout, a team member will text (or call) you within 24 hours to schedule **two** separate appointments:<br/>1. Your 100% <strong>FREE 'Initial Yard Reset'</strong> ($99.99+ value).<br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).",
+      "whatHappensNextBody": "Your payment today covers your <strong>first {term} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.<br/><br/>After checkout, a team member will text (or call) you within 24 hours to schedule **two** separate appointments:<br/>1. Your 100% <strong>FREE First Cleanup</strong> ($99.99+ value).<br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).",
       "bailoutLink": "Prefer to set up your account over the phone? Click here."
     },
     "oneTimeView": {
