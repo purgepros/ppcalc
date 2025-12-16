@@ -1,7 +1,8 @@
 /* REPLACE src/App.jsx content with this.
    Changes: 
-   1. PackageSelector: Visual Logic for 50% Off (Strikethrough old price, show new).
-   2. PaymentPlanSelector: Logic to apply 50% discount ONLY to the 'Monthly' option.
+   1. Terminology: "First Cleanup" instead of "Initial Reset".
+   2. Flow: Merged Payment Frequency into CheckoutForm.
+   3. Defaults: Default to Monthly payment.
 */
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
@@ -214,10 +215,11 @@ const SavingsInfoModal = ({ onClose }) => (
         <h3 className="text-xl font-bold text-slate-800">Your Savings Explained</h3>
       </div>
       <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
-        <p>The <strong className="text-green-700">$99.99</strong> savings figure is the <strong>minimum value</strong> of our 'Initial Yard Reset'.</p>
+        <p>The <strong className="text-green-700">OVER $99.99</strong> savings figure comes from our Free First Cleanup guarantee.</p>
         <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-          <p className="mb-2">If your yard has a significant accumulation of waste, a one-time cleanup typically costs <strong>$150 to $300+</strong>.</p>
+          <p className="mb-2">A one-time cleanup typically costs <strong>$150 to $300+</strong> depending on accumulation.</p>
           <p>With a subscription, we waive this fee <strong className="text-slate-900">100%</strong>.</p>
+          <p className="mt-2 text-xs text-slate-500">Plus, any seasonal promotions (like 50% off) are added on top of this value!</p>
         </div>
       </div>
       <button onClick={onClose} className="mt-6 w-full bg-slate-800 text-white font-bold py-3 rounded-lg hover:opacity-90 transition-all">Got it</button>
@@ -768,19 +770,25 @@ const PackageSelector = ({
   );
 };
 
-const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarterlyDiscount, text, promotions }) => {
+const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  
+  // --- INTERNAL STATE FOR MERGED PAYMENT SELECTION ---
+  const [paymentSelection, setPaymentSelection] = useState(initialPaymentSelection);
+
+  // --- RECREATE PLAN LOGIC FROM PaymentPlanSelector ---
   const monthly = packageSelection.finalMonthlyPrice;
   const qDisc = quarterlyDiscount || 30;
-  
   const isPromoActive = promotions?.isActive || false;
   // Calculate Discounted Monthly Price for Display
   const discountedMonthly = isPromoActive ? monthly / 2 : monthly;
 
-  const plans = [
+  const paymentOptions = [
     { 
       term: 'Monthly', 
       label: 'Pay Monthly', 
-      // Logic: If promo is active, show discounted price. Else normal.
       totalDue: discountedMonthly, 
       savingsText: isPromoActive ? "50% OFF First Month!" : null, 
       savingsValue: 0,
@@ -789,7 +797,6 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
     { 
       term: 'Quarterly', 
       label: 'Pay Quarterly', 
-      // Logic: Promo does NOT apply to quarterly to avoid huge loss. Standard pricing.
       totalDue: (monthly * 3) - qDisc, 
       savingsText: `Save $${qDisc} per Quarter!`, 
       savingsValue: qDisc, 
@@ -799,55 +806,23 @@ const PaymentPlanSelector = ({ packageSelection, onPaymentSelect, onBack, quarte
       term: 'Annual', 
       label: 'Pay Yearly', 
       totalDue: monthly * 11, 
-      savingsText: `Get 1 Month FREE (Save $${monthly})!`, 
+      savingsText: `Get 1 Month FREE!`, 
       savingsValue: monthly, 
       isPopular: true 
     }
   ];
 
-  return (
-    <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">{text?.title || "Choose Payment Plan"}</h2>
-      <p className="text-center text-slate-600 mb-6">for <strong>{packageSelection.name}</strong> plan</p>
-      <div className="space-y-4">
-        {plans.map((p) => (
-          <button key={p.term} onClick={() => onPaymentSelect(p.term, p.totalDue, p.savingsText, p.savingsValue, p.isPromo)} className={`relative w-full text-left p-5 border-2 rounded-xl transition-all hover:-translate-y-1 ${p.isPopular || p.isPromo ? 'border-[var(--brand-green)] bg-green-50 shadow-md' : 'border-gray-200 bg-white hover:border-blue-300'}`}>
-            {p.isPopular && <span className="absolute -top-3 right-4 bg-[var(--brand-green)] text-white text-xs font-bold px-2 py-1 rounded">BEST VALUE</span>}
-            {p.isPromo && <span className="absolute -top-3 right-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-sm animate-pulse">LIMITED OFFER</span>}
-            
-            <div className="flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">{p.label}</h3>
-                {p.savingsText && <p className={`text-sm font-bold ${p.isPromo ? 'text-red-600' : 'text-green-600'}`}>{p.savingsText}</p>}
-                {p.isPromo && <p className="text-xs text-slate-500 mt-1">Renews at ${monthly.toFixed(2)}/mo</p>}
-              </div>
-              <div className="text-right">
-                {p.isPromo ? (
-                   <div>
-                     <span className="block text-gray-400 text-sm line-through">${monthly.toFixed(2)}</span>
-                     <span className="block text-3xl font-extrabold text-red-600">${p.totalDue.toFixed(2)}</span>
-                   </div>
-                ) : (
-                   <span className="block text-2xl font-extrabold text-slate-900">${p.totalDue.toFixed(2)}</span>
-                )}
-                <span className="text-xs text-slate-500">due today</span>
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-};
+  const handleFrequencyChange = (option) => {
+    setPaymentSelection({
+        term: option.term,
+        total: option.totalDue,
+        savingsText: option.savingsText,
+        savingsValue: option.savingsValue,
+        isPromo: option.isPromo
+    });
+  };
 
-const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  
   const totalDue = paymentSelection.total;
-  // If promo is active, the savings is HUGE. Otherwise standard.
   const isPromoApplied = paymentSelection.isPromo;
   const promoSavings = isPromoApplied ? packageSelection.finalMonthlyPrice / 2 : 0;
   const totalSavings = 99.99 + paymentSelection.savingsValue + promoSavings;
@@ -923,8 +898,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         termNoun = 'Year';
       }
 
-      // --- PASS COUPON ID TO BACKEND ---
-      // Determine which ID to use based on mode
       const couponId = stripeMode === 'live' ? promotions?.couponIdLive : promotions?.couponIdTest;
 
       const payload = {
@@ -933,7 +906,6 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         customer: { ...formData, terms: true, auth: true },
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
         leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term, yard_size: readableYardSize },
-        // PASS THE PROMO DATA
         promo: {
             applied: isPromoApplied,
             couponId: isPromoApplied ? couponId : null
@@ -987,42 +959,59 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
 
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back</button>
-      <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Checkout"}</h2>
+      <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back to Plans</button>
+      <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Complete Order"}</h2>
       
+      {/* --- PAYMENT FREQUENCY SELECTOR --- */}
+      <div className="mb-6">
+        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Select Payment Frequency</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {paymentOptions.map((opt) => {
+                const isSelected = paymentSelection.term === opt.term;
+                return (
+                    <button
+                        key={opt.term}
+                        type="button"
+                        onClick={() => handleFrequencyChange(opt)}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${isSelected ? 'border-[var(--brand-green)] bg-green-50 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
+                    >
+                        <div className="flex justify-between items-center mb-1">
+                            <span className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>{opt.term}</span>
+                            {opt.isPromo && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">SALE</span>}
+                        </div>
+                        <div className={`font-extrabold text-lg ${opt.isPromo ? 'text-red-600' : 'text-gray-800'}`}>${opt.totalDue.toFixed(2)}</div>
+                        <div className="text-[10px] font-medium text-green-600 mt-1">{opt.savingsText || "Standard Rate"}</div>
+                    </button>
+                );
+            })}
+        </div>
+      </div>
+
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
-        <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Plan Breakdown</h4>
-        <div className="flex justify-between mb-1"><span className="text-slate-600">Frequency</span><span className="font-medium">{bd.details?.frequency || packageSelection.name}</span></div>
+        <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Order Summary</h4>
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Plan</span><span className="font-medium">{packageSelection.name}</span></div>
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Frequency</span><span className="font-medium">{bd.details?.frequency}</span></div>
         <div className="flex justify-between mb-1"><span className="text-slate-600">Dogs Included</span><span className="font-medium">{bd.numDogs}</span></div>
-        <div className="flex justify-between mb-1"><span className="text-slate-600">Base Plan Rate</span><span className="font-medium">${bd.baseRate}</span></div>
-        {bd.lotFee > 0 && (<div className="flex justify-between mb-1"><span className="text-slate-600">Lot Size Fee</span><span className="font-medium">+${bd.lotFee}</span></div>)}
-        {bd.dogFee > 0 && (<div className="flex justify-between mb-1"><span className="text-slate-600">Extra Dog Fee</span><span className="font-medium">+${bd.dogFee}</span></div>)}
-        <div className="flex justify-between mb-1"><span className="text-slate-600">Yard+ Coverage (Front/Sides)</span><span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>{bd.yardPlusStatus === 'Included' ? 'Included' : (bd.yardPlusCost > 0 ? `+$${bd.yardPlusCost}` : 'Not Selected')}</span></div>
+        <div className="flex justify-between mb-1"><span className="text-slate-600">Yard+ Coverage</span><span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>{bd.yardPlusStatus}</span></div>
 
         <div className="border-t border-slate-200 my-2 pt-2">
-           <div className="flex justify-between font-bold text-slate-800 mb-2">
-             <span>Total Monthly Rate:</span>
-             <span>${packageSelection.finalMonthlyPrice}</span>
+           <div className="flex justify-between font-bold text-slate-800 mb-1">
+             <span>Monthly Rate:</span>
+             <span>${packageSelection.finalMonthlyPrice.toFixed(2)}</span>
            </div>
            
-           {paymentSelection.term !== 'Monthly' && (
-             <div className="flex justify-between text-slate-600 italic">
-                <span>x {paymentSelection.term === 'Quarterly' ? '3 Months' : '12 Months'}</span>
-             </div>
-           )}
-           
-           {isPromoApplied && (
-             <div className="flex justify-between text-red-600 font-bold mt-1">
-                <span>First Month Discount (50%):</span>
+           {isPromoApplied ? (
+             <div className="flex justify-between text-red-600 font-bold mb-1">
+                <span>First Month (50% Off):</span>
                 <span>-${promoSavings.toFixed(2)}</span>
              </div>
-           )}
-
-           {paymentSelection.savingsValue > 0 && !isPromoApplied && (
-             <div className="flex justify-between text-green-600 font-bold mt-1">
-                <span>{paymentSelection.term} Discount:</span>
-                <span>-${paymentSelection.savingsValue.toFixed(2)}</span>
-             </div>
+           ) : (
+             paymentSelection.savingsValue > 0 && (
+                <div className="flex justify-between text-green-600 font-bold mb-1">
+                    <span>{paymentSelection.term} Savings:</span>
+                    <span>-${paymentSelection.savingsValue.toFixed(2)}</span>
+                </div>
+             )
            )}
         </div>
 
@@ -1033,28 +1022,29 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         
         <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-900 p-3 rounded-lg mt-4 shadow-sm">
           <div className="flex justify-between items-end mb-1">
-            <span className="font-extrabold text-sm flex items-center">🎉 TOTAL SAVINGS APPLIED:</span>
-            <span className="font-extrabold text-xl tracking-tight">${totalSavings.toFixed(2)}</span>
+            <span className="font-extrabold text-sm flex items-center">🎉 TOTAL SAVINGS:</span>
+            <span className="font-extrabold text-xl tracking-tight">OVER ${totalSavings.toFixed(2)}</span>
           </div>
           <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
              <div className="flex justify-between items-center">
                <div className="flex items-center">
-                 <span>100% Free First Visit / Waived Setup</span>
+                 <span>FREE First Cleanup</span>
                  <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
                </div>
                <span className="font-bold">$99.99</span>
              </div>
-             {isPromoApplied && (
+             {isPromoApplied ? (
                 <div className="flex justify-between items-center text-red-700">
-                  <span>50% Off First Month Trial:</span>
+                  <span>50% Off First Month:</span>
                   <span className="font-bold">+${promoSavings.toFixed(2)}</span>
                 </div>
-             )}
-             {paymentSelection.savingsValue > 0 && !isPromoApplied && (
-                <div className="flex justify-between items-center">
-                  <span>{paymentSelection.term} Payment Discount:</span>
-                  <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
-                </div>
+             ) : (
+                paymentSelection.savingsValue > 0 && (
+                    <div className="flex justify-between items-center">
+                    <span>{paymentSelection.term} Discount:</span>
+                    <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
+                    </div>
+                )
              )}
           </div>
         </div>
@@ -1066,7 +1056,7 @@ const CheckoutForm = ({ packageSelection, paymentSelection, zipCode, dogCount, y
         <p className="mb-3 leading-relaxed">Your payment today covers your first <strong>{termNounDisplay}</strong> of service. Your subscription will <strong>not</strong> begin until your <strong>first scheduled visit</strong>.</p>
         <p className="mb-3">After checkout, a team member will text (or call) you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
         <div className="space-y-2">
-            <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your 100% FREE 1st Scoop / Initial Yard Reset ($99.99+ Value).</span></div>
+            <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your 100% FREE First Cleanup ($99.99+ Value).</span></div>
             <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your First <em>Paid</em> Visit (which starts your subscription).</span></div>
         </div>
       </div>
@@ -1241,7 +1231,8 @@ const Site = () => {
   const [dogCountLabel, setDogCountLabel] = useState('1-2'); 
   const [yardPlusSelections, setYardPlusSelections] = useState({});
   const [packageSelection, setPackageSelection] = useState(null); 
-  const [paymentSelection, setPaymentSelection] = useState(null); 
+  // Initial Payment Selection is just a placeholder, logic now lives in CheckoutForm
+  const [initialPaymentSelection, setInitialPaymentSelection] = useState(null); 
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [stripeInstance, setStripeInstance] = useState(null);
   const [cardElement, setCardElement] = useState(null);
@@ -1335,9 +1326,22 @@ const Site = () => {
     else setView('packages');
   };
 
-  // UPDATED HANDLER: Now receives isPromo
-  const handlePaymentPlanSelect = (term, total, savings, savingsValue, isPromo) => {
-    setPaymentSelection({ term, total, savings, savingsValue, isPromo });
+  const handlePlanSelect = (planName, finalPrice, planKey) => {
+    setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey});
+    
+    // Set Default Payment Selection (Monthly)
+    const isPromoActive = config?.data?.promotions?.isActive || false;
+    const monthlyPrice = finalPrice;
+    
+    setInitialPaymentSelection({
+        term: 'Monthly',
+        total: isPromoActive ? monthlyPrice / 2 : monthlyPrice,
+        savingsText: isPromoActive ? "50% OFF First Month!" : null,
+        savingsValue: 0,
+        isPromo: isPromoActive
+    });
+
+    // Skip PaymentPlanSelector (Step 4) and go straight to Checkout (Step 5)
     setView('checkout');
   };
 
@@ -1364,9 +1368,52 @@ const Site = () => {
           {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} />}
           {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
-          {view === 'packages' && <PackageSelector basePrices={config.data.basePrices} planDetails={config.data.planDetails} yardSize={yardSize} numDogs={numDogs} lotFees={config.data.lotFees} extraDogPrice={config.data.extraDogPrice} yardPlusPrice={config.data.yardPlusPrice} yardPlusSelections={yardPlusSelections} setYardPlusSelections={setYardPlusSelections} text={config.text.packagesView} specialOffer={config.text.globals} onBack={() => setView('sorter')} onPlanSelect={(planName, finalPrice, planKey) => { setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey}); setView('payment'); }} onOneTimeClick={() => setView('onetime')} onInfoClick={() => setShowInfoModal(true)} onAlertsInfoClick={() => setShowAlertsModal(true)} promotions={config.data.promotions} />}
-          {view === 'payment' && <PaymentPlanSelector packageSelection={packageSelection} quarterlyDiscount={config.data.quarterlyDiscount} text={config.text.paymentPlanView} onPaymentSelect={handlePaymentPlanSelect} onBack={() => setView('packages')} promotions={config.data.promotions} />}
-          {view === 'checkout' && <CheckoutForm packageSelection={packageSelection} paymentSelection={paymentSelection} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} yardPlusSelected={!!yardPlusSelections[packageSelection.key]} stripeInstance={stripeInstance} cardElement={cardElement} text={config.text.checkoutView} stripeMode={config.data.STRIPE_MODE} onBack={() => setView('payment')} onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} configData={config.data} onSavingsInfoClick={() => setShowSavingsModal(true)} promotions={config.data.promotions} />}
+          
+          {view === 'packages' && (
+            <PackageSelector 
+              basePrices={config.data.basePrices} 
+              planDetails={config.data.planDetails} 
+              yardSize={yardSize} 
+              numDogs={numDogs} 
+              lotFees={config.data.lotFees} 
+              extraDogPrice={config.data.extraDogPrice} 
+              yardPlusPrice={config.data.yardPlusPrice} 
+              yardPlusSelections={yardPlusSelections} 
+              setYardPlusSelections={setYardPlusSelections} 
+              text={config.text.packagesView} 
+              specialOffer={config.text.globals} 
+              onBack={() => setView('sorter')} 
+              onPlanSelect={handlePlanSelect} // Use new handler
+              onOneTimeClick={() => setView('onetime')} 
+              onInfoClick={() => setShowInfoModal(true)} 
+              onAlertsInfoClick={() => setShowAlertsModal(true)} 
+              promotions={config.data.promotions} 
+            />
+          )}
+          
+          {/* Note: 'payment' view is now skipped */}
+          
+          {view === 'checkout' && (
+            <CheckoutForm 
+              packageSelection={packageSelection} 
+              initialPaymentSelection={initialPaymentSelection} // Pass initial state
+              zipCode={zipCode} 
+              dogCount={dogCountLabel} 
+              yardSize={yardSize} 
+              yardPlusSelected={!!yardPlusSelections[packageSelection.key]} 
+              stripeInstance={stripeInstance} 
+              cardElement={cardElement} 
+              text={config.text.checkoutView} 
+              stripeMode={config.data.STRIPE_MODE} 
+              onBack={() => setView('packages')} // Go back to Packages, not Payment
+              onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} 
+              configData={config.data} 
+              onSavingsInfoClick={() => setShowSavingsModal(true)} 
+              promotions={config.data.promotions}
+              quarterlyDiscount={config.data.quarterlyDiscount}
+            />
+          )}
+          
           {view === 'onetime' && (
               <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
                 <button onClick={() => setView('packages')} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back to Plans</button>

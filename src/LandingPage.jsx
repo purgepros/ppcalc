@@ -56,9 +56,9 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/60 to-black/40"></div>
 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
-          {/* NUCLEAR OFFER BANNER */}
-          <div className="inline-block bg-[#38b6ff] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse border border-white/20">
-            DOUBLE DEAL: 50% OFF First Month + FREE Initial Reset ($150+ Savings)
+          {/* NUCLEAR OFFER BANNER - CHANGED TO RED ORANGE */}
+          <div className="inline-block bg-[#ff4500] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse border border-white/20">
+            DOUBLE DEAL: 50% OFF First Month + FREE First Cleanup ($150+ Savings)
           </div>
           
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
@@ -202,9 +202,9 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                     <div className="text-center text-gray-400 text-xl">Varies</div>
                 </div>
 
-                {/* Row 5 - Free Initial Clean */}
+                {/* Row 5 - Free First Cleanup */}
                 <div className="grid grid-cols-3 py-4 px-6 items-center">
-                    <div className="font-bold text-gray-800">Free Initial Clean</div>
+                    <div className="font-bold text-gray-800">Free First Cleanup</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
                     <div className="text-center text-red-600 text-sm font-bold">Charges $40 - $100+</div>
                 </div>
@@ -247,7 +247,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
 
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE First Cleanup</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -295,7 +295,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
                 
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset (Over $99 Value)</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE First Cleanup (Over $99 Value)</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-[#38b6ff] hover:bg-[#2ea0e6] text-white font-bold py-3 rounded-full transition-all shadow-lg hover:-translate-y-1 cursor-pointer">
@@ -338,7 +338,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Automated Reminders</li>
 
                 <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE Initial Reset</strong>
+                  <span className="mr-2">★</span> <strong>BONUS: FREE First Cleanup</strong>
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -369,7 +369,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             <div className="bg-white p-8 rounded-xl shadow-sm">
               <div className="w-12 h-12 bg-[#38b6ff] text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-6">3</div>
               <h3 className="text-xl font-bold mb-3 text-gray-900">We Reset & Maintain</h3>
-              <p className="text-gray-600">We perform your FREE Initial Reset, then show up every week to keep it perfect.</p>
+              <p className="text-gray-600">We perform your FREE First Cleanup, then show up every week to keep it perfect.</p>
             </div>
           </div>
         </div>
