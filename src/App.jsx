@@ -1,4 +1,9 @@
-/* REPLACE src/App.jsx content with this. */
+/* REPLACE src/App.jsx content with this.
+   Changes: 
+   1. Terminology: "First Cleanup" instead of "Initial Reset".
+   2. Flow: Merged Payment Frequency into CheckoutForm.
+   3. Defaults: Default to Monthly payment.
+*/
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
@@ -367,12 +372,13 @@ const SpecialOfferBox = ({ offer, promotions }) => {
           <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">{offer.specialOfferTitle}</h3>
           <div className="text-slate-600 text-sm leading-relaxed space-y-1" dangerouslySetInnerHTML={{ __html: offer.specialOfferBody }} />
           
-          {/* NEW: Promo Addition */}
+          {/* NEW: Promo Addition - FIXED HTML RENDERING */}
           {isPromoActive && (
             <div className="mt-3 pt-2 border-t border-green-100">
-               <p className="text-sm font-bold text-red-600 flex items-center animate-pulse">
-                 <span className="mr-1">✚</span> {promotions.bannerText || "50% Off First Month!"}
-               </p>
+               <div className="text-sm font-bold text-red-600 flex items-center animate-pulse">
+                 <span className="mr-1">✚</span> 
+                 <span dangerouslySetInnerHTML={{ __html: promotions.bannerText || "50% Off First Month!" }} />
+               </div>
             </div>
           )}
         </div>
