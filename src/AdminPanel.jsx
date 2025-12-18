@@ -1,4 +1,3 @@
-/* REPLACE the entire content of src/AdminPanel.jsx with this. */
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -198,7 +197,6 @@ const AdminDashboard = () => {
     
     // --- BUG FIX: Parse numbers correctly ---
     // If the input type is 'number', convert the string value to a real JavaScript number.
-    // This prevents "60" (string) + 0 becoming "600" instead of 60.
     const val = type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value);
 
     setConfig(prevConfig => {
@@ -222,18 +220,32 @@ const AdminDashboard = () => {
     });
   };
 
-  // 3. Handle changes to items in an array (Safe Version)
-  const handleArrayChange = (e, section, key, subKey, index) => {
+  // 3. Handle changes to items in an array (IMPROVED for deep nesting)
+  // supports optional subSubKey for things like modals.serviceInfo.body
+  const handleArrayChange = (e, section, key, subKey, index, subSubKey = null) => {
     const { value } = e.target;
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
-      // Ensure array exists
+      
+      // Ensure path exists
       if (!newConfig[section]) newConfig[section] = {};
       if (!newConfig[section][key]) newConfig[section][key] = {};
-      if (!Array.isArray(newConfig[section][key][subKey])) {
-         newConfig[section][key][subKey] = [];
+      if (!newConfig[section][key][subKey]) newConfig[section][key][subKey] = {};
+
+      let targetArray;
+      if (subSubKey) {
+         if (!Array.isArray(newConfig[section][key][subKey][subSubKey])) {
+             newConfig[section][key][subKey][subSubKey] = [];
+         }
+         targetArray = newConfig[section][key][subKey][subSubKey];
+      } else {
+         if (!Array.isArray(newConfig[section][key][subKey])) {
+             newConfig[section][key][subKey] = [];
+         }
+         targetArray = newConfig[section][key][subKey];
       }
-      newConfig[section][key][subKey][index] = value;
+
+      targetArray[index] = value;
       return newConfig;
     });
   };
@@ -268,7 +280,7 @@ const AdminDashboard = () => {
     }));
   };
 
-  // --- NEW: Load from Local Config.json ---
+  // --- Load from Local Config.json ---
   const handleLoadFromLocal = async () => {
     if (!window.confirm("Warning: This will overwrite the current Admin view with data from your 'config.json' file. You must click 'Save' afterwards to update the database. Continue?")) return;
     
@@ -480,6 +492,24 @@ const AdminDashboard = () => {
               />
             </label>
           </div>
+
+          {/* --- NEW LOT SIZE FEES SECTION --- */}
+          <h4 className="text-md font-semibold mt-6 mb-2">Lot Size Upcharges ($/mo)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AdminInput
+              type="number"
+              label="Medium Lot (Tier 1)"
+              value={config.data?.lotFees?.tier1}
+              onChange={(e) => handleChange(e, 'data', 'lotFees', 'tier1')}
+            />
+            <AdminInput
+              type="number"
+              label="Large Lot (Tier 2)"
+              value={config.data?.lotFees?.tier2}
+              onChange={(e) => handleChange(e, 'data', 'lotFees', 'tier2')}
+            />
+          </div>
+
           <h4 className="text-md font-semibold mt-6 mb-2">Additional Dog Fees ($)</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <AdminInput
@@ -625,7 +655,7 @@ const AdminDashboard = () => {
                   key={index}
                   label={`Paragraph ${index + 1} (HTML)`}
                   value={text}
-                  onChange={(e) => handleArrayArrayChange(e, 'text', 'modals', 'serviceInfo', 'body', index)}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'serviceInfo', index, 'body')}
                 />
               ))}
             </div>
@@ -647,7 +677,7 @@ const AdminDashboard = () => {
                   key={index}
                   label={`Bullet ${index + 1} (HTML)`}
                   value={text}
-                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'alertsInfo', 'bullets', index)}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'alertsInfo', index, 'bullets')}
                 />
               ))}
             </div>
@@ -664,7 +694,7 @@ const AdminDashboard = () => {
                   key={index}
                   label={`Paragraph ${index + 1} (HTML)`}
                   value={text}
-                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', 'body', index)}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', index, 'body')}
                 />
               ))}
               {getSafeArray(config, ['text', 'modals', 'pricingInfo', 'bullets']).map((text, index) => (
@@ -672,7 +702,7 @@ const AdminDashboard = () => {
                   key={index}
                   label={`Bullet ${index + 1} (HTML)`}
                   value={text}
-                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', 'bullets', index)}
+                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'pricingInfo', index, 'bullets')}
                 />
               ))}
                <AdminInput 
