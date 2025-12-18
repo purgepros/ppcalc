@@ -1322,7 +1322,7 @@ const Site = () => {
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
 
-  useExitIntent(isFormSubmitted, () => setIsExitModalOpen(true));
+  // useExitIntent(isFormSubmitted, () => setIsExitModalOpen(true));
 
   useEffect(() => {
     if (config?.data?.APPROVED_ZIP_CODES) {
