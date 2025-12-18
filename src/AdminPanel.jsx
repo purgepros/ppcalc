@@ -191,7 +191,7 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
   
-  // 2. Handle "deep" state changes for nested objects (Robust Version)
+  // 2. Handle "deep" state changes for nested objects (Safe Version with Array Checks)
   const handleChange = (e, section, key, subKey = null, subSubKey = null) => {
     const { value, type, checked } = e.target;
     
@@ -201,14 +201,14 @@ const AdminDashboard = () => {
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
       
-      // Ensure base paths exist
-      if (!newConfig[section]) newConfig[section] = {};
-      if (!newConfig[section][key]) newConfig[section][key] = {};
+      // Ensure base paths exist and are OBJECTS (not arrays)
+      if (!newConfig[section] || Array.isArray(newConfig[section])) newConfig[section] = {};
+      if (!newConfig[section][key] || Array.isArray(newConfig[section][key])) newConfig[section][key] = {};
 
       if (subSubKey) {
         // Ensure the parent (subKey) is an object before setting property
-        // This prevents overwriting if subKey was accidentally a string or null
-        if (!newConfig[section][key][subKey] || typeof newConfig[section][key][subKey] !== 'object') {
+        // FIX: Explicitly check !Array.isArray to prevent "array with properties" bug
+        if (!newConfig[section][key][subKey] || typeof newConfig[section][key][subKey] !== 'object' || Array.isArray(newConfig[section][key][subKey])) {
             newConfig[section][key][subKey] = {};
         }
         newConfig[section][key][subKey][subSubKey] = val;
@@ -222,18 +222,17 @@ const AdminDashboard = () => {
   };
 
   // 3. Handle changes to items in an array (Robust for deep nesting)
-  // supports optional subSubKey for things like modals.serviceInfo.body
   const handleArrayChange = (e, section, key, subKey, index, subSubKey = null) => {
     const { value } = e.target;
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
       
-      // Ensure path exists
-      if (!newConfig[section]) newConfig[section] = {};
-      if (!newConfig[section][key]) newConfig[section][key] = {};
+      // Ensure path exists and are OBJECTS
+      if (!newConfig[section] || Array.isArray(newConfig[section])) newConfig[section] = {};
+      if (!newConfig[section][key] || Array.isArray(newConfig[section][key])) newConfig[section][key] = {};
       
-      // Ensure subKey object exists if we are going deeper
-      if (!newConfig[section][key][subKey] || (subSubKey && typeof newConfig[section][key][subKey] !== 'object')) {
+      // FIX: Ensure subKey is a plain object, NOT an array
+      if (!newConfig[section][key][subKey] || (subSubKey && (typeof newConfig[section][key][subKey] !== 'object' || Array.isArray(newConfig[section][key][subKey])))) {
           newConfig[section][key][subKey] = {};
       }
 
