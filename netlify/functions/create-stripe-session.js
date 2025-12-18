@@ -24,19 +24,19 @@ const PRICE_MAP = {
     // BASE PLANS (The core service)
     base: {
       'biWeekly': {
-        'Monthly': 'price_1SWVVvGelkvkkUqXck6r6av3',
-        'Quarterly': 'price_1SWVWbGelkvkkUqXl6w1RfSl',
-        'Annual': 'price_1SWVWyGelkvkkUqX1KeQYW5h',
+        'Monthly': 'price_1SfoRAGelkvkkUqXIpxtx3c6',
+        'Quarterly': 'price_1SfoReGelkvkkUqXvoD9tjiH',
+        'Annual': 'price_1SfoRyGelkvkkUqX1Dgx6jjP',
       },
       'weekly': {
-        'Monthly': 'price_1SWVZKGelkvkkUqXYkPgNDSG',
-        'Quarterly': 'price_1SWVZWGelkvkkUqX1Np1OeNm',
-        'Annual': 'price_1SWVZKGelkvkkUqXYkPgNDSG',
+        'Monthly': 'price_1SfoSXGelkvkkUqXumzZTcHZ',
+        'Quarterly': 'price_1SfoSfGelkvkkUqXkdnlxClQ',
+        'Annual': 'price_1SfoSpGelkvkkUqXgtPtkGJW',
       },
       'twiceWeekly': {
-        'Monthly': 'price_1SWVb6GelkvkkUqX4foVUqXY',
-        'Quarterly': 'price_1SWVbNGelkvkkUqX2lngbCgo',
-        'Annual': 'price_1SWVbdGelkvkkUqXI3XYNfGI',
+        'Monthly': 'price_1SfoTfGelkvkkUqXIGPkYiiG',
+        'Quarterly': 'price_1SfoTnGelkvkkUqXbrU1sZtn',
+        'Annual': 'price_1SfoU3GelkvkkUqXVOAiHiUt',
       }
     },
 
@@ -74,9 +74,9 @@ const PRICE_MAP = {
   live: {
     oneTime: 'price_1SWVoLGelkvkkUqXAJglWmsl', 
     base: {
-      'biWeekly': { 'Monthly': 'price_1SWVnyGelkvkkUqX6tFDDXz7', 'Quarterly': 'price_1SWVnyGelkvkkUqXuGrXvcw3', 'Annual': 'price_1SWVnxGelkvkkUqXOlRaVL9S' },
-      'weekly':   { 'Monthly': 'price_1SWVo3GelkvkkUqXCnSOQUlX',   'Quarterly': 'price_1SWVo3GelkvkkUqXWxOKACq0',   'Annual': 'price_1SWVo3GelkvkkUqXKRTnS2rh' },
-      'twiceWeekly': { 'Monthly': 'price_1SWVo7GelkvkkUqXkKI4Av48', 'Quarterly': 'price_1SWVo7GelkvkkUqXpfp4U0gj', 'Annual': 'price_1SWVo7GelkvkkUqXl91VAnSf' }
+      'biWeekly': { 'Monthly': 'price_1SfoVBGelkvkkUqXvFzoyeg3', 'Quarterly': 'price_1SfoVBGelkvkkUqXNFC3SNzn', 'Annual': 'price_1SfoVBGelkvkkUqXNjfXTqce' },
+      'weekly':   { 'Monthly': 'price_1SfoVGGelkvkkUqXrb9fQayP',   'Quarterly': 'price_1SfoVGGelkvkkUqXXZN6gL8l',   'Annual': 'price_1SfoVGGelkvkkUqXOp8LVQ1x' },
+      'twiceWeekly': { 'Monthly': 'price_1SfoVIGelkvkkUqXDye4FlPD', 'Quarterly': 'price_1SfoVIGelkvkkUqXbfP3rYFW', 'Annual': 'price_1SfoVIGelkvkkUqXBWO9Qiu6' }
     },
     lot: {
       'tier1': { 'Monthly': 'price_1SWVoBGelkvkkUqX2YUDGmam', 'Quarterly': 'price_1SWVoBGelkvkkUqXyd7tyZmh', 'Annual': 'price_1SWVoBGelkvkkUqXiNLcsNlT' },
