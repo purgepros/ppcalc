@@ -350,7 +350,7 @@ const FullPageLoader = ({ error = null }) => (
   </div>
 );
 
-const SpecialOfferBox = ({ offer, promotions }) => {
+const SpecialOfferBox = ({ offer, promotions, onLearnMoreClick }) => {
   if (!offer) return null;
   const isPromoActive = promotions?.isActive;
   
@@ -367,6 +367,15 @@ const SpecialOfferBox = ({ offer, promotions }) => {
           <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">{offer.specialOfferTitle}</h3>
           <div className="text-slate-600 text-sm leading-relaxed space-y-1" dangerouslySetInnerHTML={{ __html: offer.specialOfferBody }} />
           
+          <div className="mt-2">
+              <button 
+                  onClick={onLearnMoreClick}
+                  className="text-sm font-bold text-[var(--brand-green)] hover:text-green-700 underline flex items-center cursor-pointer transition-colors"
+              >
+                  👆 Learn More
+              </button>
+          </div>
+
           {isPromoActive && (
             <div className="mt-3 pt-2 border-t border-green-100">
                <div className="text-sm font-bold text-red-600 flex items-center animate-pulse">
@@ -454,7 +463,7 @@ const Footer = ({ text }) => {
 };
 
 // --- UPDATED SORTER COMPONENT ---
-const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions }) => {
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions, onLearnMoreClick }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1'); // Default to '1'
 
@@ -513,7 +522,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
         </select>
       </div>
 
-      <SpecialOfferBox offer={specialOffer} promotions={promotions} />
+      <SpecialOfferBox offer={specialOffer} promotions={promotions} onLearnMoreClick={onLearnMoreClick} />
 
       <button onClick={handleSubmit} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
         See My Price
@@ -535,7 +544,7 @@ const PackageSelector = ({
   onInfoClick, onAlertsInfoClick, 
   text, specialOffer, 
   yardPlusSelections, setYardPlusSelections,
-  promotions 
+  promotions, onLearnMoreClick
 }) => {
 
   const fees = lotFees || { tier1: 30, tier2: 60 };
@@ -677,7 +686,7 @@ const PackageSelector = ({
           />
         </div>
       ) : (
-        <SpecialOfferBox offer={specialOffer} />
+        <SpecialOfferBox offer={specialOffer} onLearnMoreClick={onLearnMoreClick} />
       )}
 
       <div className="space-y-6">
@@ -1011,6 +1020,14 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
         </div>
       </div>
 
+      {/* --- RISK FREE BOX --- */}
+      {text?.riskFreeBox && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center shadow-sm">
+            <h4 className="text-lg font-bold text-green-800 mb-2">{text.riskFreeBox.title}</h4>
+            <div className="text-sm text-green-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: text.riskFreeBox.body }} />
+        </div>
+      )}
+
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Order Summary</h4>
         <div className="flex justify-between mb-1"><span className="text-slate-600">Plan</span><span className="font-medium">{packageSelection.name}</span></div>
@@ -1223,7 +1240,7 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
   
   return (
     <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
+      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Book One-Time"}</h2>
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <div className="flex justify-between"><span>One-Time Yard Reset</span><span className="font-medium text-slate-900">$99.99</span></div>
@@ -1268,7 +1285,8 @@ const Site = () => {
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showSatisfactionModal, setShowSatisfactionModal] = useState(false);
   const [showYardHelperModal, setShowYardHelperModal] = useState(false); 
-  const [showSavingsModal, setShowSavingsModal] = useState(false); 
+  const [showSavingsModal, setShowSavingsModal] = useState(false);
+  const [showSpecialOfferModal, setShowSpecialOfferModal] = useState(false); 
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
@@ -1392,7 +1410,7 @@ const Site = () => {
         />
       ) : (
         <main className="container mx-auto px-4 max-w-xl pb-12">
-          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} promotions={config.data.promotions} />}
+          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} promotions={config.data.promotions} onLearnMoreClick={() => setShowSpecialOfferModal(true)} />}
           {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           
@@ -1415,6 +1433,7 @@ const Site = () => {
               onInfoClick={() => setShowInfoModal(true)} 
               onAlertsInfoClick={() => setShowAlertsModal(true)} 
               promotions={config.data.promotions} 
+              onLearnMoreClick={() => setShowSpecialOfferModal(true)}
             />
           )}
           
@@ -1471,6 +1490,7 @@ const Site = () => {
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
       {showYardHelperModal && <YardHelperModal onClose={() => setShowYardHelperModal(false)} />}
       {showSavingsModal && <SavingsInfoModal onClose={() => setShowSavingsModal(false)} />}
+      {showSpecialOfferModal && <ServiceInfoModal onClose={() => setShowSpecialOfferModal(false)} text={config.text.modals.specialOfferInfo} />}
       
       {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} dogCount={dogCountLabel} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>

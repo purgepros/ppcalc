@@ -620,6 +620,19 @@ const AdminDashboard = () => {
               rows={6}
               onChange={(e) => handleChange(e, 'text', 'checkoutView', 'whatHappensNextBody')}
             />
+            <div className="p-3 border rounded-md bg-green-50 border-green-200">
+                <h4 className="text-md font-semibold mb-2 text-green-800">Checkout: "Risk Free" Box</h4>
+                <AdminInput 
+                    label="Box Title"
+                    value={config.text?.checkoutView?.riskFreeBox?.title || ""}
+                    onChange={(e) => handleChange(e, 'text', 'checkoutView', 'riskFreeBox', 'title')}
+                />
+                <AdminTextArea 
+                    label="Box Body Text"
+                    value={config.text?.checkoutView?.riskFreeBox?.body || ""}
+                    onChange={(e) => handleChange(e, 'text', 'checkoutView', 'riskFreeBox', 'body')}
+                />
+            </div>
           </div>
         </div>
         
@@ -628,6 +641,21 @@ const AdminDashboard = () => {
           <h3 className="text-lg font-semibold mb-4">Modal Text ("i" Buttons)</h3>
           
           <div className="space-y-4">
+            
+            <div className="p-3 border rounded-md">
+                <h4 className="text-md font-semibold mb-2">Special Offer Modal</h4>
+                <AdminInput 
+                    label="Title"
+                    value={config.text?.modals?.specialOfferInfo?.title || ""}
+                    onChange={(e) => handleChange(e, 'text', 'modals', 'specialOfferInfo', 'title')}
+                />
+                <AdminTextArea 
+                    label="Body Text (HTML)"
+                    value={config.text?.modals?.specialOfferInfo?.body || ""}
+                    onChange={(e) => handleChange(e, 'text', 'modals', 'specialOfferInfo', 'body')}
+                />
+            </div>
+
             <div className="p-3 border rounded-md bg-green-50 border-green-200">
               <h4 className="text-md font-semibold mb-2 text-green-800">Satisfaction Guarantee Modal (Header)</h4>
               <AdminInput 

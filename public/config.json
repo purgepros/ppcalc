@@ -98,6 +98,10 @@
     },
     "checkoutView": {
       "title": "Final Step: Complete Your Order",
+      "riskFreeBox": {
+        "title": "Try Us Risk FREE!",
+        "body": "If you aren't completely happy after your first month of service, let us know and we will make it right or refund your final month's subscription charge. No questions asked."
+      },
       "whatHappensNextTitle": "Here's What Happens Next:",
       "whatHappensNextBody": "Your payment today covers your <strong>first {term} of service.</strong> Your subscription will **not** begin until your **first scheduled weekly visit**.<br/><br/>After checkout, a team member will text (or call) you within 24 hours to schedule **two** separate appointments:<br/>1. Your 100% <strong>FREE First Cleanup</strong> ($99.99+ value).<br/>2. Your <strong>First *Paid* Weekly Visit</strong> (which starts your subscription).",
       "bailoutLink": "Prefer to set up your account over the phone? Click here."
@@ -127,6 +131,10 @@
       "changeZipLink": "&larr; Change Zip Code"
     },
     "modals": {
+      "specialOfferInfo": {
+        "title": "Free First Cleanup Details",
+        "body": "<strong>Our Gift To You</strong><br>We believe in starting fresh! When you subscribe to any recurring plan (Weekly or Twice-Weekly), we perform a complete initial cleanup of your yard absolutely FREE. This service normally costs $99.99 or more.<br><br><strong>Why do we do this?</strong><br>We want to earn your business for the long haul. By waiving the startup fee, we make it easy for you to try our service without a huge upfront cost."
+      },
       "serviceInfo": {
         "title": "About Seasonal Activation",
         "body": [
