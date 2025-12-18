@@ -660,7 +660,8 @@ const AdminDashboard = () => {
               <h4 className="text-md font-semibold mb-2 text-green-800">Satisfaction Guarantee Modal (Header)</h4>
               <AdminInput 
                 label="Title"
-                value={config.text?.modals?.satisfactionInfo?.title || "100% Satisfaction Guaranteed"}
+                placeholder="100% Satisfaction Guaranteed"
+                value={config.text?.modals?.satisfactionInfo?.title || ""}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'satisfactionInfo', 'title')}
               />
               <AdminTextArea 
@@ -679,7 +680,8 @@ const AdminDashboard = () => {
               <h4 className="text-md font-semibold mb-2 text-green-800">Risk-Free Guarantee Modal (Checkout)</h4>
               <AdminInput 
                 label="Title"
-                value={config.text?.modals?.riskFreeInfo?.title || "Risk-Free Trial Details"}
+                placeholder="Risk-Free Trial Details"
+                value={config.text?.modals?.riskFreeInfo?.title || ""}
                 onChange={(e) => handleChange(e, 'text', 'modals', 'riskFreeInfo', 'title')}
               />
               <AdminTextArea 
