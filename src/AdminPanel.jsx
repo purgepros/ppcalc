@@ -254,10 +254,12 @@ const AdminDashboard = () => {
     });
   };
 
-  // 4. SPECIAL: Handle converting TextArea newlines to Array
+  // 4. SPECIAL: Handle converting TextArea newlines to Array AND parsing subheadings
   const handleFeaturesChange = (e, planKey) => {
     const rawText = e.target.value;
-    const lines = rawText.split('\n');
+    // Split by line to get individual features
+    // Then replace ' || ' with actual newline character for the data storage
+    const lines = rawText.split('\n').map(line => line.replace(/ \|\| /g, '\n'));
     
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
@@ -578,9 +580,14 @@ const AdminDashboard = () => {
                     </div>
 
                     <AdminTextArea
-                      label="Features List (One per line)"
+                      label="Features List (One per line. Use ' || ' for subheadings)"
                       rows={7}
-                      value={(config.data?.planDetails?.[planKey]?.features || []).join('\n')}
+                      // Join array with newlines, BUT first ensure internal newlines in data 
+                      // are converted to the readable separator ' || ' so they stay on one line.
+                      value={(config.data?.planDetails?.[planKey]?.features || [])
+                        .map(f => f.replace(/\n/g, ' || '))
+                        .join('\n')
+                      }
                       onChange={(e) => handleFeaturesChange(e, planKey)}
                     />
                  </div>
