@@ -675,6 +675,20 @@ const AdminDashboard = () => {
               />
             </div>
 
+            <div className="p-3 border rounded-md bg-green-50 border-green-200">
+              <h4 className="text-md font-semibold mb-2 text-green-800">Risk-Free Guarantee Modal (Checkout)</h4>
+              <AdminInput 
+                label="Title"
+                value={config.text?.modals?.riskFreeInfo?.title || "Risk-Free Trial Details"}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'riskFreeInfo', 'title')}
+              />
+              <AdminTextArea 
+                label="Body Text"
+                value={config.text?.modals?.riskFreeInfo?.body || ""}
+                onChange={(e) => handleChange(e, 'text', 'modals', 'riskFreeInfo', 'body')}
+              />
+            </div>
+
             <div className="p-3 border rounded-md">
               <h4 className="text-md font-semibold mb-2">Service Info Modal</h4>
               <AdminInput 

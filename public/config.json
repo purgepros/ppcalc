@@ -169,6 +169,10 @@
         "body": "We stand behind our work! If anything is missed, we will dispatch a team to return and make sure any issues are rectified immediately.",
         "footer": "Your satisfaction is our priority."
       },
+      "riskFreeInfo": {
+        "title": "Risk-Free Trial Details",
+        "body": "<strong>Peace of Mind Promise</strong><br>We want you to love your service. If you are not satisfied with your yard after your first month of service, simply contact us. We will either fix the issue immediately at no cost or refund your last month's subscription payment."
+      },
       "exitIntent": {
         "title": "Leaving So Soon?",
         "body": "Before you go, let us email you this quote! We'll also include our <strong>Free 5-Point Pet Safety Checklist for Yards</strong>."

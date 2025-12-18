@@ -81,6 +81,13 @@ const PaymentTrustBadge = () => (
   </div>
 );
 
+// --- Visual Cues ---
+const ClickHint = () => (
+  <span className="text-[10px] text-blue-500 font-bold ml-1 uppercase tracking-tighter opacity-80 animate-pulse hover:opacity-100 cursor-pointer">
+    (Click for Details)
+  </span>
+);
+
 // --- Modal Components ---
 
 const ModalOverlay = ({ children, onClose }) => (
@@ -413,6 +420,11 @@ const Header = ({ onSatisfactionClick }) => (
         <div className="ml-3 text-blue-500 bg-white rounded-full p-0.5 shadow-sm">
            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
         </div>
+        <div className="ml-2">
+            <span className="text-[10px] text-blue-500 font-bold uppercase tracking-tighter opacity-90 animate-pulse hover:opacity-100">
+                (Click for Details)
+            </span>
+        </div>
       </button>
     </div>
   </header>
@@ -732,9 +744,12 @@ const PackageSelector = ({
                         <span className="mr-1">✅</span>
                         <span className="leading-tight">{plan.renderFeatureText(feature)}</span>
                         {(feature.includes('Seasonal Sanitation')) && (
-                          <button onClick={onInfoClick} className="ml-2 text-blue-500 hover:text-blue-700 bg-white rounded-full p-0.5 shadow-sm">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                          </button>
+                          <div className="flex items-center">
+                            <button onClick={onInfoClick} className="ml-2 text-blue-500 hover:text-blue-700 bg-white rounded-full p-0.5 shadow-sm">
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
+                            </button>
+                            <button onClick={onInfoClick}><ClickHint/></button>
+                          </div>
                         )}
                      </div>
                   </div>
@@ -757,7 +772,10 @@ const PackageSelector = ({
                     <div className="flex-grow">
                       {plan.renderFeatureText(feat)}
                       {(feat.includes('Automated Reminders')) && (
-                        <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700 inline-block align-middle bg-white rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                        <div className="inline-flex items-center">
+                          <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700 inline-block align-middle bg-white rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                          <button onClick={onAlertsInfoClick}><ClickHint/></button>
+                        </div>
                       )}
                     </div>
                   </li>
@@ -770,7 +788,10 @@ const PackageSelector = ({
                     <div className="flex-grow flex items-center">
                         <span className="opacity-70">{plan.renderFeatureText(feat)}</span>
                         {(feat.includes('Seasonal Sanitation')) && (
-                          <button onClick={onInfoClick} className="ml-2 text-slate-400 hover:text-blue-500 inline-block align-middle bg-white rounded-full p-0.5 shadow-sm"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                          <div className="flex items-center">
+                            <button onClick={onInfoClick} className="ml-2 text-slate-400 hover:text-blue-500 inline-block align-middle bg-white rounded-full p-0.5 shadow-sm"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                            <button onClick={onInfoClick}><ClickHint/></button>
+                          </div>
                         )}
                     </div>
                   </li>
@@ -804,7 +825,7 @@ const PackageSelector = ({
 };
 
 // --- UPDATED CHECKOUT FORM ---
-const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount }) => {
+const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount, onRiskFreeInfoClick }) => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -1025,6 +1046,12 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center shadow-sm">
             <h4 className="text-lg font-bold text-green-800 mb-2">{text.riskFreeBox.title}</h4>
             <div className="text-sm text-green-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: text.riskFreeBox.body }} />
+            <button 
+              onClick={onRiskFreeInfoClick} 
+              className="mt-3 text-xs font-bold text-green-800 underline hover:text-green-900 cursor-pointer flex items-center justify-center mx-auto"
+            >
+              👆 Learn More
+            </button>
         </div>
       )}
 
@@ -1073,7 +1100,10 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
              <div className="flex justify-between items-center">
                <div className="flex items-center">
                  <span>FREE First Cleanup</span>
-                 <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                 <div className="flex items-center">
+                    <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                    <button onClick={onSavingsInfoClick}><ClickHint/></button>
+                 </div>
                </div>
                <span className="font-bold">$99.99</span>
              </div>
@@ -1284,6 +1314,7 @@ const Site = () => {
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [showSatisfactionModal, setShowSatisfactionModal] = useState(false);
+  const [showRiskFreeModal, setShowRiskFreeModal] = useState(false);
   const [showYardHelperModal, setShowYardHelperModal] = useState(false); 
   const [showSavingsModal, setShowSavingsModal] = useState(false);
   const [showSpecialOfferModal, setShowSpecialOfferModal] = useState(false); 
@@ -1457,6 +1488,7 @@ const Site = () => {
               onSavingsInfoClick={() => setShowSavingsModal(true)} 
               promotions={config.data.promotions}
               quarterlyDiscount={config.data.quarterlyDiscount}
+              onRiskFreeInfoClick={() => setShowRiskFreeModal(true)}
             />
           )}
           
@@ -1488,6 +1520,7 @@ const Site = () => {
       {showAlertsModal && <AlertsInfoModal onClose={() => setShowAlertsModal(false)} text={config.text.modals.alertsInfo} />}
       {showPricingModal && <PricingInfoModal onClose={() => setShowPricingModal(false)} text={config.text.modals.pricingInfo} />}
       {showSatisfactionModal && <SatisfactionModal onClose={() => setShowSatisfactionModal(false)} text={config.text.modals.satisfactionInfo} />}
+      {showRiskFreeModal && <ServiceInfoModal onClose={() => setShowRiskFreeModal(false)} text={config.text.modals.riskFreeInfo} />}
       {showYardHelperModal && <YardHelperModal onClose={() => setShowYardHelperModal(false)} />}
       {showSavingsModal && <SavingsInfoModal onClose={() => setShowSavingsModal(false)} />}
       {showSpecialOfferModal && <ServiceInfoModal onClose={() => setShowSpecialOfferModal(false)} text={config.text.modals.specialOfferInfo} />}
