@@ -171,13 +171,15 @@ exports.handler = async (event) => {
       }
 
       // 3. EXTRA DOG FEE
-      // We parse the dog count string "1-2", "3", "4" to a number
+      // Base now covers 1 dog. Charge for any over 1.
       let numDogs = 1;
-      if (quote.dogCount === '1-2') numDogs = 1; // Base covers this
+      // Handle legacy '1-2' string just in case, but frontend now sends '1', '2', etc.
+      if (quote.dogCount === '1-2') numDogs = 2; 
       else numDogs = parseInt(quote.dogCount, 10);
 
-      if (numDogs > 2) {
-        const extraDogs = numDogs - 2;
+      // Changed logic: Fee applies for anything OVER 1 dog
+      if (numDogs > 1) {
+        const extraDogs = numDogs - 1;
         const dogPriceId = selectedPrices.extraDog?.[term];
         if (dogPriceId) {
           items.push({ price: dogPriceId, quantity: extraDogs });

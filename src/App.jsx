@@ -1,9 +1,4 @@
-/* REPLACE src/App.jsx content with this.
-   Changes: 
-   1. Terminology: "First Cleanup" instead of "Initial Reset".
-   2. Flow: Merged Payment Frequency into CheckoutForm.
-   3. Defaults: Default to Monthly payment.
-*/
+/* REPLACE src/App.jsx content with this. */
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
@@ -372,7 +367,6 @@ const SpecialOfferBox = ({ offer, promotions }) => {
           <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">{offer.specialOfferTitle}</h3>
           <div className="text-slate-600 text-sm leading-relaxed space-y-1" dangerouslySetInnerHTML={{ __html: offer.specialOfferBody }} />
           
-          {/* NEW: Promo Addition - FIXED HTML RENDERING */}
           {isPromoActive && (
             <div className="mt-3 pt-2 border-t border-green-100">
                <div className="text-sm font-bold text-red-600 flex items-center animate-pulse">
@@ -459,12 +453,12 @@ const Footer = ({ text }) => {
   );
 };
 
+// --- UPDATED SORTER COMPONENT ---
 const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
-  const [dogCount, setDogCount] = useState(initialDogCount || '1-2');
+  const [dogCount, setDogCount] = useState(initialDogCount || '1'); // Default to '1'
 
   const getDogNumber = (val) => {
-    if (val === '1-2') return 2;
     if (val === '10+') return 10;
     return parseInt(val, 10);
   };
@@ -506,7 +500,8 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
             className="w-full p-4 border-2 border-gray-300 rounded-lg text-lg bg-white cursor-pointer hover:border-blue-400 transition-colors focus:border-blue-500 outline-none appearance-none"
             style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: '2.5rem' }}
         >
-          <option value="1-2">1 - 2 Dogs</option>
+          <option value="1">1 Dog</option>
+          <option value="2">2 Dogs</option>
           <option value="3">3 Dogs</option>
           <option value="4">4 Dogs</option>
           <option value="5">5 Dogs</option>
@@ -531,6 +526,7 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
   );
 };
 
+// --- UPDATED PACKAGE SELECTOR ---
 const PackageSelector = ({ 
   basePrices, planDetails, 
   yardSize, numDogs, 
@@ -539,7 +535,7 @@ const PackageSelector = ({
   onInfoClick, onAlertsInfoClick, 
   text, specialOffer, 
   yardPlusSelections, setYardPlusSelections,
-  promotions // New Prop for Promo Logic
+  promotions 
 }) => {
 
   const fees = lotFees || { tier1: 30, tier2: 60 };
@@ -552,7 +548,6 @@ const PackageSelector = ({
   const eDogPrice = extraDogPrice || 15;
   const yPlusPrice = yardPlusPrice || 20;
 
-  // --- PROMO LOGIC ---
   const isPromoActive = promotions?.isActive || false;
   const promoBannerText = promotions?.bannerText || "50% Off First Month!";
 
@@ -560,12 +555,17 @@ const PackageSelector = ({
   if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
   if (yardSize === 'tier2') lotFee = fees.tier2 || 0;
 
+  // UPDATED FEE LOGIC: Charge for dogs over 1
   let dogFee = 0;
-  if (numDogs > 2) {
-    dogFee = (numDogs - 2) * eDogPrice;
+  if (numDogs > 1) {
+    dogFee = (numDogs - 1) * eDogPrice;
   }
 
-  const showAllPlans = numDogs < 6;
+  // UPDATED VISIBILITY LOGIC
+  // > 2 Dogs: No Bi-Weekly
+  // > 5 Dogs: No Bi-Weekly AND No Weekly
+  const showBiWeekly = numDogs <= 2;
+  const showWeekly = numDogs <= 5;
 
   const handleToggle = (planKey) => {
     setYardPlusSelections(prev => ({ ...prev, [planKey]: !prev[planKey] }));
@@ -583,8 +583,14 @@ const PackageSelector = ({
 
     const finalPrice = base + lotFee + dogFee + addonCost;
     
-    // --- CALCULATE PROMO PRICE (For Display) ---
-    // We only display the discount here. The actual application happens in the backend.
+    // CALCULATE PER VISIT PRICE
+    let divisor = 1;
+    if (key === 'biWeekly') divisor = 2.17; // 26 visits / 12 mo
+    if (key === 'weekly') divisor = 4.33;   // 52 visits / 12 mo
+    if (key === 'twiceWeekly') divisor = 8.66; // 104 visits / 12 mo
+    
+    const perVisitPrice = (finalPrice / divisor).toFixed(2);
+
     const displayPrice = isPromoActive ? (finalPrice / 2).toFixed(2) : finalPrice;
 
     const featuredFreeFeatures = [];
@@ -632,8 +638,9 @@ const PackageSelector = ({
       featuredFreeFeatures,
       standardFeatures,
       excludedFeatures,
-      finalPrice, // KEEP ORIGINAL PRICE FOR LOGIC
-      displayPrice, // USED FOR VISUALS
+      finalPrice, 
+      displayPrice,
+      perVisitPrice, // NEW: Pass per visit price to UI
       isPromoActive,
       basePrice: base,
       popular: isPopular,
@@ -644,13 +651,16 @@ const PackageSelector = ({
     };
   };
 
-  if (showAllPlans) {
+  // Logic to push plans based on flags
+  if (showBiWeekly) {
     const p1 = buildPlan('biWeekly', false);
     if (p1) plans.push(p1);
-    const p2 = buildPlan('weekly', true);
+  }
+  if (showWeekly) {
+    const p2 = buildPlan('weekly', true); // Weekly is popular if shown
     if (p2) plans.push(p2);
   }
-  const p3 = buildPlan('twiceWeekly', !showAllPlans);
+  const p3 = buildPlan('twiceWeekly', !showWeekly); // Twice-Weekly popular if it's the only one
   if (p3) plans.push(p3);
 
   return (
@@ -658,11 +668,9 @@ const PackageSelector = ({
       <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Choose Your Plan"}</h2>
 
-      {/* Show Global Offer or Promo Banner */}
       {isPromoActive ? (
         <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center p-4 rounded-xl mb-6 shadow-md animate-pulse">
           <h3 className="text-lg font-bold uppercase tracking-wider">🔥 Special Offer Unlocked 🔥</h3>
-          {/* ENABLE HTML RENDERING HERE */}
           <div 
             className="text-sm font-medium opacity-90 leading-relaxed" 
             dangerouslySetInnerHTML={{ __html: promoBannerText }} 
@@ -679,9 +687,9 @@ const PackageSelector = ({
             {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-md tracking-wide animate-pulse">BEST VALUE</span>}
             {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">LIMITED AVAILABILITY</span>}
             
-            <div className="text-center mb-4">
+            <div className="text-center mb-2">
               <h3 className="text-2xl font-bold text-slate-800">{plan.name}</h3>
-              <div className="mt-2 mb-2">
+              <div className="mt-2 mb-1">
                 {plan.isPromoActive ? (
                   <div className="flex flex-col items-center">
                     <span className="text-gray-400 text-lg line-through decoration-red-500 font-semibold">${plan.finalPrice}</span>
@@ -696,6 +704,11 @@ const PackageSelector = ({
                     <span className="text-slate-500 font-medium">/mo</span>
                   </div>
                 )}
+              </div>
+              
+              {/* PER VISIT PRICE BREAKDOWN */}
+              <div className="inline-block bg-slate-100 px-3 py-1 rounded-full text-sm font-semibold text-slate-600 mb-2">
+                Just ${plan.perVisitPrice} / visit
               </div>
             </div>
 
@@ -767,7 +780,6 @@ const PackageSelector = ({
               </label>
             )}
 
-            {/* Note: Pass ORIGINAL price, backend handles discount */}
             <button onClick={() => onPlanSelect(plan.name, plan.finalPrice, plan.key)} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:bg-opacity-90 shadow transition-transform hover:-translate-y-0.5">
               Select Plan
             </button>
@@ -782,19 +794,17 @@ const PackageSelector = ({
   );
 };
 
+// --- UPDATED CHECKOUT FORM ---
 const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount }) => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
-  // --- INTERNAL STATE FOR MERGED PAYMENT SELECTION ---
   const [paymentSelection, setPaymentSelection] = useState(initialPaymentSelection);
 
-  // --- RECREATE PLAN LOGIC FROM PaymentPlanSelector ---
   const monthly = packageSelection.finalMonthlyPrice;
   const qDisc = quarterlyDiscount || 30;
   const isPromoActive = promotions?.isActive || false;
-  // Calculate Discounted Monthly Price for Display
   const discountedMonthly = isPromoActive ? monthly / 2 : monthly;
 
   const paymentOptions = [
@@ -852,16 +862,24 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
     if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
     if (yardSize === 'tier2') lotFee = fees.tier2 || 0;
 
-    const numDogs = dogCount === '1-2' ? 2 : (dogCount === '10+' ? 10 : parseInt(dogCount));
+    // Correctly parse dog count
+    const numDogs = dogCount === '10+' ? 10 : parseInt(dogCount);
+    // Charge for extra dogs over 1
     let dogFee = 0;
-    if (numDogs > 2) {
-        dogFee = (numDogs - 2) * eDogPrice;
+    if (numDogs > 1) {
+        dogFee = (numDogs - 1) * eDogPrice;
     }
 
     const yardPlusCost = (yardPlusSelected && packageSelection.key !== 'twiceWeekly') ? yPlusPrice : 0;
     const yardPlusStatus = (packageSelection.key === 'twiceWeekly') ? 'Included' : (yardPlusSelected ? `$${yPlusPrice}` : 'Not Selected');
 
-    return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs, details };
+    // Calculate Per Visit
+    let perVisit = 0;
+    if (packageSelection.key === 'weekly') perVisit = monthly / 4.33;
+    else if (packageSelection.key === 'biWeekly') perVisit = monthly / 2.17;
+    else if (packageSelection.key === 'twiceWeekly') perVisit = monthly / 8.66;
+
+    return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs, details, perVisit };
   };
 
   const bd = getBreakdown();
@@ -890,12 +908,6 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
       });
 
       if (stripeError) throw new Error(stripeError.message);
-
-      const monthly = packageSelection.finalMonthlyPrice;
-      let perVisit = 0;
-      if (packageSelection.key === 'weekly') perVisit = monthly / 4.33;
-      else if (packageSelection.key === 'biWeekly') perVisit = monthly / 2.17;
-      else if (packageSelection.key === 'twiceWeekly') perVisit = monthly / 8.66;
 
       let termDiscountRow = '';
       let termNoun = 'Month'; 
@@ -931,7 +943,7 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
           payment_term: paymentSelection.term || 'Monthly',
           term_noun: termNoun,
           total_monthly: `$${monthly.toFixed(2)}/mo`, 
-          per_visit: `$${perVisit.toFixed(2)}`,
+          per_visit: `$${bd.perVisit.toFixed(2)}`,
           final_charge: `$${totalDue.toFixed(2)}`,
           initial_savings: "99.99",
           total_savings: totalSavings.toFixed(2),
@@ -1005,6 +1017,9 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
         <div className="flex justify-between mb-1"><span className="text-slate-600">Frequency</span><span className="font-medium">{bd.details?.frequency}</span></div>
         <div className="flex justify-between mb-1"><span className="text-slate-600">Dogs Included</span><span className="font-medium">{bd.numDogs}</span></div>
         <div className="flex justify-between mb-1"><span className="text-slate-600">Yard+ Coverage</span><span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>{bd.yardPlusStatus}</span></div>
+
+        {/* NEW PER VISIT ROW */}
+        <div className="flex justify-between mb-1 text-slate-500 italic"><span className="">Breakdown:</span><span className="">${bd.perVisit.toFixed(2)} / visit</span></div>
 
         <div className="border-t border-slate-200 my-2 pt-2">
            <div className="flex justify-between font-bold text-slate-800 mb-1">
@@ -1239,8 +1254,8 @@ const Site = () => {
   const [view, setView] = useState('zip'); 
   const [zipCode, setZipCode] = useState('');
   const [yardSize, setYardSize] = useState('standard');
-  const [numDogs, setNumDogs] = useState(2); 
-  const [dogCountLabel, setDogCountLabel] = useState('1-2'); 
+  const [numDogs, setNumDogs] = useState(1); 
+  const [dogCountLabel, setDogCountLabel] = useState('1'); 
   const [yardPlusSelections, setYardPlusSelections] = useState({});
   const [packageSelection, setPackageSelection] = useState(null); 
   // Initial Payment Selection is just a placeholder, logic now lives in CheckoutForm
