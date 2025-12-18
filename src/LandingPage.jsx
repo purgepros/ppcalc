@@ -58,16 +58,16 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
           {/* NUCLEAR OFFER BANNER - CHANGED TO RED ORANGE */}
           <div className="inline-block bg-[#ff4500] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse border border-white/20">
-            DOUBLE DEAL: 50% OFF First Month + FREE First Cleanup ($150+ Savings)
+            FREE First Cleanup ($99+ Savings) When Signing Up for Recurring Service!
           </div>
           
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
             Stop Living in a Toilet.<br />
-            <span className="text-[#38b6ff]">Get a Pristine, Sanitized Yard 24/7.</span>
+            <span className="text-[#38b6ff]">Get a Pristine, Poop Free Yard. 🐶💩</span>
           </h1>
           
           <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto mb-10 font-medium">
-            The only pet waste service in Indy that <strong>Sanitizes, Deodorizes, and Hauls Away</strong>. Reduce bacteria. Eliminate odor. Protect your pets.
+            ✅ Reduce bacteria. ✅ Eliminate odor. ✅ Protect your pets.
           </p>
 
           {/* --- ZIP CODE GATE --- */}
@@ -90,7 +90,6 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
               </button>
             </form>
             {error && <p className="text-red-600 font-bold mt-3 text-sm">{error}</p>}
-            <p className="text-gray-500 text-xs mt-3">Instant online quote. No phone call required.</p>
             
             {/* NEW BADGE */}
             <div className="mt-4 flex items-center justify-center space-x-2 text-green-700 bg-green-50 p-2 rounded-lg border border-green-100">
