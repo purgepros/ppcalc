@@ -12,12 +12,13 @@ const db = getFirestore(app);
 
 /**
  * A reusable input field component
+ * Updated to accept 'type' prop for numeric handling
  */
-const AdminInput = ({ label, value, onChange, placeholder }) => (
+const AdminInput = ({ label, value, onChange, placeholder, type = "text" }) => (
   <label className="block">
     <span className="text-sm font-medium text-gray-700">{label}</span>
     <input
-      type="text"
+      type={type}
       value={value || ''}
       onChange={onChange}
       placeholder={placeholder}
@@ -194,7 +195,11 @@ const AdminDashboard = () => {
   // 2. Handle "deep" state changes for nested objects (Safe Version)
   const handleChange = (e, section, key, subKey = null, subSubKey = null) => {
     const { value, type, checked } = e.target;
-    const val = type === 'checkbox' ? checked : value;
+    
+    // --- BUG FIX: Parse numbers correctly ---
+    // If the input type is 'number', convert the string value to a real JavaScript number.
+    // This prevents "60" (string) + 0 becoming "600" instead of 60.
+    const val = type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value);
 
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
@@ -478,6 +483,7 @@ const AdminDashboard = () => {
           <h4 className="text-md font-semibold mt-6 mb-2">Additional Dog Fees ($)</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <AdminInput
+              type="number"
               label="Price Per Extra Dog (Over 1)"
               value={config.data?.extraDogPrice}
               onChange={(e) => handleChange(e, 'data', 'extraDogPrice')}
@@ -486,6 +492,7 @@ const AdminDashboard = () => {
           <h4 className="text-md font-semibold mt-6 mb-2">Add-on Pricing ($)</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <AdminInput
+              type="number"
               label="Yard+ Coverage Add-on"
               value={config.data?.yardPlusPrice || 20}
               onChange={(e) => handleChange(e, 'data', 'yardPlusPrice')}
@@ -618,7 +625,7 @@ const AdminDashboard = () => {
                   key={index}
                   label={`Paragraph ${index + 1} (HTML)`}
                   value={text}
-                  onChange={(e) => handleArrayChange(e, 'text', 'modals', 'serviceInfo', 'body', index)}
+                  onChange={(e) => handleArrayArrayChange(e, 'text', 'modals', 'serviceInfo', 'body', index)}
                 />
               ))}
             </div>
