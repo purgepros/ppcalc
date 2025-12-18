@@ -191,23 +191,24 @@ const AdminDashboard = () => {
     fetchData();
   }, []);
   
-  // 2. Handle "deep" state changes for nested objects (Safe Version)
+  // 2. Handle "deep" state changes for nested objects (Robust Version)
   const handleChange = (e, section, key, subKey = null, subSubKey = null) => {
     const { value, type, checked } = e.target;
     
-    // --- BUG FIX: Parse numbers correctly ---
-    // If the input type is 'number', convert the string value to a real JavaScript number.
+    // Parse numbers correctly
     const val = type === 'checkbox' ? checked : (type === 'number' ? Number(value) : value);
 
     setConfig(prevConfig => {
       const newConfig = JSON.parse(JSON.stringify(prevConfig));
       
-      // Safety checks to create objects if they don't exist
+      // Ensure base paths exist
       if (!newConfig[section]) newConfig[section] = {};
       if (!newConfig[section][key]) newConfig[section][key] = {};
 
       if (subSubKey) {
-        if (!newConfig[section][key][subKey]) {
+        // Ensure the parent (subKey) is an object before setting property
+        // This prevents overwriting if subKey was accidentally a string or null
+        if (!newConfig[section][key][subKey] || typeof newConfig[section][key][subKey] !== 'object') {
             newConfig[section][key][subKey] = {};
         }
         newConfig[section][key][subKey][subSubKey] = val;
@@ -220,7 +221,7 @@ const AdminDashboard = () => {
     });
   };
 
-  // 3. Handle changes to items in an array (IMPROVED for deep nesting)
+  // 3. Handle changes to items in an array (Robust for deep nesting)
   // supports optional subSubKey for things like modals.serviceInfo.body
   const handleArrayChange = (e, section, key, subKey, index, subSubKey = null) => {
     const { value } = e.target;
@@ -230,7 +231,11 @@ const AdminDashboard = () => {
       // Ensure path exists
       if (!newConfig[section]) newConfig[section] = {};
       if (!newConfig[section][key]) newConfig[section][key] = {};
-      if (!newConfig[section][key][subKey]) newConfig[section][key][subKey] = {};
+      
+      // Ensure subKey object exists if we are going deeper
+      if (!newConfig[section][key][subKey] || (subSubKey && typeof newConfig[section][key][subKey] !== 'object')) {
+          newConfig[section][key][subKey] = {};
+      }
 
       let targetArray;
       if (subSubKey) {
