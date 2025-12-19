@@ -201,7 +201,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <button onClick={scrollToTop} className="bg-[#38b6ff] hover:bg-[#2ea0e6] text-white font-bold py-4 px-10 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-lg">
                     Claim My Free Cleanup Now
                 </button>
-                <p className="mt-4 text-sm text-gray-500 italic">*Free Yard Reset applies to Weekly and Bi-Weekly subscriptions only.</p>
+                <p className="mt-4 text-sm text-gray-500 italic">*Free Yard Reset applies to Twice Weekly, Weekly and Bi-Weekly subscriptions only.</p>
             </div>
         </div>
       </section>
