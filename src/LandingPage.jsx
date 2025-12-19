@@ -57,7 +57,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
           
           {/* PSYCHOLOGICAL TRIGGER BANNER */}
           <div className="inline-block bg-red-600 text-white font-extrabold px-6 py-3 rounded-full uppercase tracking-wider text-sm md:text-base mb-8 shadow-[0_0_20px_rgba(220,38,38,0.6)] animate-pulse border-2 border-red-400 transform hover:scale-105 transition-transform cursor-default">
-            ⚠️ DO NOT Pay For Your First Cleanup. Get It FREE! ($99 Value)
+            ⚠️ DO NOT Pay For Your First Cleanup. Get It FREE! (An OVER $99 Value)
           </div>
           
           <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight drop-shadow-lg">
