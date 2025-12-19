@@ -879,6 +879,8 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
   const promoSavings = isPromoApplied ? packageSelection.finalMonthlyPrice / 2 : 0;
   const totalSavings = 99.99 + paymentSelection.savingsValue + promoSavings;
 
+/* REPLACE the getBreakdown function inside CheckoutForm with this: */
+
   const getBreakdown = () => {
     if (!configData) return { base: 0, lot: 0, dog: 0, yardPlus: 0 };
     const prices = configData.basePrices;
@@ -903,11 +905,25 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
     const yardPlusCost = (yardPlusSelected && packageSelection.key !== 'twiceWeekly') ? yPlusPrice : 0;
     const yardPlusStatus = (packageSelection.key === 'twiceWeekly') ? 'Included' : (yardPlusSelected ? `$${yPlusPrice}` : 'Not Selected');
 
-    // Calculate Per Visit
+    // --- NEW: Calculate Effective Monthly Rate for Per-Visit Breakdown ---
+    // We want to show the lower "per visit" price if they choose Quarterly or Annual
+    let effectiveMonthly = monthly; 
+    
+    if (paymentSelection.term === 'Quarterly') {
+        // (Monthly * 3 - $30 discount) / 3 months = Effective Monthly
+        effectiveMonthly = ((monthly * 3) - (quarterlyDiscount || 30)) / 3;
+    } else if (paymentSelection.term === 'Annual') {
+        // (Monthly * 11) / 12 months = Effective Monthly (Since they get 1 mo free)
+        effectiveMonthly = (monthly * 11) / 12;
+    }
+    // Note: We deliberately ignore the "50% off first month" promo here so the 
+    // per-visit price reflects the long-term value, not just the first month.
+
+    // Calculate Per Visit using Effective Rate
     let perVisit = 0;
-    if (packageSelection.key === 'weekly') perVisit = monthly / 4.33;
-    else if (packageSelection.key === 'biWeekly') perVisit = monthly / 2.17;
-    else if (packageSelection.key === 'twiceWeekly') perVisit = monthly / 8.66;
+    if (packageSelection.key === 'weekly') perVisit = effectiveMonthly / 4.33;
+    else if (packageSelection.key === 'biWeekly') perVisit = effectiveMonthly / 2.17;
+    else if (packageSelection.key === 'twiceWeekly') perVisit = effectiveMonthly / 8.66;
 
     return { baseRate, lotFee, dogFee, yardPlusCost, yardPlusStatus, numDogs, details, perVisit };
   };
