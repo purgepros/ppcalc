@@ -1081,17 +1081,20 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
         {/* NEW PER VISIT ROW */}
         <div className="flex justify-between mb-1 text-slate-500 italic"><span className="">Breakdown:</span><span className="">${bd.perVisit.toFixed(2)} / visit</span></div>
 
-        <div className="border-t border-slate-200 my-2 pt-2">
+        <div className="border-t border-slate-200 my-3 pt-3">
+           
            {/* --- NEW ADDITION: First Cleanup Line Items --- */}
-           <div className="flex justify-between text-slate-500 mb-1">
+           <div className="flex justify-between text-slate-500 mb-2">
              <span>First Clean Up / Yard Reset</span>
-             <span className="text-slate-900">$99.99+</span>
+             <span className="text-slate-900 font-medium">$99.99+</span>
            </div>
-           <div className="flex justify-between text-green-600 font-bold mb-1 items-center">
+           
+           {/* FREE First Cleanup Deduction - NOW RED and POPPING */}
+           <div className="flex justify-between text-red-600 font-bold mb-3 items-center bg-red-50 p-2 -mx-2 rounded border border-red-100">
              <div className="flex items-center">
                <span>FREE First Clean Up / Yard Reset</span>
                <div className="flex items-center ml-1">
-                  <button onClick={onSavingsInfoClick} className="text-green-600 hover:text-green-800 focus:outline-none"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                  <button onClick={onSavingsInfoClick} className="text-red-500 hover:text-red-700 focus:outline-none"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
                   <button onClick={onSavingsInfoClick}><ClickHint/></button>
                </div>
              </div>
@@ -1099,7 +1102,7 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
            </div>
            {/* ---------------------------------------------- */}
 
-           <div className="flex justify-between font-bold text-slate-800 mb-1">
+           <div className="flex justify-between font-bold text-slate-800 mb-1 text-base">
              <span>Monthly Rate:</span>
              <span>${packageSelection.finalMonthlyPrice.toFixed(2)}</span>
            </div>
@@ -1119,42 +1122,38 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
            )}
         </div>
 
-        <div className="border-t border-slate-300 pt-2 mt-2 flex justify-between text-xl text-slate-900 font-extrabold">
-          <span>Due Today:</span>
-          <span>${totalDue.toFixed(2)}</span>
-        </div>
-        
+        {/* Total Savings Box - Modified to just be a calculator */}
         <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-900 p-3 rounded-lg mt-4 shadow-sm">
           <div className="flex justify-between items-end mb-1">
-            <span className="font-extrabold text-sm flex items-center">🎉 TOTAL SAVINGS:</span>
-            <span className="font-extrabold text-xl tracking-tight">OVER ${totalSavings.toFixed(2)}</span>
+            <span className="font-extrabold text-sm flex items-center uppercase tracking-wider">🎉 You Saved:</span>
+            <span className="font-extrabold text-2xl tracking-tight text-green-700">OVER ${totalSavings.toFixed(2)}</span>
           </div>
-          <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
-             <div className="flex justify-between items-center">
-               <div className="flex items-center">
-                 <span>FREE First Cleanup</span>
-                 <div className="flex items-center">
-                    <button onClick={onSavingsInfoClick} className="ml-1 text-green-600 hover:text-green-800 focus:outline-none" title="See how we calculated this"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
-                    <button onClick={onSavingsInfoClick}><ClickHint/></button>
-                 </div>
-               </div>
-               <span className="font-bold">$99.99</span>
-             </div>
-             {isPromoApplied ? (
-                <div className="flex justify-between items-center text-red-700">
-                  <span>50% Off First Month:</span>
-                  <span className="font-bold">+${promoSavings.toFixed(2)}</span>
-                </div>
-             ) : (
-                paymentSelection.savingsValue > 0 && (
-                    <div className="flex justify-between items-center">
-                    <span>{paymentSelection.term} Discount:</span>
-                    <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
+          {/* Removed itemized First Cleanup line from inside the box */}
+          {(isPromoApplied || paymentSelection.savingsValue > 0) && (
+              <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
+                 {isPromoApplied ? (
+                    <div className="flex justify-between items-center text-green-700">
+                      <span>Includes 50% Off First Month:</span>
+                      <span className="font-bold">+${promoSavings.toFixed(2)}</span>
                     </div>
-                )
-             )}
-          </div>
+                 ) : (
+                    paymentSelection.savingsValue > 0 && (
+                        <div className="flex justify-between items-center">
+                        <span>Includes {paymentSelection.term} Discount:</span>
+                        <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
+                        </div>
+                    )
+                 )}
+              </div>
+          )}
         </div>
+
+        {/* Due Today - More Prominent Footer */}
+        <div className="bg-slate-900 text-white p-4 -mx-4 -mb-4 rounded-b-lg mt-6 shadow-inner flex justify-between items-center">
+          <span className="text-lg font-medium opacity-90">Total Due Today:</span>
+          <span className="text-3xl font-extrabold tracking-wide text-white">${totalDue.toFixed(2)}</span>
+        </div>
+
       </div>
 
       <div className="bg-blue-50 p-5 rounded-xl mb-6 text-sm text-blue-800 border border-blue-100 shadow-sm relative overflow-hidden">
