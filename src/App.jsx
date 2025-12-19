@@ -1124,28 +1124,10 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
 
         {/* Total Savings Box - Modified to just be a calculator */}
         <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-900 p-3 rounded-lg mt-4 shadow-sm">
-          <div className="flex justify-between items-end mb-1">
+          <div className="flex justify-between items-end">
             <span className="font-extrabold text-sm flex items-center uppercase tracking-wider">🎉 You Saved:</span>
             <span className="font-extrabold text-2xl tracking-tight text-green-700">OVER ${totalSavings.toFixed(2)}</span>
           </div>
-          {/* Removed itemized First Cleanup line from inside the box */}
-          {(isPromoApplied || paymentSelection.savingsValue > 0) && (
-              <div className="border-t border-green-300/50 pt-2 mt-1 space-y-1 text-xs font-medium text-green-800/80">
-                 {isPromoApplied ? (
-                    <div className="flex justify-between items-center text-green-700">
-                      <span>Includes 50% Off First Month:</span>
-                      <span className="font-bold">+${promoSavings.toFixed(2)}</span>
-                    </div>
-                 ) : (
-                    paymentSelection.savingsValue > 0 && (
-                        <div className="flex justify-between items-center">
-                        <span>Includes {paymentSelection.term} Discount:</span>
-                        <span className="font-bold">+${paymentSelection.savingsValue.toFixed(2)}</span>
-                        </div>
-                    )
-                 )}
-              </div>
-          )}
         </div>
 
         {/* Due Today - More Prominent Footer */}
