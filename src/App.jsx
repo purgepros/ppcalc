@@ -562,7 +562,7 @@ const PackageSelector = ({
   const fees = lotFees || { tier1: 30, tier2: 60 };
   const prices = basePrices || { weekly: 109, biWeekly: 89, twiceWeekly: 169 };
   const detailsMap = planDetails || {
-    biWeekly: { name: "Bi-Weekly Reset", priceKey: "biWeekly", frequency: "Every 2 Weeks", features: ["Backyard Coverage", "Waste Hauled Away"] },
+    biWeekly: { name: "Bi-Weekly Reset",HP: "biWeekly", frequency: "Every 2 Weeks", features: ["Backyard Coverage", "Waste Hauled Away"] },
     weekly: { name: "Pristine-Clean", priceKey: "weekly", frequency: "Every Week", features: ["Backyard Coverage", "Waste Hauled Away"] },
     twiceWeekly: { name: "Pristine-Plus", priceKey: "twiceWeekly", frequency: "2x Per Week", features: ["Yard+ Coverage", "Waste Hauled Away"] }
   };
@@ -576,15 +576,11 @@ const PackageSelector = ({
   if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
   if (yardSize === 'tier2') lotFee = fees.tier2 || 0;
 
-  // UPDATED FEE LOGIC: Charge for dogs over 1
   let dogFee = 0;
   if (numDogs > 1) {
     dogFee = (numDogs - 1) * eDogPrice;
   }
 
-  // UPDATED VISIBILITY LOGIC
-  // > 2 Dogs: No Bi-Weekly
-  // > 5 Dogs: No Bi-Weekly AND No Weekly
   const showBiWeekly = numDogs <= 2;
   const showWeekly = numDogs <= 5;
 
@@ -604,14 +600,12 @@ const PackageSelector = ({
 
     const finalPrice = base + lotFee + dogFee + addonCost;
     
-    // CALCULATE PER VISIT PRICE
     let divisor = 1;
-    if (key === 'biWeekly') divisor = 2.17; // 26 visits / 12 mo
-    if (key === 'weekly') divisor = 4.33;   // 52 visits / 12 mo
-    if (key === 'twiceWeekly') divisor = 8.66; // 104 visits / 12 mo
+    if (key === 'biWeekly') divisor = 2.17;
+    if (key === 'weekly') divisor = 4.33; 
+    if (key === 'twiceWeekly') divisor = 8.66;
     
     const perVisitPrice = (finalPrice / divisor).toFixed(2);
-
     const displayPrice = isPromoActive ? (finalPrice / 2).toFixed(2) : finalPrice;
 
     const featuredFreeFeatures = [];
@@ -661,7 +655,7 @@ const PackageSelector = ({
       excludedFeatures,
       finalPrice, 
       displayPrice,
-      perVisitPrice, // NEW: Pass per visit price to UI
+      perVisitPrice, 
       isPromoActive,
       basePrice: base,
       popular: isPopular,
@@ -672,154 +666,193 @@ const PackageSelector = ({
     };
   };
 
-  // Logic to push plans based on flags
   if (showBiWeekly) {
     const p1 = buildPlan('biWeekly', false);
     if (p1) plans.push(p1);
   }
   if (showWeekly) {
-    const p2 = buildPlan('weekly', true); // Weekly is popular if shown
+    const p2 = buildPlan('weekly', true);
     if (p2) plans.push(p2);
   }
-  const p3 = buildPlan('twiceWeekly', !showWeekly); // Twice-Weekly popular if it's the only one
+  const p3 = buildPlan('twiceWeekly', !showWeekly);
   if (p3) plans.push(p3);
 
+  // --- Theme Helper ---
+  const getTheme = (key) => {
+    if (key === 'biWeekly') return {
+        card: 'border-2 border-yellow-400 shadow-xl hover:shadow-2xl hover:-translate-y-1',
+        header: 'bg-yellow-50 text-yellow-900 border-b border-yellow-100',
+        badge: 'bg-yellow-400 text-yellow-900 font-extrabold',
+        badgeText: 'LIMITED AVAILABILITY',
+        priceColor: 'text-yellow-900',
+        subTitleColor: 'text-yellow-700/80',
+        checkIcon: 'text-yellow-500',
+        button: 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-md shadow-yellow-200'
+    };
+    if (key === 'weekly') return {
+        card: 'border-4 border-[#38b6ff] shadow-[0_20px_50px_rgba(56,182,255,0.25)] scale-[1.02] md:scale-105 z-10 transform transition-all duration-300 hover:-translate-y-2 relative',
+        header: 'bg-[#38b6ff] text-white',
+        badge: 'bg-green-500 text-white font-extrabold shadow-md animate-pulse',
+        badgeText: 'MOST POPULAR • BEST VALUE',
+        priceColor: 'text-white',
+        subTitleColor: 'text-blue-100',
+        checkIcon: 'text-[#38b6ff]',
+        button: 'bg-[#38b6ff] hover:bg-[#2ea0e6] text-white shadow-xl shadow-blue-200 transform hover:scale-105'
+    };
+    // Twice Weekly
+    return {
+        card: 'border-2 border-slate-900 shadow-xl hover:shadow-2xl hover:-translate-y-1',
+        header: 'bg-slate-900 text-white',
+        badge: 'bg-slate-600 text-white font-bold',
+        badgeText: 'PREMIUM SERVICE',
+        priceColor: 'text-white',
+        subTitleColor: 'text-slate-400',
+        checkIcon: 'text-slate-800',
+        button: 'bg-slate-800 hover:bg-slate-700 text-white shadow-md'
+    };
+  };
+
   return (
-    <div className="bg-white p-6 md:p-8 rounded-xl shadow-lg fade-in">
-      <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4">&larr; Back</button>
-      <h2 className="text-2xl font-bold text-slate-800 text-center mb-6">{text?.title || "Choose Your Plan"}</h2>
+    <div className="bg-slate-50 p-6 md:p-8 rounded-xl shadow-inner fade-in min-h-[600px]">
+      <div className="max-w-2xl mx-auto">
+        <button onClick={onBack} className="text-sm text-gray-600 hover:text-blue-600 hover:underline mb-4 flex items-center">
+            <span className="mr-1">&larr;</span> Back
+        </button>
+        <h2 className="text-3xl font-extrabold text-slate-800 text-center mb-2">{text?.title || "Choose Your Plan"}</h2>
+        <p className="text-center text-slate-500 mb-8 font-medium">Select the cleaning frequency that fits your life.</p>
 
-      {isPromoActive ? (
-        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center p-4 rounded-xl mb-6 shadow-md animate-pulse">
-          <h3 className="text-lg font-bold uppercase tracking-wider">🔥 Special Offer Unlocked 🔥</h3>
-          <div 
-            className="text-sm font-medium opacity-90 leading-relaxed" 
-            dangerouslySetInnerHTML={{ __html: promoBannerText }} 
-          />
-        </div>
-      ) : (
-        <SpecialOfferBox offer={specialOffer} onLearnMoreClick={onLearnMoreClick} />
-      )}
-
-      <div className="space-y-6">
-        {plans.map((plan) => (
-          <div key={plan.key} className={`relative p-6 border-2 rounded-xl transition-all ${plan.popular ? 'border-[var(--brand-green)] shadow-lg scale-[1.02]' : (plan.limited ? 'border-yellow-400 shadow-md' : 'border-gray-200')}`}>
-            
-            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-md tracking-wide animate-pulse">BEST VALUE</span>}
-            {plan.limited && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">LIMITED AVAILABILITY</span>}
-            
-            <div className="text-center mb-2">
-              <h3 className="text-2xl font-bold text-slate-800">{plan.name}</h3>
-              <div className="mt-2 mb-1">
-                {plan.isPromoActive ? (
-                  <div className="flex flex-col items-center">
-                    <span className="text-gray-400 text-lg line-through decoration-red-500 font-semibold">${plan.finalPrice}</span>
-                    <div>
-                      <span className="text-4xl font-extrabold text-red-600">${plan.displayPrice}</span>
-                      <span className="text-slate-500 font-medium text-sm"> / first mo</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <span className="text-4xl font-extrabold text-slate-900">${plan.finalPrice}</span>
-                    <span className="text-slate-500 font-medium">/mo</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* PER VISIT PRICE BREAKDOWN */}
-              <div className="inline-block bg-slate-100 px-3 py-1 rounded-full text-sm font-semibold text-slate-600 mb-2">
-                Just ${plan.perVisitPrice} / visit
-              </div>
+        {isPromoActive ? (
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-center p-4 rounded-xl mb-8 shadow-lg animate-pulse transform hover:scale-[1.01] transition-transform">
+            <h3 className="text-lg font-bold uppercase tracking-wider flex items-center justify-center">
+                <span className="mr-2">🔥</span> Special Offer Unlocked <span className="ml-2">🔥</span>
+            </h3>
+            <div 
+                className="text-sm font-medium opacity-90 leading-relaxed mt-1" 
+                dangerouslySetInnerHTML={{ __html: promoBannerText }} 
+            />
             </div>
+        ) : (
+            <SpecialOfferBox offer={specialOffer} onLearnMoreClick={onLearnMoreClick} />
+        )}
 
-            <div className="text-center mb-6 border-b pb-3">
-               <p className="text-sm text-slate-600 font-bold uppercase tracking-wider">{plan.serviceSubTitle}</p>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              {plan.featuredFreeFeatures.map((feature, idx) => (
-                  <div key={idx} className="bg-green-50 text-green-800 text-sm font-bold px-3 py-2 rounded-lg text-center border border-green-200 shadow-sm flex flex-col justify-center items-center relative">
-                     <div className="flex items-center justify-center w-full">
-                        <span className="mr-1">✅</span>
-                        <span className="leading-tight">{plan.renderFeatureText(feature)}</span>
-                        {(feature.includes('Seasonal Sanitation')) && (
-                          <div className="flex items-center">
-                            <button onClick={onInfoClick} className="ml-2 text-blue-500 hover:text-blue-700 bg-white rounded-full p-0.5 shadow-sm">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg>
-                            </button>
-                            <button onClick={onInfoClick}><ClickHint/></button>
-                          </div>
-                        )}
-                     </div>
-                  </div>
-              ))}
-              {yardPlusSelections[plan.key] && !plan.isYardPlusIncluded && (
-                <div className="bg-blue-50 text-blue-800 text-sm font-bold px-3 py-2 rounded-lg text-center border border-blue-200 shadow-sm">
-                  ✅ Includes Yard+ Coverage (+${yPlusPrice}/mo.)
-                </div>
-              )}
-            </div>
-
-            <ul className="space-y-3 mb-6">
-              <li className="flex items-start text-sm text-slate-600">
-                <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>Service for <strong>up to {numDogs} Dogs</strong></span>
-              </li>
-              {plan.standardFeatures.map((feat, i) => (
-                  <li key={i} className="flex items-start text-sm text-slate-600">
-                    <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                    <div className="flex-grow">
-                      {plan.renderFeatureText(feat)}
-                      {(feat.includes('Automated Reminders')) && (
-                        <div className="inline-flex items-center">
-                          <button onClick={onAlertsInfoClick} className="ml-1 text-blue-500 hover:text-blue-700 inline-block align-middle bg-white rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
-                          <button onClick={onAlertsInfoClick}><ClickHint/></button>
+        <div className="space-y-8 md:space-y-10">
+            {plans.map((plan) => {
+                const theme = getTheme(plan.key);
+                return (
+                    <div key={plan.key} className={`rounded-2xl overflow-hidden bg-white ${theme.card}`}>
+                        
+                        {/* --- CARD HEADER --- */}
+                        <div className={`p-6 text-center relative ${theme.header}`}>
+                            {theme.badgeText && (
+                                <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs tracking-wider shadow-sm uppercase ${theme.badge}`}>
+                                    {theme.badgeText}
+                                </div>
+                            )}
+                            
+                            <h3 className="text-2xl font-bold mt-2">{plan.name}</h3>
+                            <p className={`text-xs font-bold uppercase tracking-widest mt-1 mb-4 ${theme.subTitleColor}`}>{plan.serviceSubTitle}</p>
+                            
+                            <div className="flex flex-col items-center justify-center">
+                                {plan.isPromoActive ? (
+                                    <>
+                                        <span className={`text-lg line-through opacity-60 decoration-current`}>${plan.finalPrice}</span>
+                                        <div className="flex items-baseline">
+                                            <span className={`text-5xl font-extrabold tracking-tight ${plan.key === 'weekly' ? 'text-white' : 'text-red-600'}`}>${plan.displayPrice}</span>
+                                            <span className={`text-sm font-medium ml-1 opacity-80`}>/ first mo</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex items-baseline">
+                                        <span className={`text-5xl font-extrabold tracking-tight ${theme.priceColor}`}>${plan.finalPrice}</span>
+                                        <span className={`text-sm font-medium ml-1 opacity-80`}>/ mo</span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            {/* Per Visit Pill */}
+                            <div className={`inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold ${plan.key === 'weekly' || plan.key === 'twiceWeekly' ? 'bg-white/20 text-white' : 'bg-slate-900/10 text-slate-700'}`}>
+                                Just ${plan.perVisitPrice} / visit
+                            </div>
                         </div>
-                      )}
-                    </div>
-                  </li>
-              ))}
-              {plan.excludedFeatures.map((feat, i) => (
-                  <li key={`ex-${i}`} className="flex items-start text-sm text-slate-400 line-through decoration-slate-400">
-                    <div className="relative flex-shrink-0 mr-2">
-                        <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </div>
-                    <div className="flex-grow flex items-center">
-                        <span className="opacity-70">{plan.renderFeatureText(feat)}</span>
-                        {(feat.includes('Seasonal Sanitation')) && (
-                          <div className="flex items-center">
-                            <button onClick={onInfoClick} className="ml-2 text-slate-400 hover:text-blue-500 inline-block align-middle bg-white rounded-full p-0.5 shadow-sm"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
-                            <button onClick={onInfoClick}><ClickHint/></button>
-                          </div>
-                        )}
-                    </div>
-                  </li>
-              ))}
-            </ul>
 
-            {plan.canToggleYardPlus && (
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-4 cursor-pointer border border-slate-200 hover:bg-slate-100">
-                <span className="text-sm font-semibold text-slate-700">Add Yard+ Coverage (Front & Side Yards) (+${yPlusPrice}/mo.)</span>
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                  checked={!!yardPlusSelections[plan.key]} 
-                  onChange={() => handleToggle(plan.key)} 
-                />
-              </label>
-            )}
+                        {/* --- CARD BODY --- */}
+                        <div className="p-6">
+                            
+                            {/* Feature Highlights */}
+                            <div className="space-y-3 mb-6">
+                                {plan.featuredFreeFeatures.map((feature, idx) => (
+                                    <div key={idx} className="flex items-start">
+                                        <div className="flex-shrink-0 mt-0.5">
+                                            <svg className={`w-5 h-5 ${theme.checkIcon}`} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                                        </div>
+                                        <div className="ml-3 text-sm text-slate-700 font-bold">
+                                            <span className="leading-tight">{plan.renderFeatureText(feature)}</span>
+                                            {(feature.includes('Seasonal Sanitation')) && (
+                                                <button onClick={onInfoClick} className="ml-2 text-blue-500 hover:text-blue-700 align-middle"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                                {yardPlusSelections[plan.key] && !plan.isYardPlusIncluded && (
+                                    <div className="flex items-start bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                        <div className="flex-shrink-0 mt-0.5"><svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg></div>
+                                        <div className="ml-3 text-sm text-blue-800 font-bold">Includes Yard+ Coverage (+${yPlusPrice}/mo.)</div>
+                                    </div>
+                                )}
+                            </div>
 
-            <button onClick={() => onPlanSelect(plan.name, plan.finalPrice, plan.key)} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:bg-opacity-90 shadow transition-transform hover:-translate-y-0.5">
-              Select Plan
-            </button>
-          </div>
-        ))}
+                            {/* Standard Features */}
+                            <ul className="space-y-3 mb-8 border-t border-slate-100 pt-4">
+                                <li className="flex items-start text-sm text-slate-600">
+                                    <svg className="w-5 h-5 text-slate-300 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                                    <span>Service for <strong>up to {numDogs} Dogs</strong></span>
+                                </li>
+                                {plan.standardFeatures.map((feat, i) => (
+                                    <li key={i} className="flex items-start text-sm text-slate-600">
+                                        <svg className="w-5 h-5 text-slate-300 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                                        <div className="flex-grow">
+                                            {plan.renderFeatureText(feat)}
+                                            {(feat.includes('Automated Reminders')) && (
+                                                <button onClick={onAlertsInfoClick} className="ml-1 text-slate-400 hover:text-blue-500 align-middle"><svg className="w-4 h-4 inline" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
+                                            )}
+                                        </div>
+                                    </li>
+                                ))}
+                                {plan.excludedFeatures.map((feat, i) => (
+                                    <li key={`ex-${i}`} className="flex items-start text-sm text-slate-400 line-through decoration-slate-300 opacity-60">
+                                        <div className="relative flex-shrink-0 mr-3">
+                                            <svg className="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </div>
+                                        <span>{plan.renderFeatureText(feat)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            {plan.canToggleYardPlus && (
+                                <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg mb-6 cursor-pointer border border-slate-200 hover:bg-slate-100 hover:border-blue-300 transition-colors group">
+                                    <span className="text-xs font-bold text-slate-600 group-hover:text-blue-800">Add Yard+ Coverage (Front & Side Yards) (+${yPlusPrice}/mo.)</span>
+                                    <input 
+                                        type="checkbox" 
+                                        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
+                                        checked={!!yardPlusSelections[plan.key]} 
+                                        onChange={() => handleToggle(plan.key)} 
+                                    />
+                                </label>
+                            )}
+
+                            <button onClick={() => onPlanSelect(plan.name, plan.finalPrice, plan.key)} className={`w-full font-bold py-4 rounded-xl transition-all ${theme.button}`}>
+                                Select {plan.name}
+                            </button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+
+        <button type="button" onClick={onOneTimeClick} className="block w-full text-center text-sm text-gray-500 hover:text-blue-600 hover:underline mt-10 cursor-pointer font-medium">
+            {text?.oneTimeLink || "Looking for a One-Time Cleanup? Click Here"}
+        </button>
       </div>
-
-      <button type="button" onClick={onOneTimeClick} className="block w-full text-center text-sm text-gray-500 hover:text-blue-600 hover:underline mt-8 cursor-pointer">
-        {text?.oneTimeLink || "One Time Cleanup?"}
-      </button>
     </div>
   );
 };
