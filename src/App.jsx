@@ -739,10 +739,10 @@ const PackageSelector = ({
             {plans.map((plan) => {
                 const theme = getTheme(plan.key);
                 return (
-                    <div key={plan.key} className={`rounded-2xl overflow-hidden bg-white ${theme.card}`}>
+                    <div key={plan.key} className={`rounded-2xl bg-white relative ${theme.card}`}>
                         
                         {/* --- CARD HEADER --- */}
-                        <div className={`p-6 text-center relative ${theme.header}`}>
+                        <div className={`p-6 text-center relative rounded-t-2xl ${theme.header}`}>
                             {theme.badgeText && (
                                 <div className={`absolute -top-3 left-1/2 transform -translate-x-1/2 px-4 py-1 rounded-full text-xs tracking-wider shadow-sm uppercase ${theme.badge}`}>
                                     {theme.badgeText}
