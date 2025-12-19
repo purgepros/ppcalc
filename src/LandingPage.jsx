@@ -1,3 +1,4 @@
+/* REPLACE src/LandingPage.jsx content with this */
 import React, { useState, useEffect } from 'react';
 
 const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, onAlertsInfoClick }) => {
@@ -9,10 +10,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
 
   // --- Load TrustIndex Review Widget ---
   useEffect(() => {
-    // Target the specific container instead of the body
     const container = document.getElementById('trustindex-widget-container');
-    
-    // Check if script is already there to prevent duplicates inside the container
     if (container && !container.querySelector('script[src*="trustindex.io"]')) {
       const script = document.createElement('script');
       script.src = "https://cdn.trustindex.io/loader.js?bcbd78c609d5338ba8463b296ff";
@@ -56,22 +54,23 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
         <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/60 to-black/40"></div>
 
         <div className="container mx-auto max-w-6xl relative z-10 text-center">
-          {/* NUCLEAR OFFER BANNER - CHANGED TO RED ORANGE */}
-          <div className="inline-block bg-[#ff4500] text-white font-bold px-5 py-2 rounded-md uppercase tracking-wider text-sm mb-6 shadow-lg animate-pulse border border-white/20">
-            FREE First Cleanup ($99+ Savings) When Signing Up for Recurring Service!
+          
+          {/* PSYCHOLOGICAL TRIGGER BANNER */}
+          <div className="inline-block bg-red-600 text-white font-extrabold px-6 py-3 rounded-full uppercase tracking-wider text-sm md:text-base mb-8 shadow-[0_0_20px_rgba(220,38,38,0.6)] animate-pulse border-2 border-red-400 transform hover:scale-105 transition-transform cursor-default">
+            ⚠️ DO NOT Pay For Your First Cleanup. Get It FREE! ($99 Value)
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight drop-shadow-lg">
             Stop Living in a Toilet.<br />
-            <span className="text-[#38b6ff]">Get a Pristine, Poop Free Yard. 🐶💩</span>
+            <span className="text-[#38b6ff]">Get a Poop Free Yard. 🐶💩</span>
           </h1>
           
-          <p className="text-gray-300 text-lg md:text-xl max-w-3xl mx-auto mb-10 font-medium">
+          <p className="text-gray-200 text-lg md:text-xl max-w-3xl mx-auto mb-10 font-medium drop-shadow-md">
             ✅ Reduce bacteria. ✅ Eliminate odor. ✅ Protect your pets.
           </p>
 
           {/* --- ZIP CODE GATE --- */}
-          <div className="bg-white text-gray-900 p-6 md:p-8 rounded-xl max-w-lg mx-auto shadow-2xl transform transition-transform hover:scale-[1.01]">
+          <div className="bg-white text-gray-900 p-6 md:p-8 rounded-xl max-w-lg mx-auto shadow-2xl transform transition-transform hover:scale-[1.01] relative z-20">
             <h3 className="text-xl font-bold mb-4">Check Availability & Get Your Price</h3>
             <form onSubmit={handleZipSubmit} className="flex flex-col md:flex-row gap-3">
               <input 
@@ -79,30 +78,31 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 type="tel" 
                 pattern="[0-9]*" 
                 maxLength="5"
-                className="flex-1 p-4 border-2 border-gray-300 rounded-lg text-lg focus:border-[#38b6ff] focus:outline-none transition-colors"
+                className="flex-1 p-4 border-2 border-gray-300 rounded-lg text-lg focus:border-[#38b6ff] focus:outline-none transition-colors font-medium placeholder-gray-400"
                 placeholder="Enter Zip Code" 
                 value={zip}
                 onChange={(e) => setZip(e.target.value)}
                 required
               />
-              <button type="submit" className="bg-black text-[#38b6ff] font-bold uppercase py-4 px-8 rounded-lg hover:bg-gray-800 transition-colors shadow-md whitespace-nowrap cursor-pointer">
+              <button type="submit" className="bg-black text-[#38b6ff] font-bold uppercase py-4 px-8 rounded-lg hover:bg-gray-800 hover:text-white transition-all shadow-md whitespace-nowrap cursor-pointer hover:shadow-lg">
                 Get Started
               </button>
             </form>
             {error && <p className="text-red-600 font-bold mt-3 text-sm">{error}</p>}
-            
-            {/* NEW BADGE */}
-            <div className="mt-4 flex items-center justify-center space-x-2 text-green-700 bg-green-50 p-2 rounded-lg border border-green-100">
-              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-              <span className="text-xs font-bold uppercase tracking-wide">100% Satisfaction Guaranteed</span>
-            </div>
           </div>
         </div>
       </section>
 
       {/* --- SOCIAL PROOF / REVIEWS SECTION --- */}
-      <section className="bg-gray-50 py-10 border-b border-gray-100">
+      <section className="bg-gray-50 py-12 border-b border-gray-100">
         <div className="container mx-auto max-w-4xl px-4 text-center">
+            
+            {/* SATISFACTION BADGE - MOVED HERE */}
+            <div className="inline-flex items-center justify-center space-x-2 text-green-800 bg-green-100 px-4 py-2 rounded-full border border-green-200 mb-8 shadow-sm">
+              <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              <span className="text-sm md:text-base font-bold uppercase tracking-wide">100% Risk-Free Satisfaction Guaranteed</span>
+            </div>
+
             <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-6">Trusted by Indy's Top Pet Owners</p>
             <div className="min-h-[100px] flex items-center justify-center">
                 <div id="trustindex-widget-container"></div>
@@ -186,18 +186,18 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
                 </div>
                 
-                {/* Row 2 - Hauls Waste Away (Moved up) */}
+                {/* Row 2 - Hauls Waste Away */}
                 <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center bg-blue-50/50">
                     <div className="font-bold text-gray-800">Hauls Waste Away</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
                     <div className="text-center text-red-500 text-sm font-bold">Left in YOUR bin</div>
                 </div>
 
-                {/* Row 3 - Sanitizing & Deodorizing (Moved down & Bundled) */}
+                {/* Row 3 - Sanitizing & Deodorizing */}
                 <div className="grid grid-cols-3 py-4 px-6 border-b border-gray-100 items-center">
                     <div className="font-bold text-gray-800">Sanitizing & Deodorizing</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓ <span className="text-xs block text-green-600 font-normal">Included</span></div>
-                    <div className="text-center text-gray-400 text-xl">-</div>
+                    <div className="text-center text-gray-400 text-sm font-bold">Not Included</div>
                 </div>
 
                 {/* Row 4 - Locked Gate Photo */}
@@ -211,7 +211,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <div className="grid grid-cols-3 py-4 px-6 items-center">
                     <div className="font-bold text-gray-800">Free First Cleanup</div>
                     <div className="text-center text-green-500 font-bold text-xl">✓</div>
-                    <div className="text-center text-red-600 text-sm font-bold">Charges $40 - $100+</div>
+                    <div className="text-center text-red-600 text-sm font-bold">Charges $40 - $150+</div>
                 </div>
             </div>
         </div>
@@ -228,14 +228,20 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             {/* PLAN 1: BI-WEEKLY */}
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 flex flex-col relative group hover:border-gray-600 transition-colors">
               <div className="text-2xl font-bold mb-2">Bi-Weekly Reset</div>
+              
+              {/* PER VISIT BREAKDOWN */}
+              <div className="inline-block bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm font-bold mb-3 border border-gray-700">
+                Just ${(prices.biWeekly / 2.17).toFixed(2)} / visit
+              </div>
+
               <div className="text-4xl font-extrabold text-[#38b6ff] mb-2">
                 ${prices.biWeekly}<span className="text-lg text-white font-medium">/mo</span>
               </div>
-              <div className="text-[#38b6ff] text-xs font-bold uppercase tracking-wide mb-2">First Month: 50% OFF</div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">2 Visits / Month</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Bi-Weekly Visits</strong></li>
+                <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> <strong>Waste Hauled Away</strong></li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Happy Dog Treato Drop!</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Backyard Only Coverage</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
@@ -247,12 +253,11 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                   </div>
                 </li>
                 
-                <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Waste Hauled Away</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Sanitizing Treatment</li>
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
 
-                <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE First Cleanup</strong>
+                <li className="flex items-center justify-center text-black bg-yellow-400 font-bold p-2 rounded text-center text-xs mt-4 uppercase tracking-wide">
+                  <span className="mr-1">★</span> BONUS: FREE First Cleanup
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
@@ -267,10 +272,15 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 Most Popular
               </div>
               <div className="text-2xl font-bold mb-2">Pristine-Clean</div>
+              
+              {/* PER VISIT BREAKDOWN - HIGHLIGHTED */}
+              <div className="inline-block bg-[#38b6ff]/20 text-[#38b6ff] px-4 py-1 rounded-full text-base font-extrabold mb-3 border border-[#38b6ff]/50">
+                Just ${(prices.weekly / 4.33).toFixed(2)} / visit
+              </div>
+
               <div className="text-4xl font-extrabold text-[#38b6ff] mb-2">
                 ${prices.weekly}<span className="text-lg text-white font-medium">/mo</span>
               </div>
-              <div className="text-[#38b6ff] text-xs font-bold uppercase tracking-wide mb-2">First Month: 50% OFF</div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">4-5 Visits / Month (Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
@@ -299,8 +309,8 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 
                 <li className="flex items-start text-gray-600 line-through"><span className="text-red-500 mr-2">✖</span> NO Yard+ Coverage Included</li>
                 
-                <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE First Cleanup (Over $99 Value)</strong>
+                <li className="flex items-center justify-center text-black bg-yellow-400 font-bold p-2 rounded text-center text-xs mt-4 uppercase tracking-wide transform scale-105 shadow-md">
+                  <span className="mr-1">★</span> BONUS: FREE First Cleanup (Over $99 Value)
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-[#38b6ff] hover:bg-[#2ea0e6] text-white font-bold py-3 rounded-full transition-all shadow-lg hover:-translate-y-1 cursor-pointer">
@@ -312,10 +322,15 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             {/* PLAN 3: TWICE WEEKLY */}
             <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl p-8 flex flex-col relative group hover:border-gray-600 transition-colors">
               <div className="text-2xl font-bold mb-2">Pristine-Plus</div>
+              
+              {/* PER VISIT BREAKDOWN */}
+              <div className="inline-block bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm font-bold mb-3 border border-gray-700">
+                Just ${(prices.twiceWeekly / 8.66).toFixed(2)} / visit
+              </div>
+
               <div className="text-4xl font-extrabold text-[#38b6ff] mb-2">
                 ${prices.twiceWeekly}<span className="text-lg text-white font-medium">/mo</span>
               </div>
-              <div className="text-[#38b6ff] text-xs font-bold uppercase tracking-wide mb-2">First Month: 50% OFF</div>
               <div className="text-gray-500 text-sm border-b border-gray-800 pb-6 mb-6">8-9 Visits / Month (Twice-Weekly)</div>
               
               <ul className="space-y-4 text-left flex-grow mb-8 text-sm">
@@ -342,8 +357,8 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Pics of Locked Gates</li>
                 <li className="flex items-start"><span className="text-[#38b6ff] mr-2">✔</span> Automated Reminders</li>
 
-                <li className="flex items-start text-[#38b6ff] mt-4 pt-4 border-t border-gray-800">
-                  <span className="mr-2">★</span> <strong>BONUS: FREE First Cleanup</strong>
+                <li className="flex items-center justify-center text-black bg-yellow-400 font-bold p-2 rounded text-center text-xs mt-4 uppercase tracking-wide">
+                  <span className="mr-1">★</span> BONUS: FREE First Cleanup
                 </li>
               </ul>
               <button onClick={scrollToTop} className="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 rounded-full transition-all cursor-pointer">
