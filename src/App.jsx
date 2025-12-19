@@ -1032,6 +1032,20 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back to Plans</button>
       <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Complete Order"}</h2>
       
+      {/* --- RISK FREE BOX --- */}
+      {text?.riskFreeBox && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center shadow-sm">
+            <h4 className="text-lg font-bold text-green-800 mb-2">{text.riskFreeBox.title}</h4>
+            <div className="text-sm text-green-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: text.riskFreeBox.body }} />
+            <button 
+              onClick={onRiskFreeInfoClick} 
+              className="mt-3 text-xs font-bold text-green-800 underline hover:text-green-900 cursor-pointer flex items-center justify-center mx-auto"
+            >
+              👆 Learn More
+            </button>
+        </div>
+      )}
+
       {/* --- PAYMENT FREQUENCY SELECTOR --- */}
       <div className="mb-6">
         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Select Payment Frequency</h3>
@@ -1056,20 +1070,6 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
             })}
         </div>
       </div>
-
-      {/* --- RISK FREE BOX --- */}
-      {text?.riskFreeBox && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center shadow-sm">
-            <h4 className="text-lg font-bold text-green-800 mb-2">{text.riskFreeBox.title}</h4>
-            <div className="text-sm text-green-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: text.riskFreeBox.body }} />
-            <button 
-              onClick={onRiskFreeInfoClick} 
-              className="mt-3 text-xs font-bold text-green-800 underline hover:text-green-900 cursor-pointer flex items-center justify-center mx-auto"
-            >
-              👆 Learn More
-            </button>
-        </div>
-      )}
 
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Order Summary</h4>
