@@ -367,7 +367,7 @@ const LandingPage = ({ config, onZipValidated, onCustomQuoteClick, onInfoClick, 
             </div>
 
           </div>
-          <p className="text-center text-gray-500 text-sm mt-8">Base pricing for up to 2 dogs and standard lot size.</p>
+          <p className="text-center text-gray-500 text-sm mt-8">Base pricing for up to 1 dog(s) and standard lot size.</p>
         </div>
       </section>
 
