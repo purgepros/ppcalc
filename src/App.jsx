@@ -1,4 +1,3 @@
-/* REPLACE src/App.jsx content with this. */
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
@@ -46,26 +45,6 @@ const trackFbEvent = (eventName, params = {}) => {
   }
 };
 
-const useExitIntent = (isFormSubmitted, onIntent) => {
-  useEffect(() => {
-    if (isFormSubmitted) return;
-    const timerId = setTimeout(() => {
-      const handleMouseLeave = (e) => {
-        if (e.clientY <= 0) {
-          const hasSeenModal = sessionStorage.getItem('seenExitIntentModal');
-          if (!hasSeenModal) {
-            onIntent();
-            sessionStorage.setItem('seenExitIntentModal', 'true');
-          }
-        }
-      };
-      document.addEventListener('mouseleave', handleMouseLeave);
-      return () => document.removeEventListener('mouseleave', handleMouseLeave);
-    }, 1500);
-    return () => clearTimeout(timerId);
-  }, [isFormSubmitted, onIntent]);
-};
-
 const PaymentTrustBadge = () => (
   <div className="flex items-center justify-between mt-2 px-1">
     <div className="flex space-x-1 opacity-70 grayscale hover:grayscale-0 transition-all">
@@ -92,7 +71,7 @@ const ClickHint = () => (
 
 const ModalOverlay = ({ children, onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in" onClick={onClose}>
-    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden relative animate-scaleIn" onClick={e => e.stopPropagation()}>
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden relative animate-scaleIn max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
       <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10 p-2">
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
@@ -124,7 +103,7 @@ const YardHelperModal = ({ onClose }) => (
         </span>
         Which size is right?
       </h3>
-      <div className="space-y-3 text-sm text-slate-600 max-h-[60vh] overflow-y-auto pr-1">
+      <div className="space-y-3 text-sm text-slate-600">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
           <strong className="block text-slate-800 text-base mb-1">Standard Lot (Up to 0.25 Acre)</strong>
           <p>Most common. Typical subdivision home with a standard backyard.</p>
@@ -156,7 +135,7 @@ const ServiceInfoModal = ({ onClose, text }) => (
         </span>
         {text?.title || "Service Info"}
       </h3>
-      <div className="space-y-3 text-slate-600 text-sm leading-relaxed max-h-[60vh] overflow-y-auto pr-2">
+      <div className="space-y-3 text-slate-600 text-sm leading-relaxed">
         {Array.isArray(text?.body) ? text.body.map((p, i) => (
           <p key={i} dangerouslySetInnerHTML={{__html: p}} />
         )) : <p dangerouslySetInnerHTML={{__html: text?.body}} />}
@@ -228,100 +207,6 @@ const SavingsInfoModal = ({ onClose }) => (
     </div>
   </ModalOverlay>
 );
-
-const ExitIntentModal = ({ onClose, currentPlan, zipCode, dogCount, yardSize, text }) => {
-  const [email, setEmail] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const handleEmailQuote = async () => {
-    if (!email || !email.includes('@')) return;
-    setIsSending(true);
-    const baseUrl = window.location.origin + window.location.pathname;
-    const params = new URLSearchParams();
-    if (zipCode) params.set('zip', zipCode);
-    if (dogCount) params.set('dogCount', dogCount);
-    const quoteLink = `${baseUrl}?${params.toString()}`;
-
-    const monthly = currentPlan?.finalMonthlyPrice || 0;
-    let perVisit = 0;
-    if (currentPlan?.key === 'weekly') perVisit = monthly / 4.33;
-    else if (currentPlan?.key === 'biWeekly') perVisit = monthly / 2.17;
-    else if (currentPlan?.key === 'twiceWeekly') perVisit = monthly / 8.66;
-
-    const yardSizeLabels = {
-      'standard': 'Standard (Up to 1/4 Acre)',
-      'tier1': 'Medium (1/4 - 1/2 Acre)',
-      'tier2': 'Large (1/2 - 1 Acre)',
-      'estate': 'Estate (Over 1 Acre)'
-    };
-    const readableYardSize = yardSizeLabels[yardSize] || yardSize || 'Not Selected';
-
-    try {
-      await fetch('/.netlify/functions/create-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadType: 'exitIntent',
-          leadData: { email, zip: zipCode, dog_count: dogCount, yard_size: readableYardSize, lead_status: 'Exit Intent - Saved Quote' },
-          emailParams: {
-            email,
-            plan: currentPlan?.name || 'Custom Quote',
-            dog_count: dogCount,
-            total_monthly: `$${monthly.toFixed(2)}`,
-            per_visit: `$${perVisit.toFixed(2)}`,
-            quote_link: quoteLink,
-            zip: zipCode, 
-            yard_size: readableYardSize
-          }
-        })
-      });
-      trackFbEvent('Lead', { content_name: 'Exit Intent Saved Quote' });
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/Ug4FCLCrqckbELmUhJhC' });
-      }
-      setSent(true);
-      setTimeout(onClose, 2000);
-    } catch (e) {
-      console.error(e);
-      setIsSending(false);
-    }
-  };
-
-  return (
-    <ModalOverlay onClose={onClose}>
-      <div className="p-8 text-center">
-        <h3 className="text-2xl font-bold text-slate-800 mb-2">{text?.title || "Wait!"}</h3>
-        <p className="text-slate-600 mb-6" dangerouslySetInnerHTML={{__html: text?.body}} />
-        {!sent ? (
-          <div className="space-y-3">
-             <input 
-               type="email" 
-               placeholder="Enter your email address" 
-               className="w-full p-3 border rounded-lg"
-               value={email}
-               onChange={e => setEmail(e.target.value)}
-             />
-             <div className="flex space-x-3">
-               <button onClick={onClose} className="flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300">No thanks</button>
-               <button 
-                 onClick={handleEmailQuote} 
-                 disabled={isSending || !email}
-                 className="flex-1 bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90 disabled:opacity-50"
-               >
-                 {isSending ? 'Sending...' : 'Email Me Quote'}
-               </button>
-             </div>
-          </div>
-        ) : (
-          <div className="text-green-600 font-bold p-4 bg-green-50 rounded-lg">
-            Quote Sent! Check your inbox.
-          </div>
-        )}
-      </div>
-    </ModalOverlay>
-  );
-};
 
 const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
   <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer mt-2">
@@ -477,7 +362,11 @@ const Footer = ({ text }) => {
 // --- UPDATED SORTER COMPONENT ---
 const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions, onLearnMoreClick }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
-  const [dogCount, setDogCount] = useState(initialDogCount || '1'); // Default to '1'
+  const [dogCount, setDogCount] = useState(initialDogCount || '1'); 
+  const [phone, setPhone] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [consent, setConsent] = useState(false);
+  const [error, setError] = useState('');
 
   const getDogNumber = (val) => {
     if (val === '10+') return 10;
@@ -485,12 +374,34 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
   };
 
   const handleSubmit = () => {
+    if (!phone || phone.length < 10) {
+        setError('Please enter a valid phone number.');
+        return;
+    }
+    if (!consent) {
+        setError('Please agree to receive communications to proceed.');
+        return;
+    }
+    setError('');
     const numDogs = getDogNumber(dogCount);
-    onSortComplete(yardSize, numDogs, dogCount);
+    onSortComplete(yardSize, numDogs, dogCount, phone, consent, couponCode);
   };
 
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
+      
+      {/* Coupon Field - Optional, at Top */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Have a Coupon Code?</label>
+        <input 
+            type="text" 
+            placeholder="Enter Code (Optional)"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
+            className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 outline-none"
+        />
+      </div>
+
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
             <h2 className="text-xl font-bold text-slate-800">{text?.yardTitle || "1. Property Size?"}</h2>
@@ -534,7 +445,32 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
         </select>
       </div>
 
+      {/* Phone & Consent Section */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+         <h3 className="font-bold text-gray-800 mb-3">Your Contact Info</h3>
+         <input 
+            type="tel" 
+            placeholder="Mobile Phone Number (Required)"
+            className="w-full p-3 border rounded mb-3"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+         />
+         <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
+            <input 
+                type="checkbox" 
+                className="mt-1"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+            />
+            <span>
+                By providing my phone number, I agree to receive calls and text messages from Purge Pros, including for marketing purposes. Messaging frequency varies and message and data rate may apply. You may reply STOP to opt out. By checking this box I agree to our <a href="https://itspurgepros.com/privacy-policy" target="_blank" className="text-blue-600 underline">Privacy Policy</a>.
+            </span>
+         </label>
+      </div>
+
       <SpecialOfferBox offer={specialOffer} promotions={promotions} onLearnMoreClick={onLearnMoreClick} />
+
+      {error && <p className="text-red-600 font-bold text-center mb-4">{error}</p>}
 
       <button onClick={handleSubmit} className="w-full bg-[var(--brand-green)] text-white font-bold text-lg py-4 rounded-lg hover:bg-opacity-90 shadow-lg transition-transform hover:-translate-y-0.5">
         See My Price
@@ -864,8 +800,14 @@ const PackageSelector = ({
 };
 
 // --- UPDATED CHECKOUT FORM ---
-const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount, onRiskFreeInfoClick }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', address: '', agreed: false });
+const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount, onRiskFreeInfoClick, phoneFromSorter, couponFromSorter }) => {
+  const [formData, setFormData] = useState({ 
+      name: '', email: '', phone: phoneFromSorter || '', 
+      address: '', city: '', state: 'IN', 
+      dogName: '', source: '', comments: '',
+      agreed: false 
+  });
+  const [cardNow, setCardNow] = useState(false); // Toggle for Card Now vs Later
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
@@ -918,8 +860,6 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
   const promoSavings = isPromoApplied ? packageSelection.finalMonthlyPrice / 2 : 0;
   const totalSavings = 99.99 + paymentSelection.savingsValue + promoSavings;
 
-/* REPLACE the getBreakdown function inside CheckoutForm with this: */
-
   const getBreakdown = () => {
     if (!configData) return { base: 0, lot: 0, dog: 0, yardPlus: 0 };
     const prices = configData.basePrices;
@@ -933,9 +873,7 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
     if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
     if (yardSize === 'tier2') lotFee = fees.tier2 || 0;
 
-    // Correctly parse dog count
     const numDogs = dogCount === '10+' ? 10 : parseInt(dogCount);
-    // Charge for extra dogs over 1
     let dogFee = 0;
     if (numDogs > 1) {
         dogFee = (numDogs - 1) * eDogPrice;
@@ -944,21 +882,13 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
     const yardPlusCost = (yardPlusSelected && packageSelection.key !== 'twiceWeekly') ? yPlusPrice : 0;
     const yardPlusStatus = (packageSelection.key === 'twiceWeekly') ? 'Included' : (yardPlusSelected ? `$${yPlusPrice}` : 'Not Selected');
 
-    // --- NEW: Calculate Effective Monthly Rate for Per-Visit Breakdown ---
-    // We want to show the lower "per visit" price if they choose Quarterly or Annual
     let effectiveMonthly = monthly; 
-    
     if (paymentSelection.term === 'Quarterly') {
-        // (Monthly * 3 - $30 discount) / 3 months = Effective Monthly
         effectiveMonthly = ((monthly * 3) - (quarterlyDiscount || 30)) / 3;
     } else if (paymentSelection.term === 'Annual') {
-        // (Monthly * 11) / 12 months = Effective Monthly (Since they get 1 mo free)
         effectiveMonthly = (monthly * 11) / 12;
     }
-    // Note: We deliberately ignore the "50% off first month" promo here so the 
-    // per-visit price reflects the long-term value, not just the first month.
 
-    // Calculate Per Visit using Effective Rate
     let perVisit = 0;
     if (packageSelection.key === 'weekly') perVisit = effectiveMonthly / 4.33;
     else if (packageSelection.key === 'biWeekly') perVisit = effectiveMonthly / 2.17;
@@ -972,7 +902,8 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.agreed) { setError('Please agree to the terms and authorization.'); return; }
-    if (!stripeInstance || !cardElement) { setError('Payment system not ready. Please wait or refresh.'); return; }
+    // Only require Stripe Element if "Card Now" is selected
+    if (cardNow && (!stripeInstance || !cardElement)) { setError('Payment system not ready. Please wait or refresh.'); return; }
     
     setIsSubmitting(true);
     setError('');
@@ -986,13 +917,17 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
     const readableYardSize = yardSizeLabels[yardSize] || yardSize;
 
     try {
-      const { error: stripeError, paymentMethod } = await stripeInstance.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-        billing_details: { name: formData.name, email: formData.email, phone: formData.phone, address: { line1: formData.address, postal_code: zipCode } }
-      });
+      let paymentMethodId = null;
 
-      if (stripeError) throw new Error(stripeError.message);
+      if (cardNow) {
+          const { error: stripeError, paymentMethod } = await stripeInstance.createPaymentMethod({
+            type: 'card',
+            card: cardElement,
+            billing_details: { name: formData.name, email: formData.email, phone: formData.phone, address: { line1: formData.address, city: formData.city, state: formData.state, postal_code: zipCode } }
+          });
+          if (stripeError) throw new Error(stripeError.message);
+          paymentMethodId = paymentMethod.id;
+      }
 
       let termDiscountRow = '';
       let termNoun = 'Month'; 
@@ -1009,27 +944,36 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
 
       const couponId = stripeMode === 'live' ? promotions?.couponIdLive : promotions?.couponIdTest;
 
+      // Pass manual coupon code if provided, otherwise use promo
+      const finalCouponCode = couponFromSorter || (isPromoApplied ? couponId : null);
+
       const payload = {
         stripeMode,
-        paymentMethodId: paymentMethod.id,
+        paymentMethodId: paymentMethodId, // Null if "Card Later"
+        cardOption: cardNow ? 'now' : 'later',
         customer: { ...formData, terms: true, auth: true },
         quote: { zipCode, dogCount, planName: packageSelection.name, planKey: packageSelection.key, paymentTerm: paymentSelection.term, totalDueToday: totalDue, yardSize, yardPlusSelected },
         leadData: { ...formData, zip: zipCode, dog_count: dogCount, plan: packageSelection.name, total: totalDue, term: paymentSelection.term, yard_size: readableYardSize },
         promo: {
-            applied: isPromoApplied,
-            couponId: isPromoApplied ? couponId : null
+            applied: !!finalCouponCode,
+            couponId: finalCouponCode
         },
         emailParams: { 
           name: formData.name || 'Valued Customer',
           email: formData.email || '',
           phone: formData.phone || '',
           address: formData.address || '',
+          city: formData.city || '',
+          state: formData.state || '',
+          dog_name: formData.dogName || '',
+          source: formData.source || '',
+          comments: formData.comments || '',
           plan: packageSelection.name || 'Standard Plan', 
           payment_term: paymentSelection.term || 'Monthly',
           term_noun: termNoun,
           total_monthly: `$${monthly.toFixed(2)}/mo`, 
           per_visit: `$${bd.perVisit.toFixed(2)}`,
-          final_charge: `$${totalDue.toFixed(2)}`,
+          final_charge: cardNow ? `$${totalDue.toFixed(2)}` : '$0.00 (Due Later)',
           initial_savings: "99.99",
           total_savings: totalSavings.toFixed(2),
           term_discount_row: termDiscountRow || '',
@@ -1050,9 +994,15 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
       const data = await res.json();
       if (!res.ok || data.status !== 'success') throw new Error(data.message || 'Payment failed.');
       
-      trackFbEvent('Purchase', { value: totalDue, currency: 'USD', content_name: packageSelection.name });
-      if (typeof window.gtag === 'function') {
-        window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC', 'value': totalDue, 'currency': 'USD', 'transaction_id': 'txn_' + Date.now() });
+      // Only track purchase if they actually paid
+      if (cardNow) {
+          trackFbEvent('Purchase', { value: totalDue, currency: 'USD', content_name: packageSelection.name });
+          if (typeof window.gtag === 'function') {
+            window.gtag('event', 'conversion', { 'send_to': 'AW-17767139897/lcnyCLfUhckbELmUhJhC', 'value': totalDue, 'currency': 'USD', 'transaction_id': 'txn_' + Date.now() });
+          }
+      } else {
+          // Track as Lead for now
+          trackFbEvent('Lead', { content_name: 'Checkout - Card Later' });
       }
 
       onSubmitSuccess();
@@ -1071,20 +1021,6 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back to Plans</button>
       <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Complete Order"}</h2>
       
-      {/* --- RISK FREE BOX --- */}
-      {text?.riskFreeBox && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-center shadow-sm">
-            <h4 className="text-lg font-bold text-green-800 mb-2">{text.riskFreeBox.title}</h4>
-            <div className="text-sm text-green-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: text.riskFreeBox.body }} />
-            <button 
-              onClick={onRiskFreeInfoClick} 
-              className="mt-3 text-xs font-bold text-green-800 underline hover:text-green-900 cursor-pointer flex items-center justify-center mx-auto"
-            >
-              👆 Learn More
-            </button>
-        </div>
-      )}
-
       {/* --- PAYMENT FREQUENCY SELECTOR --- */}
       <div className="mb-6">
         <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Select Payment Frequency</h3>
@@ -1117,29 +1053,21 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
         <div className="flex justify-between mb-1"><span className="text-slate-600">Dogs Included</span><span className="font-medium">{bd.numDogs}</span></div>
         <div className="flex justify-between mb-1"><span className="text-slate-600">Yard+ Coverage</span><span className={`font-medium ${bd.yardPlusStatus === 'Included' ? 'text-green-600 font-bold' : (bd.yardPlusCost > 0 ? '' : 'text-slate-400')}`}>{bd.yardPlusStatus}</span></div>
 
-        {/* NEW PER VISIT ROW */}
-        <div className="flex justify-between mb-1 text-slate-500 italic"><span className="">Breakdown:</span><span className="">${bd.perVisit.toFixed(2)} / visit</span></div>
-
         <div className="border-t border-slate-200 my-3 pt-3">
-           
-           {/* --- NEW ADDITION: First Cleanup Line Items --- */}
            <div className="flex justify-between text-slate-500 mb-2">
              <span>First Clean Up / Yard Reset</span>
              <span className="text-slate-900 font-medium">$99.99+</span>
            </div>
            
-           {/* FREE First Cleanup Deduction - NOW RED and POPPING */}
            <div className="flex justify-between text-red-600 font-bold mb-3 items-center bg-red-50 p-2 -mx-2 rounded border border-red-100">
              <div className="flex items-center">
                <span>FREE First Clean Up / Yard Reset</span>
                <div className="flex items-center ml-1">
                   <button onClick={onSavingsInfoClick} className="text-red-500 hover:text-red-700 focus:outline-none"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></button>
-                  <button onClick={onSavingsInfoClick}><ClickHint/></button>
                </div>
              </div>
              <span>-$99.99+</span>
            </div>
-           {/* ---------------------------------------------- */}
 
            <div className="flex justify-between font-bold text-slate-800 mb-1 text-base">
              <span>Monthly Rate:</span>
@@ -1161,50 +1089,75 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
            )}
         </div>
 
-        {/* Total Savings Box - Modified to just be a calculator */}
-        <div className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-dashed border-green-400 text-green-900 p-3 rounded-lg mt-4 shadow-sm">
-          <div className="flex justify-between items-end">
-            <span className="font-extrabold text-sm flex items-center uppercase tracking-wider">🎉 You Saved:</span>
-            <span className="font-extrabold text-2xl tracking-tight text-green-700">OVER ${totalSavings.toFixed(2)}</span>
-          </div>
-        </div>
-
-        {/* Due Today - More Prominent Footer */}
         <div className="bg-slate-900 text-white p-4 -mx-4 -mb-4 rounded-b-lg mt-6 shadow-inner flex justify-between items-center">
           <span className="text-lg font-medium opacity-90">Total Due Today:</span>
           <span className="text-3xl font-extrabold tracking-wide text-white">${totalDue.toFixed(2)}</span>
         </div>
-
-      </div>
-
-      <div className="bg-blue-50 p-5 rounded-xl mb-6 text-sm text-blue-800 border border-blue-100 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 bg-blue-100 p-2 rounded-bl-lg"><svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-        <h4 className="font-bold mb-3 text-blue-900 text-base flex items-center">{text?.whatHappensNextTitle || "Here's What Happens Next:"}</h4>
-        <p className="mb-3 leading-relaxed">Your payment today covers your first <strong>{termNounDisplay}</strong> of service. Your subscription will <strong>not</strong> begin until your <strong>first scheduled visit</strong>.</p>
-        <p className="mb-3">After checkout, a team member will text (or call) you within 24 hours to schedule <strong>two</strong> separate appointments:</p>
-        <div className="space-y-2">
-            <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your 100% FREE First Cleanup ($99.99+ Value).</span></div>
-            <div className="flex items-start"><div className="bg-white rounded-full p-0.5 mr-2 mt-0.5 shadow-sm"><svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div><span>Your First <em>Paid</em> Visit (which starts your subscription).</span></div>
-        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-        <input className="w-full p-3 border rounded" type="email" placeholder="Email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-        <input className="w-full p-3 border rounded" type="tel" placeholder="Phone" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-        <input className="w-full p-3 border rounded" placeholder="Address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
-        
-        <div className="p-3 border rounded bg-white min-h-[50px]">
-          {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
+        {/* Contact Info */}
+        <h4 className="font-bold text-gray-800 border-b pb-1 mt-6 mb-3">1. Contact Information</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+            <input className="w-full p-3 border rounded" type="email" placeholder="Email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
         </div>
+        <input className="w-full p-3 border rounded bg-gray-100" type="tel" placeholder="Phone" readOnly value={formData.phone} />
+
+        {/* Service Address */}
+        <h4 className="font-bold text-gray-800 border-b pb-1 mt-6 mb-3">2. Service Address</h4>
+        <input className="w-full p-3 border rounded" placeholder="Street Address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+        <div className="grid grid-cols-3 gap-4">
+            <input className="col-span-2 w-full p-3 border rounded" placeholder="City" required value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+            <input className="w-full p-3 border rounded bg-gray-100" placeholder="State" readOnly value="IN" />
+        </div>
+        <input className="w-full p-3 border rounded bg-gray-100" placeholder="Zip Code" readOnly value={zipCode} />
+
+        {/* Details */}
+        <h4 className="font-bold text-gray-800 border-b pb-1 mt-6 mb-3">3. Service Details</h4>
+        <input className="w-full p-3 border rounded" placeholder="Dog's Name(s) (Optional)" value={formData.dogName} onChange={e => setFormData({...formData, dogName: e.target.value})} />
+        <select className="w-full p-3 border rounded bg-white" value={formData.source} onChange={e => setFormData({...formData, source: e.target.value})}>
+            <option value="">How did you hear about us? (Optional)</option>
+            <option value="Google">Google Search</option>
+            <option value="Facebook">Facebook / Instagram</option>
+            <option value="Nextdoor">Nextdoor</option>
+            <option value="Referral">Friend / Neighbor</option>
+            <option value="Truck">Saw Truck</option>
+            <option value="Other">Other</option>
+        </select>
+        <textarea className="w-full p-3 border rounded" rows="2" placeholder="Gate codes, access notes, or comments (Optional)" value={formData.comments} onChange={e => setFormData({...formData, comments: e.target.value})} />
+
+        {/* Payment */}
+        <h4 className="font-bold text-gray-800 border-b pb-1 mt-6 mb-3">4. Billing</h4>
         
-        <PaymentTrustBadge />
+        <div className="mb-4">
+            <label className="block text-sm font-bold text-gray-700 mb-2">A card on file is needed before services can start. Would you like to provide card information now?*</label>
+            <div className="space-y-2">
+                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="cardOption" className="mr-3" checked={cardNow} onChange={() => setCardNow(true)} />
+                    <span className="font-medium">Yes, I'm ready to start.</span>
+                </label>
+                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="cardOption" className="mr-3" checked={!cardNow} onChange={() => setCardNow(false)} />
+                    <span className="font-medium">No, I have question(s) about my service first.</span>
+                </label>
+            </div>
+        </div>
+
+        {cardNow && (
+            <div className="p-3 border rounded bg-white min-h-[50px] animate-scaleIn">
+                {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
+                <PaymentTrustBadge />
+            </div>
+        )}
+        
         <TermsCheckbox checked={formData.agreed} onChange={(val) => setFormData(prev => ({...prev, agreed: val}))} isSubscription={true} />
         
         {error && <p className="text-red-600 text-center text-sm">{error}</p>}
-        <button disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold py-4 rounded-lg hover:bg-opacity-90">
-          {isSubmitting ? 'Processing...' : `Pay $${totalDue.toFixed(2)} & Start`}
+        <button disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold py-4 rounded-lg hover:bg-opacity-90 transition-all">
+          {isSubmitting ? 'Processing...' : (cardNow ? `Pay $${totalDue.toFixed(2)} & Start Subscription` : 'Complete Order')}
         </button>
+        {!cardNow && <p className="text-center text-xs text-gray-500 mt-2">A team member will contact you to finalize billing.</p>}
       </form>
     </div>
   );
@@ -1356,9 +1309,11 @@ const Site = () => {
   const [yardSize, setYardSize] = useState('standard');
   const [numDogs, setNumDogs] = useState(1); 
   const [dogCountLabel, setDogCountLabel] = useState('1'); 
+  const [phone, setPhone] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  
   const [yardPlusSelections, setYardPlusSelections] = useState({});
   const [packageSelection, setPackageSelection] = useState(null); 
-  // Initial Payment Selection is just a placeholder, logic now lives in CheckoutForm
   const [initialPaymentSelection, setInitialPaymentSelection] = useState(null); 
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [stripeInstance, setStripeInstance] = useState(null);
@@ -1374,8 +1329,6 @@ const Site = () => {
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [configError, setConfigError] = useState(null);
   const [configSource, setConfigSource] = useState('Checking...');
-
-  // useExitIntent(isFormSubmitted, () => setIsExitModalOpen(true));
 
   useEffect(() => {
     if (config?.data?.APPROVED_ZIP_CODES) {
@@ -1448,8 +1401,43 @@ const Site = () => {
     }
   }, [view, cardElement]);
 
-  const handleSorter = (size, dogs, label) => {
-    setYardSize(size); setNumDogs(dogs); setDogCountLabel(label);
+  const handleSorter = async (size, dogs, label, capturedPhone, consent, capturedCoupon) => {
+    setYardSize(size); 
+    setNumDogs(dogs); 
+    setDogCountLabel(label);
+    setPhone(capturedPhone);
+    setCouponCode(capturedCoupon);
+
+    // --- FIRE INCOMPLETE LEAD WEBHOOK ---
+    // This sends data to GHL immediately so you can follow up if they abandon checkout
+    const yardSizeLabels = {
+      'standard': 'Standard (Up to 1/4 Acre)',
+      'tier1': 'Medium (1/4 - 1/2 Acre)',
+      'tier2': 'Large (1/2 - 1 Acre)',
+      'estate': 'Estate (Over 1 Acre)'
+    };
+    
+    try {
+        await fetch('/.netlify/functions/create-lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                leadType: 'incomplete', // Special type for GHL routing
+                leadData: { 
+                    phone: capturedPhone,
+                    zip: zipCode, 
+                    dog_count: label, 
+                    yard_size: yardSizeLabels[size] || size, 
+                    coupon_code: capturedCoupon,
+                    lead_status: 'Incomplete - Step 2' 
+                },
+                emailParams: {} // No email sent to admin for incomplete, just GHL
+            })
+        });
+    } catch (e) {
+        console.warn("Background lead capture failed", e);
+    }
+
     if (size === 'estate') setView('lead_estate');
     else if (dogs >= 10) setView('lead_kennel');
     else setView('packages');
@@ -1458,7 +1446,6 @@ const Site = () => {
   const handlePlanSelect = (planName, finalPrice, planKey) => {
     setPackageSelection({name: planName, finalMonthlyPrice: finalPrice, key: planKey});
     
-    // Set Default Payment Selection (Monthly)
     const isPromoActive = config?.data?.promotions?.isActive || false;
     const monthlyPrice = finalPrice;
     
@@ -1470,7 +1457,6 @@ const Site = () => {
         isPromo: isPromoActive
     });
 
-    // Skip PaymentPlanSelector (Step 4) and go straight to Checkout (Step 5)
     setView('checkout');
   };
 
@@ -1512,7 +1498,7 @@ const Site = () => {
               text={config.text.packagesView} 
               specialOffer={config.text.globals} 
               onBack={() => setView('sorter')} 
-              onPlanSelect={handlePlanSelect} // Use new handler
+              onPlanSelect={handlePlanSelect} 
               onOneTimeClick={() => setView('onetime')} 
               onInfoClick={() => setShowInfoModal(true)} 
               onAlertsInfoClick={() => setShowAlertsModal(true)} 
@@ -1521,21 +1507,21 @@ const Site = () => {
             />
           )}
           
-          {/* Note: 'payment' view is now skipped */}
-          
           {view === 'checkout' && (
             <CheckoutForm 
               packageSelection={packageSelection} 
-              initialPaymentSelection={initialPaymentSelection} // Pass initial state
+              initialPaymentSelection={initialPaymentSelection} 
               zipCode={zipCode} 
               dogCount={dogCountLabel} 
               yardSize={yardSize} 
+              phoneFromSorter={phone}
+              couponFromSorter={couponCode}
               yardPlusSelected={!!yardPlusSelections[packageSelection.key]} 
               stripeInstance={stripeInstance} 
               cardElement={cardElement} 
               text={config.text.checkoutView} 
               stripeMode={config.data.STRIPE_MODE} 
-              onBack={() => setView('packages')} // Go back to Packages, not Payment
+              onBack={() => setView('packages')} 
               onSubmitSuccess={() => { setIsFormSubmitted(true); setView('success'); }} 
               configData={config.data} 
               onSavingsInfoClick={() => setShowSavingsModal(true)} 
