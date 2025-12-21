@@ -244,16 +244,16 @@ const FullPageLoader = ({ error = null }) => (
 
 const SpecialOfferBox = ({ offer, promotions, onLearnMoreClick }) => {
   if (!offer) return null;
-  const isPromoActive = promotions?.isActive;
   
+  // Always active look as requested
   return (
-    <div className="bg-white border-2 border-dashed border-[var(--brand-green)] p-5 rounded-xl mb-6 shadow-sm relative overflow-hidden group transform transition-transform hover:scale-[1.01]">
-      <div className="absolute top-0 right-0 bg-[var(--brand-green)] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider shadow-sm">
-        🔥 PROMO
+    <div className="bg-green-50 border-2 border-green-500 p-5 rounded-xl mb-6 shadow-sm relative overflow-hidden group transform transition-transform hover:scale-[1.01]">
+      <div className="absolute top-0 right-0 bg-green-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider shadow-sm">
+        ✓ ACTIVATED
       </div>
       <div className="flex items-start space-x-4">
-        <div className="flex-shrink-0 bg-green-100 p-3 rounded-full text-[var(--brand-green)]">
-           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>
+        <div className="flex-shrink-0 bg-white p-3 rounded-full text-green-600 shadow-sm border border-green-100">
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
         </div>
         <div>
           <h3 className="text-lg font-extrabold text-slate-800 uppercase tracking-tight mb-1">{offer.specialOfferTitle}</h3>
@@ -262,20 +262,11 @@ const SpecialOfferBox = ({ offer, promotions, onLearnMoreClick }) => {
           <div className="mt-2">
               <button 
                   onClick={onLearnMoreClick}
-                  className="text-sm font-bold text-[var(--brand-green)] hover:text-green-700 underline flex items-center cursor-pointer transition-colors"
+                  className="text-sm font-bold text-green-700 hover:text-green-800 underline flex items-center cursor-pointer transition-colors"
               >
-                  👆 Learn More
+                  ℹ️ See Offer Details
               </button>
           </div>
-
-          {isPromoActive && (
-            <div className="mt-3 pt-2 border-t border-green-100">
-               <div className="text-sm font-bold text-red-600 flex items-center animate-pulse">
-                 <span className="mr-1">✚</span> 
-                 <span dangerouslySetInnerHTML={{ __html: promotions.bannerText || "50% Off First Month!" }} />
-               </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -374,8 +365,10 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
   };
 
   const handleSubmit = () => {
-    if (!phone || phone.length < 10) {
-        setError('Please enter a valid phone number.');
+    // 1. Validate Phone Number (Basic Regex for 10 digits)
+    const phoneRegex = /^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/;
+    if (!phone || !phoneRegex.test(phone)) {
+        setError('Please enter a valid 10-digit phone number.');
         return;
     }
     if (!consent) {
@@ -390,8 +383,11 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
   return (
     <div className="bg-white p-8 rounded-xl shadow-lg fade-in">
       
+      {/* Moved Special Offer Box to Top */}
+      <SpecialOfferBox offer={specialOffer} promotions={promotions} onLearnMoreClick={onLearnMoreClick} />
+
       {/* Coupon Field - Optional, at Top */}
-      <div className="mb-6">
+      <div className="mb-6 mt-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">Have a Coupon Code?</label>
         <input 
             type="text" 
@@ -467,8 +463,6 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
             </span>
          </label>
       </div>
-
-      <SpecialOfferBox offer={specialOffer} promotions={promotions} onLearnMoreClick={onLearnMoreClick} />
 
       {error && <p className="text-red-600 font-bold text-center mb-4">{error}</p>}
 
@@ -898,6 +892,19 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
   };
 
   const bd = getBreakdown();
+
+  // FIX: Force mount Stripe Element when container becomes visible
+  useEffect(() => {
+    if (cardNow && cardElement) {
+        setTimeout(() => {
+            try {
+                cardElement.mount('#card-element');
+            } catch (e) {
+                console.log("Element already mounted");
+            }
+        }, 50);
+    }
+  }, [cardNow, cardElement]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
