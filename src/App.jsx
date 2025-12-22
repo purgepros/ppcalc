@@ -502,7 +502,10 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
             placeholder="Mobile Phone Number (Required)"
             className="w-full p-3 border rounded mb-3"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 10) setPhone(val);
+            }}
          />
          <label className="flex items-start gap-2 text-xs text-gray-600 cursor-pointer">
             <input 
@@ -1250,7 +1253,16 @@ const LeadForm = ({ title, description, onBack, onSubmitSuccess, zipCode, dogCou
       <form onSubmit={handleSubmit} className="space-y-4">
         <input className="w-full p-3 border rounded" placeholder="Name" required onChange={e => setFormData({...formData, name: e.target.value})} />
         <input className="w-full p-3 border rounded" placeholder="Email" required onChange={e => setFormData({...formData, email: e.target.value})} />
-        <input className="w-full p-3 border rounded" placeholder="Phone" required onChange={e => setFormData({...formData, phone: e.target.value})} />
+        <input 
+          className="w-full p-3 border rounded" 
+          placeholder="Phone" 
+          required 
+          value={formData.phone}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            if (val.length <= 10) setFormData({...formData, phone: val});
+          }} 
+        />
         <textarea className="w-full p-3 border rounded" placeholder="Tell us about your property..." onChange={e => setFormData({...formData, notes: e.target.value})} />
         <button disabled={isSubmitting} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded">
           {isSubmitting ? 'Sending...' : 'Request Quote'}
@@ -1327,7 +1339,17 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
       <form onSubmit={handleSubmit} className="space-y-4">
         <input className="w-full p-3 border rounded" placeholder="Full Name" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
         <input className="w-full p-3 border rounded" type="email" placeholder="Email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-        <input className="w-full p-3 border rounded" type="tel" placeholder="Phone" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+        <input 
+          className="w-full p-3 border rounded" 
+          type="tel" 
+          placeholder="Phone" 
+          required 
+          value={formData.phone} 
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            if (val.length <= 10) setFormData({...formData, phone: val});
+          }} 
+        />
         <input className="w-full p-3 border rounded" placeholder="Service Address" required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
         <div className="p-3 border rounded bg-white min-h-[50px]">
           {stripeInstance ? <div id="card-element" /> : <p className="text-gray-400 text-center">Loading Payment System...</p>}
@@ -1340,6 +1362,65 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
         </button>
       </form>
     </div>
+  );
+};
+
+const ExitIntentModal = ({ currentPlan, zipCode, yardSize, dogCount, planDetails, text, onClose }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await fetch('/.netlify/functions/create-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadType: 'exitIntent',
+          leadData: { email, zip: zipCode, yard_size: yardSize, dog_count: dogCount, lead_status: 'Exit Intent' },
+          emailParams: { email, zip: zipCode, yard_size: yardSize, dog_count: dogCount, plan: currentPlan?.name || 'Unknown' }
+        })
+      });
+      setSent(true);
+      setTimeout(onClose, 3000);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <div className="p-8 text-center">
+        {sent ? (
+          <div className="text-green-600 font-bold">
+            <div className="text-4xl mb-2">✓</div>
+            <p>Quote sent! Check your inbox.</p>
+          </div>
+        ) : (
+          <>
+            <h3 className="text-2xl font-bold text-slate-800 mb-3">{text?.title || "Wait!"}</h3>
+            <div className="text-slate-600 mb-6 text-sm" dangerouslySetInnerHTML={{ __html: text?.body || "Let us email you a quote." }} />
+            <form onSubmit={handleSubmit}>
+              <input
+                type="email"
+                required
+                placeholder="Enter your email"
+                className="w-full p-3 border rounded mb-4"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
+              <button disabled={loading} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90">
+                {loading ? 'Sending...' : 'Send My Quote'}
+              </button>
+            </form>
+            <button onClick={onClose} className="mt-4 text-xs text-gray-400 underline">No thanks, I'll pay full price later</button>
+          </>
+        )}
+      </div>
+    </ModalOverlay>
   );
 };
 
@@ -1357,6 +1438,7 @@ const Site = () => {
   const [yardPlusSelections, setYardPlusSelections] = useState({});
   const [packageSelection, setPackageSelection] = useState(null); 
   const [initialPaymentSelection, setInitialPaymentSelection] = useState(null); 
+  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [stripeInstance, setStripeInstance] = useState(null);
   const [cardElement, setCardElement] = useState(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -1607,6 +1689,7 @@ const Site = () => {
       {showSavingsModal && <SavingsInfoModal onClose={() => setShowSavingsModal(false)} />}
       {showSpecialOfferModal && <ServiceInfoModal onClose={() => setShowSpecialOfferModal(false)} text={config.text.modals.specialOfferInfo} />}
       
+      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} dogCount={dogCountLabel} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
   );
 };
