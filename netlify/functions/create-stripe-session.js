@@ -3,6 +3,7 @@
  * * Updates:
  * 1. Fixes "Empty Payment Method" error by conditionally attaching payment info.
  * 2. Supports "Pay Later" by creating subscriptions in 'incomplete' state.
+ * 3. Removes invalid 'save_default_payment_method' parameter.
  */
 
 const emailjs = require('@emailjs/nodejs');
@@ -197,7 +198,7 @@ exports.handler = async (event) => {
       // If NO card is provided (Pay Later), we must allow incomplete payments
       if (!paymentMethodId) {
           subOptions.payment_behavior = 'default_incomplete';
-          subOptions.save_default_payment_method = 'on_subscription';
+          // Removed invalid parameter: save_default_payment_method
       }
 
       // Apply Coupon if exists
