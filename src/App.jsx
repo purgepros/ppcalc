@@ -208,65 +208,6 @@ const SavingsInfoModal = ({ onClose }) => (
   </ModalOverlay>
 );
 
-const ExitIntentModal = ({ currentPlan, zipCode, yardSize, dogCount, planDetails, text, onClose }) => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await fetch('/.netlify/functions/create-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadType: 'exitIntent',
-          leadData: { email, zip: zipCode, yard_size: yardSize, dog_count: dogCount, lead_status: 'Exit Intent' },
-          emailParams: { email, zip: zipCode, yard_size: yardSize, dog_count: dogCount, plan: currentPlan?.name || 'Unknown' }
-        })
-      });
-      setSent(true);
-      setTimeout(onClose, 3000);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalOverlay onClose={onClose}>
-      <div className="p-8 text-center">
-        {sent ? (
-          <div className="text-green-600 font-bold">
-            <div className="text-4xl mb-2">✓</div>
-            <p>Quote sent! Check your inbox.</p>
-          </div>
-        ) : (
-          <>
-            <h3 className="text-2xl font-bold text-slate-800 mb-3">{text?.title || "Wait!"}</h3>
-            <div className="text-slate-600 mb-6 text-sm" dangerouslySetInnerHTML={{ __html: text?.body || "Let us email you a quote." }} />
-            <form onSubmit={handleSubmit}>
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                className="w-full p-3 border rounded mb-4"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-              <button disabled={loading} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90">
-                {loading ? 'Sending...' : 'Send My Quote'}
-              </button>
-            </form>
-            <button onClick={onClose} className="mt-4 text-xs text-gray-400 underline">No thanks, I'll pay full price later</button>
-          </>
-        )}
-      </div>
-    </ModalOverlay>
-  );
-};
-
 const TermsCheckbox = ({ checked, onChange, isSubscription }) => (
   <label className="flex items-start text-xs text-gray-500 gap-2 cursor-pointer mt-2">
     <input 
@@ -1402,65 +1343,6 @@ const OneTimeCheckoutForm = ({ zipCode, dogCount, onBack, onSubmitSuccess, strip
   );
 };
 
-const ExitIntentModal = ({ currentPlan, zipCode, yardSize, dogCount, planDetails, text, onClose }) => {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await fetch('/.netlify/functions/create-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadType: 'exitIntent',
-          leadData: { email, zip: zipCode, yard_size: yardSize, dog_count: dogCount, lead_status: 'Exit Intent' },
-          emailParams: { email, zip: zipCode, yard_size: yardSize, dog_count: dogCount, plan: currentPlan?.name || 'Unknown' }
-        })
-      });
-      setSent(true);
-      setTimeout(onClose, 3000);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ModalOverlay onClose={onClose}>
-      <div className="p-8 text-center">
-        {sent ? (
-          <div className="text-green-600 font-bold">
-            <div className="text-4xl mb-2">✓</div>
-            <p>Quote sent! Check your inbox.</p>
-          </div>
-        ) : (
-          <>
-            <h3 className="text-2xl font-bold text-slate-800 mb-3">{text?.title || "Wait!"}</h3>
-            <div className="text-slate-600 mb-6 text-sm" dangerouslySetInnerHTML={{ __html: text?.body || "Let us email you a quote." }} />
-            <form onSubmit={handleSubmit}>
-              <input
-                type="email"
-                required
-                placeholder="Enter your email"
-                className="w-full p-3 border rounded mb-4"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-              <button disabled={loading} className="w-full bg-[var(--brand-green)] text-white font-bold py-3 rounded-lg hover:opacity-90">
-                {loading ? 'Sending...' : 'Send My Quote'}
-              </button>
-            </form>
-            <button onClick={onClose} className="mt-4 text-xs text-gray-400 underline">No thanks, I'll pay full price later</button>
-          </>
-        )}
-      </div>
-    </ModalOverlay>
-  );
-};
-
 const Site = () => {
   const [config, setConfig] = useState(null);
   const [view, setView] = useState('zip'); 
@@ -1475,7 +1357,6 @@ const Site = () => {
   const [yardPlusSelections, setYardPlusSelections] = useState({});
   const [packageSelection, setPackageSelection] = useState(null); 
   const [initialPaymentSelection, setInitialPaymentSelection] = useState(null); 
-  const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [stripeInstance, setStripeInstance] = useState(null);
   const [cardElement, setCardElement] = useState(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -1726,7 +1607,6 @@ const Site = () => {
       {showSavingsModal && <SavingsInfoModal onClose={() => setShowSavingsModal(false)} />}
       {showSpecialOfferModal && <ServiceInfoModal onClose={() => setShowSpecialOfferModal(false)} text={config.text.modals.specialOfferInfo} />}
       
-      {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} dogCount={dogCountLabel} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
     </>
   );
 };
