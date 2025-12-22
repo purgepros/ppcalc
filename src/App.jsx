@@ -350,18 +350,49 @@ const Footer = ({ text }) => {
   );
 };
 
-// --- UPDATED SORTER COMPONENT ---
-const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions, onLearnMoreClick }) => {
+// --- UPDATED SORTER COMPONENT WITH COUPON VALIDATION ---
+const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text, specialOffer, lotFees, onYardHelperClick, promotions, onLearnMoreClick, stripeMode }) => {
   const [yardSize, setYardSize] = useState(initialYardSize || 'standard');
   const [dogCount, setDogCount] = useState(initialDogCount || '1'); 
   const [phone, setPhone] = useState('');
   const [couponCode, setCouponCode] = useState('');
+  const [couponStatus, setCouponStatus] = useState(null); // null, 'loading', 'valid', 'invalid'
+  const [couponDetails, setCouponDetails] = useState(null);
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState('');
 
   const getDogNumber = (val) => {
     if (val === '10+') return 10;
     return parseInt(val, 10);
+  };
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+        setCouponStatus(null);
+        setCouponDetails(null);
+        return;
+    }
+    setCouponStatus('loading');
+    try {
+        const res = await fetch('/.netlify/functions/validate-coupon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ couponCode: couponCode.trim(), stripeMode })
+        });
+        const data = await res.json();
+        
+        if (data.valid) {
+            setCouponStatus('valid');
+            setCouponDetails(data.details);
+        } else {
+            setCouponStatus('invalid');
+            setCouponDetails(null);
+        }
+    } catch (e) {
+        console.error(e);
+        setCouponStatus('invalid');
+        setCouponDetails(null);
+    }
   };
 
   const handleSubmit = () => {
@@ -377,7 +408,8 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
     }
     setError('');
     const numDogs = getDogNumber(dogCount);
-    onSortComplete(yardSize, numDogs, dogCount, phone, consent, couponCode);
+    // Pass the confirmed coupon details forward
+    onSortComplete(yardSize, numDogs, dogCount, phone, consent, couponCode, couponDetails);
   };
 
   return (
@@ -386,16 +418,37 @@ const Sorter = ({ onSortComplete, onBack, initialYardSize, initialDogCount, text
       {/* Moved Special Offer Box to Top */}
       <SpecialOfferBox offer={specialOffer} promotions={promotions} onLearnMoreClick={onLearnMoreClick} />
 
-      {/* Coupon Field - Optional, at Top */}
+      {/* --- UPDATED COUPON FIELD --- */}
       <div className="mb-6 mt-6">
         <label className="block text-sm font-medium text-gray-700 mb-1">Have a Coupon Code?</label>
-        <input 
-            type="text" 
-            placeholder="Enter Code (Optional)"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value)}
-            className="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 outline-none"
-        />
+        <div className="flex gap-2">
+            <input 
+                type="text" 
+                placeholder="Enter Code (Optional)"
+                value={couponCode}
+                onChange={(e) => { setCouponCode(e.target.value); setCouponStatus(null); }}
+                onBlur={validateCoupon}
+                className={`flex-grow p-3 border-2 rounded-lg outline-none transition-colors ${
+                    couponStatus === 'invalid' ? 'border-red-300 bg-red-50' : 
+                    (couponStatus === 'valid' ? 'border-green-300 bg-green-50' : 'border-gray-200 focus:border-blue-500')
+                }`}
+            />
+            <button 
+                onClick={validateCoupon}
+                className="bg-gray-100 text-gray-600 font-bold px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                type="button"
+            >
+                {couponStatus === 'loading' ? '...' : 'Apply'}
+            </button>
+        </div>
+        {couponStatus === 'valid' && couponDetails && (
+            <p className="text-xs text-green-600 font-bold mt-1 animate-pulse">
+                ✅ Coupon Applied: {couponDetails.percent_off ? `${couponDetails.percent_off}% OFF` : `-$${(couponDetails.amount_off/100).toFixed(2)}`}
+            </p>
+        )}
+        {couponStatus === 'invalid' && (
+            <p className="text-xs text-red-500 font-bold mt-1">❌ Invalid Coupon Code</p>
+        )}
       </div>
 
       <div className="mb-6">
@@ -486,7 +539,7 @@ const PackageSelector = ({
   onInfoClick, onAlertsInfoClick, 
   text, specialOffer, 
   yardPlusSelections, setYardPlusSelections,
-  promotions, onLearnMoreClick
+  promotions, onLearnMoreClick, couponDetails
 }) => {
 
   const fees = lotFees || { tier1: 30, tier2: 60 };
@@ -499,8 +552,12 @@ const PackageSelector = ({
   const eDogPrice = extraDogPrice || 15;
   const yPlusPrice = yardPlusPrice || 20;
 
-  const isPromoActive = promotions?.isActive || false;
-  const promoBannerText = promotions?.bannerText || "50% Off First Month!";
+  // Manual Coupon Override Logic
+  const isPromoActive = couponDetails ? true : (promotions?.isActive || false);
+  
+  const promoBannerText = couponDetails 
+    ? `Coupon Applied: <strong>${couponDetails.percent_off ? `${couponDetails.percent_off}% OFF` : `-$${(couponDetails.amount_off/100).toFixed(2)}`}</strong>` 
+    : (promotions?.bannerText || "50% Off First Month!");
 
   let lotFee = 0;
   if (yardSize === 'tier1') lotFee = fees.tier1 || 0;
@@ -530,13 +587,27 @@ const PackageSelector = ({
 
     const finalPrice = base + lotFee + dogFee + addonCost;
     
+    // --- Display Price Calculation ---
+    let displayPrice = finalPrice;
+    if (isPromoActive) {
+        if (couponDetails) {
+            if (couponDetails.percent_off) {
+                displayPrice = finalPrice * (1 - (couponDetails.percent_off / 100));
+            } else if (couponDetails.amount_off) {
+                displayPrice = Math.max(0, finalPrice - (couponDetails.amount_off / 100));
+            }
+        } else {
+            // Default global promo (50% off)
+            displayPrice = finalPrice / 2;
+        }
+    }
+    
     let divisor = 1;
     if (key === 'biWeekly') divisor = 2.17;
     if (key === 'weekly') divisor = 4.33; 
     if (key === 'twiceWeekly') divisor = 8.66;
     
     const perVisitPrice = (finalPrice / divisor).toFixed(2);
-    const displayPrice = isPromoActive ? (finalPrice / 2).toFixed(2) : finalPrice;
 
     const featuredFreeFeatures = [];
     const standardFeatures = [];
@@ -584,7 +655,7 @@ const PackageSelector = ({
       standardFeatures,
       excludedFeatures,
       finalPrice, 
-      displayPrice,
+      displayPrice: displayPrice.toFixed(2),
       perVisitPrice, 
       isPromoActive,
       basePrice: base,
@@ -794,7 +865,7 @@ const PackageSelector = ({
 };
 
 // --- UPDATED CHECKOUT FORM ---
-const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount, onRiskFreeInfoClick, phoneFromSorter, couponFromSorter }) => {
+const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogCount, yardSize, onBack, onSubmitSuccess, stripeInstance, cardElement, text, stripeMode, yardPlusSelected, configData, onSavingsInfoClick, promotions, quarterlyDiscount, onRiskFreeInfoClick, phoneFromSorter, couponFromSorter, couponDetails }) => {
   const [formData, setFormData] = useState({ 
       name: '', email: '', phone: phoneFromSorter || '', 
       address: '', city: '', state: 'IN', 
@@ -809,49 +880,43 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
 
   const monthly = packageSelection.finalMonthlyPrice;
   const qDisc = quarterlyDiscount || 30;
-  const isPromoActive = promotions?.isActive || false;
-  const discountedMonthly = isPromoActive ? monthly / 2 : monthly;
+  const isGlobalPromo = promotions?.isActive || false;
+  
+  // Calculate discount value
+  let firstMonthDiscount = 0;
+  let promoText = "";
 
-  const paymentOptions = [
-    { 
-      term: 'Monthly', 
-      label: 'Pay Monthly', 
-      totalDue: discountedMonthly, 
-      savingsText: isPromoActive ? "50% OFF First Month!" : null, 
-      savingsValue: 0,
-      isPromo: isPromoActive
-    },
-    { 
-      term: 'Quarterly', 
-      label: 'Pay Quarterly', 
-      totalDue: (monthly * 3) - qDisc, 
-      savingsText: `Save $${qDisc} per Quarter!`, 
-      savingsValue: qDisc, 
-      isPopular: false 
-    },
-    { 
-      term: 'Annual', 
-      label: 'Pay Yearly', 
-      totalDue: monthly * 11, 
-      savingsText: `Get 1 Month FREE!`, 
-      savingsValue: monthly, 
-      isPopular: true 
-    }
-  ];
+  if (couponDetails) {
+      // Manual Coupon Logic
+      if (couponDetails.percent_off) {
+          firstMonthDiscount = monthly * (couponDetails.percent_off / 100);
+          promoText = `Coupon (${couponDetails.percent_off}% Off)`;
+      } else if (couponDetails.amount_off) {
+          firstMonthDiscount = couponDetails.amount_off / 100;
+          promoText = `Coupon (-$${(couponDetails.amount_off/100).toFixed(2)})`;
+      }
+  } else if (isGlobalPromo) {
+      // Global Logic
+      firstMonthDiscount = monthly / 2;
+      promoText = "Trial Offer (50% Off)";
+  }
 
-  const handleFrequencyChange = (option) => {
-    setPaymentSelection({
-        term: option.term,
-        total: option.totalDue,
-        savingsText: option.savingsText,
-        savingsValue: option.savingsValue,
-        isPromo: option.isPromo
-    });
-  };
+  // --- RECALCULATE PRICING BASED ON MANUAL COUPON IF PRESENT ---
+  useEffect(() => {
+      const discounted = Math.max(0, monthly - firstMonthDiscount);
+      setPaymentSelection(prev => ({
+          ...prev,
+          total: prev.term === 'Monthly' ? discounted : prev.total, // Only apply discount to first month charge
+          savingsText: promoText,
+          isPromo: !!firstMonthDiscount
+      }));
+  }, [monthly, firstMonthDiscount]);
 
-  const totalDue = paymentSelection.total;
+  const totalDue = paymentSelection.term === 'Monthly' ? Math.max(0, monthly - firstMonthDiscount) : paymentSelection.total;
+  
+  // Savings Display logic
   const isPromoApplied = paymentSelection.isPromo;
-  const promoSavings = isPromoApplied ? packageSelection.finalMonthlyPrice / 2 : 0;
+  const promoSavings = isPromoApplied ? firstMonthDiscount : 0;
   const totalSavings = 99.99 + paymentSelection.savingsValue + promoSavings;
 
   const getBreakdown = () => {
@@ -939,8 +1004,9 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
       let termDiscountRow = '';
       let termNoun = 'Month'; 
 
-      if (isPromoApplied) {
-         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #DC2626; font-weight: bold;">Trial Offer (50% Off)</span><span style="font-weight: bold; color: #DC2626;">-$${promoSavings.toFixed(2)}</span></div>`;
+      // Update discount row for email based on active promo
+      if (firstMonthDiscount > 0) {
+         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #DC2626; font-weight: bold;">${promoText}</span><span style="font-weight: bold; color: #DC2626;">-$${firstMonthDiscount.toFixed(2)}</span></div>`;
       } else if (paymentSelection.term === 'Quarterly') {
         termDiscountRow = `<div style="display: flex; justify-content: space-between; margin-bottom: 8px;"><span style="color: #166534;">Quarterly Discount</span><span style="font-weight: bold; color: #166534;">-$30.00</span></div>`;
         termNoun = 'Quarter';
@@ -949,10 +1015,8 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
         termNoun = 'Year';
       }
 
-      const couponId = stripeMode === 'live' ? promotions?.couponIdLive : promotions?.couponIdTest;
-
-      // Pass manual coupon code if provided, otherwise use promo
-      const finalCouponCode = couponFromSorter || (isPromoApplied ? couponId : null);
+      // Determine Coupon ID (Manual > Global)
+      const finalCouponCode = couponDetails ? couponDetails.id : (isGlobalPromo ? (stripeMode === 'live' ? promotions?.couponIdLive : promotions?.couponIdTest) : null);
 
       const payload = {
         stripeMode,
@@ -1028,31 +1092,7 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
       <button onClick={onBack} className="text-sm text-gray-600 hover:underline mb-4">&larr; Back to Plans</button>
       <h2 className="text-2xl font-bold text-center mb-6">{text?.title || "Complete Order"}</h2>
       
-      {/* --- PAYMENT FREQUENCY SELECTOR --- */}
-      <div className="mb-6">
-        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-3">Select Payment Frequency</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {paymentOptions.map((opt) => {
-                const isSelected = paymentSelection.term === opt.term;
-                return (
-                    <button
-                        key={opt.term}
-                        type="button"
-                        onClick={() => handleFrequencyChange(opt)}
-                        className={`p-3 rounded-lg border-2 text-left transition-all ${isSelected ? 'border-[var(--brand-green)] bg-green-50 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
-                    >
-                        <div className="flex justify-between items-center mb-1">
-                            <span className={`font-bold ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>{opt.term}</span>
-                            {opt.isPromo && <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">SALE</span>}
-                        </div>
-                        <div className={`font-extrabold text-lg ${opt.isPromo ? 'text-red-600' : 'text-gray-800'}`}>${opt.totalDue.toFixed(2)}</div>
-                        <div className="text-[10px] font-medium text-green-600 mt-1">{opt.savingsText || "Standard Rate"}</div>
-                    </button>
-                );
-            })}
-        </div>
-      </div>
-
+      {/* --- ORDER SUMMARY (UPDATED) --- */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 text-sm">
         <h4 className="font-bold text-slate-700 border-b border-slate-200 pb-2 mb-2">Order Summary</h4>
         <div className="flex justify-between mb-1"><span className="text-slate-600">Plan</span><span className="font-medium">{packageSelection.name}</span></div>
@@ -1081,18 +1121,12 @@ const CheckoutForm = ({ packageSelection, initialPaymentSelection, zipCode, dogC
              <span>${packageSelection.finalMonthlyPrice.toFixed(2)}</span>
            </div>
            
-           {isPromoApplied ? (
+           {/* Dynamic Discount Row */}
+           {firstMonthDiscount > 0 && (
              <div className="flex justify-between text-red-600 font-bold mb-1">
-                <span>First Month (50% Off):</span>
-                <span>-${promoSavings.toFixed(2)}</span>
+                <span>{promoText}:</span>
+                <span>-${firstMonthDiscount.toFixed(2)}</span>
              </div>
-           ) : (
-             paymentSelection.savingsValue > 0 && (
-                <div className="flex justify-between text-green-600 font-bold mb-1">
-                    <span>{paymentSelection.term} Savings:</span>
-                    <span>-${paymentSelection.savingsValue.toFixed(2)}</span>
-                </div>
-             )
            )}
         </div>
 
@@ -1318,6 +1352,7 @@ const Site = () => {
   const [dogCountLabel, setDogCountLabel] = useState('1'); 
   const [phone, setPhone] = useState('');
   const [couponCode, setCouponCode] = useState('');
+  const [couponDetails, setCouponDetails] = useState(null); // New State for Coupon Object
   
   const [yardPlusSelections, setYardPlusSelections] = useState({});
   const [packageSelection, setPackageSelection] = useState(null); 
@@ -1408,15 +1443,15 @@ const Site = () => {
     }
   }, [view, cardElement]);
 
-  const handleSorter = async (size, dogs, label, capturedPhone, consent, capturedCoupon) => {
+  const handleSorter = async (size, dogs, label, capturedPhone, consent, capturedCoupon, capturedDetails) => {
     setYardSize(size); 
     setNumDogs(dogs); 
     setDogCountLabel(label);
     setPhone(capturedPhone);
     setCouponCode(capturedCoupon);
+    setCouponDetails(capturedDetails); // Store Validated Coupon
 
     // --- FIRE INCOMPLETE LEAD WEBHOOK ---
-    // This sends data to GHL immediately so you can follow up if they abandon checkout
     const yardSizeLabels = {
       'standard': 'Standard (Up to 1/4 Acre)',
       'tier1': 'Medium (1/4 - 1/2 Acre)',
@@ -1429,7 +1464,7 @@ const Site = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                leadType: 'incomplete', // Special type for GHL routing
+                leadType: 'incomplete',
                 leadData: { 
                     phone: capturedPhone,
                     zip: zipCode, 
@@ -1438,7 +1473,7 @@ const Site = () => {
                     coupon_code: capturedCoupon,
                     lead_status: 'Incomplete - Step 2' 
                 },
-                emailParams: {} // No email sent to admin for incomplete, just GHL
+                emailParams: {}
             })
         });
     } catch (e) {
@@ -1487,7 +1522,7 @@ const Site = () => {
         />
       ) : (
         <main className="container mx-auto px-4 max-w-xl pb-12">
-          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} promotions={config.data.promotions} onLearnMoreClick={() => setShowSpecialOfferModal(true)} />}
+          {view === 'sorter' && <Sorter onSortComplete={handleSorter} text={config.text.sorterView} specialOffer={config.text.globals} onBack={() => setView('zip')} lotFees={config.data.lotFees} onYardHelperClick={() => setShowYardHelperModal(true)} promotions={config.data.promotions} onLearnMoreClick={() => setShowSpecialOfferModal(true)} stripeMode={config.data.STRIPE_MODE} />}
           {view === 'lead_estate' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descEstate} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           {view === 'lead_kennel' && <LeadForm title={config.text.customQuoteView.title} description={config.text.customQuoteView.descMultiDog} zipCode={zipCode} dogCount={dogCountLabel} yardSize={yardSize} onBack={() => setView('sorter')} onSubmitSuccess={() => setView('success')} />}
           
@@ -1511,6 +1546,7 @@ const Site = () => {
               onAlertsInfoClick={() => setShowAlertsModal(true)} 
               promotions={config.data.promotions} 
               onLearnMoreClick={() => setShowSpecialOfferModal(true)}
+              couponDetails={couponDetails}
             />
           )}
           
@@ -1523,6 +1559,7 @@ const Site = () => {
               yardSize={yardSize} 
               phoneFromSorter={phone}
               couponFromSorter={couponCode}
+              couponDetails={couponDetails}
               yardPlusSelected={!!yardPlusSelections[packageSelection.key]} 
               stripeInstance={stripeInstance} 
               cardElement={cardElement} 
@@ -1572,7 +1609,7 @@ const Site = () => {
       {showSpecialOfferModal && <ServiceInfoModal onClose={() => setShowSpecialOfferModal(false)} text={config.text.modals.specialOfferInfo} />}
       
       {isExitModalOpen && !isFormSubmitted && <ExitIntentModal currentPlan={packageSelection || {}} zipCode={zipCode} yardSize={yardSize} dogCount={dogCountLabel} planDetails={config.data.planDetails} text={config.text.modals.exitIntent} onClose={() => setIsExitModalOpen(false)} />}
-    </>
+    </Router>
   );
 };
 

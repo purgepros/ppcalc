@@ -1,27 +1,19 @@
 /*
  * --- NETLIFY FUNCTION FOR STRIPE CHECKOUT (UNIFIED SYSTEM) ---
- *
- * This backend handles the "Stripe Mode" toggle (Test vs Live).
- * It constructs the subscription by stacking products:
- * 1. Base Plan (Monthly/Quarterly/Annual)
- * 2. Lot Fee (If applicable)
- * 3. Extra Dog Fee (If applicable, via Quantity)
- * 4. Yard+ Add-on (If selected)
- *
- * NOTE: You must create "Annual" versions of your Add-ons in Stripe
- * (priced at 11x the monthly rate) to support the "1 Month Free" logic.
+ * * Updates:
+ * 1. Fixes "Empty Payment Method" error by conditionally attaching payment info.
+ * 2. Supports "Pay Later" by creating subscriptions in 'incomplete' state.
  */
 
 const emailjs = require('@emailjs/nodejs');
 const fetch = require('node-fetch');
 
 // --- 1. THE PRICE MAPS (TEST VS LIVE) ---
-// YOU MUST FILL IN THESE IDs FROM YOUR STRIPE DASHBOARD
 const PRICE_MAP = {
   test: {
     oneTime: 'price_1SWViqGelkvkkUqXl8jzD7Za', // Your TEST One-Time ID
     
-    // BASE PLANS (The core service)
+    // BASE PLANS
     base: {
       'biWeekly': {
         'Monthly': 'price_1SfoRAGelkvkkUqXIpxtx3c6',
@@ -40,22 +32,21 @@ const PRICE_MAP = {
       }
     },
 
-    // LOT SIZE FEES (The Land)
+    // LOT SIZE FEES
     lot: {
-      'tier1': { // 1/4 to 1/2 Acre (+$30/mo)
+      'tier1': { // 1/4 to 1/2 Acre
         'Monthly': 'price_1SWVdQGelkvkkUqXSMk0z6CL',
         'Quarterly': 'price_1SWVdeGelkvkkUqXDpYTklRG',
         'Annual': 'price_1SWVdrGelkvkkUqXMcBwIOj7',
       },
-      'tier2': { // 1/2 to 1 Acre (+$60/mo)
+      'tier2': { // 1/2 to 1 Acre
         'Monthly': 'price_1SWVeaGelkvkkUqXK9rgUEPP',
         'Quarterly': 'price_1SWVerGelkvkkUqX4HaPrZJw',
         'Annual': 'price_1SWVf5GelkvkkUqXPOZlsMn7',
       }
     },
 
-    // EXTRA DOG FEE (The Volume)
-    // This is a single price ID. We use "Quantity" to handle multiple dogs.
+    // EXTRA DOG FEE
     extraDog: {
       'Monthly': 'price_1SWVfzGelkvkkUqXLwiDt8Vr',
       'Quarterly': 'price_1SWVgCGelkvkkUqXG1UkMUd8',
@@ -70,7 +61,7 @@ const PRICE_MAP = {
     }
   },
   
-  // --- LIVE MODE PRICES (Fill these in before launching!) ---
+  // --- LIVE MODE PRICES ---
   live: {
     oneTime: 'price_1SWVoLGelkvkkUqXAJglWmsl', 
     base: {
@@ -87,7 +78,6 @@ const PRICE_MAP = {
   }
 };
 
-// --- 2. THE MAIN FUNCTION HANDLER ---
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -100,10 +90,10 @@ exports.handler = async (event) => {
     quote, 
     leadData, 
     emailParams,
-    promo // Extract the promo object
+    promo // Contains .couponId if one was applied
   } = JSON.parse(event.body);
 
-  // --- SELECT STRIPE SECRET KEY ---
+  // --- SELECT SECRET KEY ---
   let secretKey;
   if (stripeMode === 'live') {
     secretKey = process.env.STRIPE_SECRET_KEY_LIVE;
@@ -125,20 +115,30 @@ exports.handler = async (event) => {
     let stripeAction;
     let isOneTime = false;
 
-    // --- Create Stripe Customer ---
-    const stripeCustomer = await stripe.customers.create({
-      payment_method: paymentMethodId,
+    // --- FIX 1: Safely Create Customer ---
+    // We only add payment_method if paymentMethodId is NOT null/empty
+    const customerParams = {
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
       address: { line1: customer.address, postal_code: quote.zipCode },
-      invoice_settings: { default_payment_method: paymentMethodId },
-    });
+    };
+
+    if (paymentMethodId) {
+        customerParams.payment_method = paymentMethodId;
+        customerParams.invoice_settings = { default_payment_method: paymentMethodId };
+    }
+
+    const stripeCustomer = await stripe.customers.create(customerParams);
 
     // --- Logic Split: One-Time vs Subscription ---
     if (quote.paymentTerm === 'One-Time Deposit') {
-      // ... One Time Logic ...
       isOneTime = true;
+      // One-Time requires immediate payment
+      if (!paymentMethodId) {
+          throw new Error("Payment method is required for the One-Time Deposit.");
+      }
+
       stripeAction = await stripe.paymentIntents.create({
         amount: 9999, 
         currency: 'usd',
@@ -151,10 +151,9 @@ exports.handler = async (event) => {
       
     } else {
       // --- SUBSCRIPTION STACKING LOGIC ---
-      
       const items = [];
-      const term = quote.paymentTerm; // "Monthly", "Quarterly", or "Annual"
-      const planKey = quote.planKey;  // "weekly", "biWeekly", etc.
+      const term = quote.paymentTerm; 
+      const planKey = quote.planKey;  
       
       // 1. BASE PLAN
       const baseId = selectedPrices.base[planKey]?.[term];
@@ -171,13 +170,10 @@ exports.handler = async (event) => {
       }
 
       // 3. EXTRA DOG FEE
-      // Base now covers 1 dog. Charge for any over 1.
       let numDogs = 1;
-      // Handle legacy '1-2' string just in case, but frontend now sends '1', '2', etc.
       if (quote.dogCount === '1-2') numDogs = 2; 
       else numDogs = parseInt(quote.dogCount, 10);
 
-      // Changed logic: Fee applies for anything OVER 1 dog
       if (numDogs > 1) {
         const extraDogs = numDogs - 1;
         const dogPriceId = selectedPrices.extraDog?.[term];
@@ -187,25 +183,28 @@ exports.handler = async (event) => {
       }
 
       // 4. YARD+ ADD-ON
-      // Only add if selected AND not already included (Twice Weekly includes it)
       if (quote.yardPlusSelected && planKey !== 'twiceWeekly') {
         const yardPlusId = selectedPrices.yardPlus?.[term];
         if (yardPlusId) items.push({ price: yardPlusId });
       }
 
-      // --- FIX 2: Prepare Subscription Options ---
+      // --- FIX 2: Prepare Subscription Options for "Card Later" ---
       const subOptions = {
         customer: stripeCustomer.id,
         items: items,
       };
 
-      // --- FIX 3: Apply Coupon using 'discounts' parameter ---
-      // Stripe API v19+ requires 'discounts' array instead of 'coupon' string
+      // If NO card is provided (Pay Later), we must allow incomplete payments
+      if (!paymentMethodId) {
+          subOptions.payment_behavior = 'default_incomplete';
+          subOptions.save_default_payment_method = 'on_subscription';
+      }
+
+      // Apply Coupon if exists
       if (promo && promo.applied && promo.couponId) {
         subOptions.discounts = [{ coupon: promo.couponId }];
       }
 
-      // Create the Subscription with the "Stack" (and optional discount)
       stripeAction = await stripe.subscriptions.create(subOptions);
     }
 
